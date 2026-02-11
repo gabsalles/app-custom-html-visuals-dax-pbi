@@ -11,18 +11,17 @@ interface PreviewProps {
 
 const Preview: React.FC<PreviewProps> = ({ global, cards, viewport }) => {
   const hexToRgb = (hex: string) => {
+    if (!hex.startsWith('#')) return '79, 70, 229'; // Fallback for gradients
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '79, 70, 229';
   };
 
-  const primaryRgb = hexToRgb(global.primaryColor);
-  
   let hoverStyles = '';
   switch (global.hoverEffect) {
-    case 'lift': hoverStyles = `transform: translateY(-6px); box-shadow: 0 15px 30px rgba(0,0,0,0.15); border-color: var(--p-primary);`; break;
-    case 'scale': hoverStyles = `transform: scale(1.03); border-color: var(--p-primary);`; break;
-    case 'glow': hoverStyles = `box-shadow: 0 0 25px rgba(${primaryRgb}, 0.5); border-color: var(--p-primary);`; break;
-    case 'border': hoverStyles = `border-color: var(--p-primary); border-width: 2px; padding: calc(var(--p-pad) - 1px);`; break;
+    case 'lift': hoverStyles = `transform: translateY(-6px); box-shadow: 0 15px 30px rgba(0,0,0,0.12); border-color: rgba(0,0,0,0.1);`; break;
+    case 'scale': hoverStyles = `transform: scale(1.03);`; break;
+    case 'glow': hoverStyles = `box-shadow: 0 0 25px rgba(var(--card-accent-rgb), 0.4);`; break;
+    case 'border': hoverStyles = `border-color: var(--card-accent); border-width: 2px; padding: calc(var(--p-pad) - 1px);`; break;
   }
 
   const animationDuration = `${global.animationDuration}s`;
@@ -49,26 +48,30 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, viewport }) => {
     @keyframes popIn { 0% { opacity: 0; transform: scale(0.6); } 100% { opacity: 1; transform: scale(1); } }
     @keyframes slideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
     @keyframes loadBar { from { width: 0; } }
-    @keyframes fillRing { to { stroke-dashoffset: var(--offset); } }
 
-    .artboard { display: grid; grid-template-columns: repeat(${global.columns}, 1fr); gap: var(--p-gap); width: 100%; padding: 10px; }
+    .artboard { 
+        display: grid; 
+        grid-template-columns: repeat(${global.columns}, 1fr); 
+        gap: var(--p-gap); 
+        width: 100%; 
+        padding: 20px;
+        min-height: 100%;
+        box-sizing: border-box;
+    }
     .p-card { 
-      background-color: var(--p-bg); border-radius: var(--p-radius); padding: var(--p-pad); 
-      min-height: var(--p-min-h); border: 1px solid rgba(0,0,0,0.08); display: flex; flex-direction: column; 
+      background: var(--p-bg); border-radius: var(--p-radius); padding: var(--p-pad); 
+      min-height: var(--p-min-h); border: 1px solid rgba(0,0,0,0.06); display: flex; flex-direction: column; 
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;
       opacity: ${global.animation === 'none' ? 1 : 0}; animation: ${animationRule};
+      flex: 1;
     }
     .p-card:hover { ${hoverStyles} }
-    .p-card::before { content: ''; position: absolute; left: 0; top: 15px; bottom: 15px; width: 4px; background: var(--p-primary); border-radius: 0 4px 4px 0; }
+    .p-card::before { content: ''; position: absolute; left: 0; top: 15px; bottom: 15px; width: 4px; background: var(--card-accent); border-radius: 0 4px 4px 0; }
     .footer { margin-top: auto; display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.03); }
     .p-row { display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: var(--p-text-sub); }
     .p-badge { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.04); display: flex; align-items: center; gap: 3px; }
     .p-track { width: 100%; height: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; overflow: hidden; margin: 10px 0; }
-    .p-fill { height: 100%; background: var(--p-primary); border-radius: 10px; width: 0; animation: loadBar 1s ease-out forwards; }
-    .ring-box { position: relative; width: 48px; height: 48px; }
-    .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
-    .ring-bg { fill: none; stroke: rgba(0,0,0,0.05); stroke-width: 5; }
-    .ring-val { fill: none; stroke: var(--p-primary); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 126; stroke-dashoffset: 126; animation: fillRing 1.2s ease-out forwards; }
+    .p-fill { height: 100%; background: var(--card-accent); border-radius: 10px; width: 0; animation: loadBar 1s ease-out forwards; }
 
     ${viewport === 'mobile' ? `.artboard { grid-template-columns: 1fr !important; }` : ''}
     ${viewport === 'tablet' ? `.artboard { grid-template-columns: repeat(2, 1fr) !important; }` : ''}
@@ -77,31 +80,23 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, viewport }) => {
   const containerWidth = viewport === 'mobile' ? '375px' : viewport === 'tablet' ? '768px' : '100%';
 
   return (
-    <div className="w-full h-full bg-[#f0f2f5] p-12 overflow-y-auto flex justify-center items-start">
+    <div className="w-full h-full bg-[#f0f2f5] overflow-y-auto flex justify-center items-stretch">
         <style>{dynamicStyles}</style>
         <div style={{ width: containerWidth, transition: 'width 0.4s ease' }} className="artboard">
           {cards.map((card, idx) => {
             const fTitle = card.fontSizeTitle || global.fontSizeTitle;
             const fValue = card.fontSizeValue || global.fontSizeValue;
             const fSub   = card.fontSizeSub   || global.fontSizeSub;
+            const accent = card.accentColor || global.primaryColor;
+            const accentRgb = hexToRgb(accent);
 
             return (
-            <div key={`${card.id}-${global.animation}-${global.hoverEffect}-${cards.length}`} className="p-card" style={{ animationDelay: `${idx * 0.1}s` }}>
+            <div key={`${card.id}-${global.animation}-${global.hoverEffect}-${cards.length}`} className="p-card" style={{ animationDelay: `${idx * 0.1}s`, '--card-accent': accent, '--card-accent-rgb': accentRgb } as any}>
               <div className="flex justify-between items-center mb-2">
                 <span style={{ fontSize: `${fTitle}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle }} className="uppercase tracking-widest">{card.title}</span>
-                {card.type === 'ring' ? (
-                   <div className="ring-box">
-                      <svg viewBox="0 0 50 50" className="ring-svg">
-                        <circle className="ring-bg" cx="25" cy="25" r="20" />
-                        <circle className="ring-val" cx="25" cy="25" r="20" style={{"--offset": 126 - (126 * Math.min(1, Math.max(0, card.progressValue / 100)))} as any} />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold" style={{color: global.textColorValue}}>{card.progressValue}%</div>
-                   </div>
-                ) : (
-                   <div className="text-gray-400 opacity-70 transition-transform hover:scale-110">
-                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={iconPaths[card.icon] || iconPaths['circle']} /></svg>
-                   </div>
-                )}
+                <div className="text-gray-400 opacity-40 transition-transform hover:scale-110">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={iconPaths[card.icon] || iconPaths['circle']} /></svg>
+                </div>
               </div>
 
               <div className="py-1">
@@ -114,7 +109,7 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, viewport }) => {
                    <div key={comp.id} className="p-row" style={{ fontSize: `${fSub}px` }}>
                       <span>{comp.label}</span>
                       {comp.trend !== 'none' && (
-                        <span className="p-badge" style={{ color: comp.trend === 'up' ? global.positiveColor : global.negativeColor }}>
+                        <span className="p-badge" style={{ color: comp.trend === 'up' ? (comp.invertColor ? global.negativeColor : global.positiveColor) : (comp.invertColor ? global.positiveColor : global.negativeColor) }}>
                           {comp.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>} {comp.value}
                         </span>
                       )}

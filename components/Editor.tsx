@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CardConfig, GlobalConfig, CardType, HoverEffect, ComparisonConfig, TrendDirection, FormatType } from '../types';
-import { Trash2, Plus, BarChart, PieChart, Square, Type, Palette, Layout, Settings, ChevronDown, ChevronRight, MousePointer2, Play, PlusCircle, X, Hash, Binary } from 'lucide-react';
+import { Trash2, Plus, Type, Palette, Layout, ChevronDown, ChevronRight, MousePointer2, PlusCircle, X, Binary, RefreshCw, Sparkles } from 'lucide-react';
 import { iconPaths } from '../utils/icons';
 
 interface EditorProps {
@@ -12,6 +12,24 @@ interface EditorProps {
 
 const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, setCards }) => {
   const [activeTab, setActiveTab] = useState<'layout' | 'style' | 'colors' | 'interactive'>('layout');
+
+  const applyBradescoPreset = () => {
+    setGlobalConfig({
+      ...globalConfig,
+      primaryColor: 'linear-gradient(180deg, #85001a 0%, #cc092f 100%)',
+      cardBackgroundColor: '#ffffff',
+      textColorTitle: '#86868B',
+      textColorValue: '#1D1D1F',
+      textColorSub: '#6B7280',
+      positiveColor: '#059669',
+      negativeColor: '#DC2626',
+      hoverEffect: 'lift',
+      animation: 'none',
+      borderRadius: 16,
+      fontWeightTitle: 700,
+      fontWeightValue: 800
+    });
+  };
 
   const updateCard = (id: string, field: keyof CardConfig, value: any) => {
     setCards(cards.map(c => c.id === id ? { ...c, [field]: value } : c));
@@ -25,7 +43,8 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
       label: 'Novo Comp',
       value: '0%',
       trend: 'up',
-      logic: 'TRUE()'
+      logic: 'TRUE()',
+      invertColor: false
     };
     updateCard(cardId, 'comparisons', [...card.comparisons, newComp]);
   };
@@ -45,6 +64,16 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
 
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-200">
+      <div className="p-4 border-b bg-gray-50/50">
+        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3">Presets Rápidos</h3>
+        <button 
+          onClick={applyBradescoPreset}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-[#85001a] to-[#cc092f] text-white text-[11px] font-bold shadow-lg shadow-red-900/20 hover:scale-[1.02] transition-all active:scale-95 border border-white/10"
+        >
+          <Sparkles size={14} /> PRESET BRADESCO
+        </button>
+      </div>
+
       <div className="flex border-b">
         {[
           { id: 'layout', icon: Layout, label: 'Layout' },
@@ -85,8 +114,20 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
 
           {activeTab === 'colors' && (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3"><ColorPicker label="Fundo" value={globalConfig.cardBackgroundColor} onChange={(v) => setGlobalConfig({...globalConfig, cardBackgroundColor: v})}/><ColorPicker label="Destaque" value={globalConfig.primaryColor} onChange={(v) => setGlobalConfig({...globalConfig, primaryColor: v})}/></div>
-              <div className="grid grid-cols-3 gap-2 border-t pt-3"><ColorPicker label="Título" value={globalConfig.textColorTitle} onChange={(v) => setGlobalConfig({...globalConfig, textColorTitle: v})}/><ColorPicker label="Valor" value={globalConfig.textColorValue} onChange={(v) => setGlobalConfig({...globalConfig, textColorValue: v})}/><ColorPicker label="Sub" value={globalConfig.textColorSub} onChange={(v) => setGlobalConfig({...globalConfig, textColorSub: v})}/></div>
+              <Field label="Fundo do Card">
+                <ColorPickerWithText value={globalConfig.cardBackgroundColor} onChange={(v) => setGlobalConfig({...globalConfig, cardBackgroundColor: v})} />
+              </Field>
+              <Field label="Destaque Primário (Barra)">
+                <ColorPickerWithText value={globalConfig.primaryColor} onChange={(v) => setGlobalConfig({...globalConfig, primaryColor: v})} />
+              </Field>
+              <div className="grid grid-cols-2 gap-3 border-t pt-3">
+                <Field label="Cor Título"><ColorPickerSimple value={globalConfig.textColorTitle} onChange={(v) => setGlobalConfig({...globalConfig, textColorTitle: v})} /></Field>
+                <Field label="Cor Valor"><ColorPickerSimple value={globalConfig.textColorValue} onChange={(v) => setGlobalConfig({...globalConfig, textColorValue: v})} /></Field>
+              </div>
+              <div className="grid grid-cols-2 gap-3 border-t pt-3">
+                <Field label="Cor Positivo"><ColorPickerSimple value={globalConfig.positiveColor} onChange={(v) => setGlobalConfig({...globalConfig, positiveColor: v})} /></Field>
+                <Field label="Cor Negativo"><ColorPickerSimple value={globalConfig.negativeColor} onChange={(v) => setGlobalConfig({...globalConfig, negativeColor: v})} /></Field>
+              </div>
             </div>
           )}
 
@@ -109,7 +150,7 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
         <div className="pt-4 space-y-3 border-t">
           <div className="flex justify-between items-center"><h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Cards de Dados</h3><button onClick={() => setCards([...cards, { id: Math.random().toString(36).substr(2, 9), title: 'Métrica', measurePlaceholder: '[Valor]', formatType: 'integer', decimalPlaces: 0, type: 'simple', targetMeasurePlaceholder: '1', value: '0', progressValue: 50, icon: 'chart', comparisons: [], isOpen: true }])} className="p-1.5 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 shadow-lg shadow-indigo-100"><Plus size={16}/></button></div>
 
-          {cards.map((card, idx) => (
+          {cards.map((card) => (
             <div key={card.id} className="bg-white border rounded-xl overflow-hidden shadow-sm transition-all hover:border-indigo-200">
               <div className="flex justify-between items-center p-3 cursor-pointer bg-gray-50/50" onClick={() => setCards(cards.map(c => c.id === card.id ? {...c, isOpen: !c.isOpen} : {...c, isOpen: false}))}>
                 <div className="flex items-center gap-2">{card.isOpen ? <ChevronDown size={14} className="text-indigo-500"/> : <ChevronRight size={14} className="text-gray-400"/>}<span className="text-[11px] font-bold text-gray-700 uppercase tracking-tight">{card.title || 'Novo Card'}</span></div>
@@ -123,124 +164,73 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                     <Field label="Visual"><select value={card.type} onChange={(e) => updateCard(card.id, 'type', e.target.value)} className="input-field"><option value="simple">Simples</option><option value="progress">Barra</option><option value="ring">Anel</option></select></Field>
                   </div>
                   
-                  {/* SEÇÃO DE DADOS EM DESTAQUE */}
                   <div className="p-4 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 space-y-4">
                      <div className="flex items-center gap-2 mb-2">
                         <Binary size={14} className="text-indigo-600"/>
                         <span className="text-[10px] font-bold text-gray-600 uppercase">Inteligência de Dados</span>
                      </div>
-                     <Field label="Medida DAX (Nome da Medida)">
-                        <input 
-                           type="text" 
-                           value={card.measurePlaceholder} 
-                           onChange={(e) => updateCard(card.id, 'measurePlaceholder', e.target.value)} 
-                           className="input-field font-mono text-[10px] bg-white border-indigo-200 text-indigo-700"
-                           placeholder="Ex: [Total Vendas]"
-                        />
+                     <Field label="Medida DAX">
+                        <input type="text" value={card.measurePlaceholder} onChange={(e) => updateCard(card.id, 'measurePlaceholder', e.target.value)} className="input-field font-mono text-[10px] bg-white border-indigo-200 text-indigo-700" placeholder="Ex: [Vendas]"/>
                      </Field>
                      <div className="grid grid-cols-2 gap-3">
                         <Field label="Formatação">
-                            <select 
-                                value={card.formatType} 
-                                onChange={(e) => updateCard(card.id, 'formatType', e.target.value as FormatType)} 
-                                className="input-field bg-white text-[11px] font-bold"
-                            >
+                            <select value={card.formatType} onChange={(e) => updateCard(card.id, 'formatType', e.target.value as FormatType)} className="input-field bg-white text-[11px] font-bold">
                                 <option value="none">Nenhuma</option>
                                 <option value="integer">Inteiro (1.000)</option>
                                 <option value="decimal">Decimal (1.000,00)</option>
                                 <option value="currency">Moeda (R$)</option>
+                                <option value="currency_short">Moeda Compacta (R$ K/M)</option>
                                 <option value="percent">Porcentagem (%)</option>
                                 <option value="short">Compacto (K/M)</option>
                             </select>
                         </Field>
-                        <Field label="Decimais">
-                            <input 
-                                type="number" 
-                                min="0" 
-                                max="4" 
-                                value={card.decimalPlaces} 
-                                onChange={(e) => updateCard(card.id, 'decimalPlaces', +e.target.value)} 
-                                className="input-field bg-white"
-                            />
+                        <Field label="Decimais"><input type="number" min="0" max="4" value={card.decimalPlaces} onChange={(e) => updateCard(card.id, 'decimalPlaces', +e.target.value)} className="input-field bg-white"/></Field>
+                     </div>
+                     
+                     <div className="border-t border-gray-200 pt-3">
+                        <Field label="Destaque Individual (Cor ou Gradient)">
+                          <ColorPickerWithText value={card.accentColor || ''} onChange={(v) => updateCard(card.id, 'accentColor', v || undefined)} placeholder="Global" />
                         </Field>
                      </div>
+
                      <div className="border-t border-gray-200 pt-3 mt-1">
-                        <Field label="Valor Preview (Somente para visualização)">
-                            <input 
-                            type="text" 
-                            value={card.value} 
-                            onChange={(e) => updateCard(card.id, 'value', e.target.value)} 
-                            className="input-field bg-white border-gray-200 text-gray-500 font-bold"
-                            placeholder="Ex: R$ 1.500"
-                            />
-                        </Field>
+                        <Field label="Valor Preview (Editor)"><input type="text" value={card.value} onChange={(e) => updateCard(card.id, 'value', e.target.value)} className="input-field bg-white border-gray-200 text-gray-500 font-bold" placeholder="Ex: R$ 1.5M"/></Field>
                      </div>
-                     {card.type !== 'simple' && (
-                       <div className="grid grid-cols-2 gap-3 border-t border-gray-200 pt-3">
-                          <Field label="Progresso Preview %">
-                             <input type="number" value={card.progressValue} onChange={(e) => updateCard(card.id, 'progressValue', +e.target.value)} className="input-field bg-white"/>
-                          </Field>
-                          <Field label="Medida Alvo (DAX)">
-                             <input type="text" value={card.targetMeasurePlaceholder} onChange={(e) => updateCard(card.id, 'targetMeasurePlaceholder', e.target.value)} className="input-field bg-white font-mono text-[10px]"/>
-                          </Field>
-                       </div>
-                     )}
                   </div>
 
-                  {/* TIPOGRAFIA LOCAL */}
-                  <div className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 space-y-3">
-                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block">Tipografia (Local Override)</label>
-                    <div className="grid grid-cols-3 gap-2">
-                       <Field label="Título"><input type="number" placeholder="Global" value={card.fontSizeTitle || ''} onChange={(e) => updateCard(card.id, 'fontSizeTitle', e.target.value ? +e.target.value : undefined)} className="input-field"/></Field>
-                       <Field label="Valor"><input type="number" placeholder="Global" value={card.fontSizeValue || ''} onChange={(e) => updateCard(card.id, 'fontSizeValue', e.target.value ? +e.target.value : undefined)} className="input-field"/></Field>
-                       <Field label="Sub"><input type="number" placeholder="Global" value={card.fontSizeSub || ''} onChange={(e) => updateCard(card.id, 'fontSizeSub', e.target.value ? +e.target.value : undefined)} className="input-field"/></Field>
+                  <Field label="Escolher Ícone">
+                    <div className="grid grid-cols-6 gap-2 mt-2 p-3 bg-white rounded-lg border max-h-48 overflow-y-auto custom-scrollbar shadow-inner">
+                      {Object.keys(iconPaths).map(icon => (
+                        <button key={icon} onClick={() => updateCard(card.id, 'icon', icon)} className={`p-2 rounded-lg transition-all border flex items-center justify-center ${card.icon === icon ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-indigo-300 hover:bg-white'}`} title={icon}>
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d={iconPaths[icon]}/></svg>
+                        </button>
+                      ))}
                     </div>
-                  </div>
+                  </Field>
 
-                  {/* SELETOR DE ÍCONES EXPANDIDO */}
-                  {card.type !== 'ring' && (
-                    <Field label="Escolher Ícone">
-                      <div className="grid grid-cols-6 gap-2 mt-2 p-3 bg-white rounded-lg border max-h-48 overflow-y-auto custom-scrollbar shadow-inner">
-                        {Object.keys(iconPaths).map(icon => (
-                          <button 
-                            key={icon} 
-                            onClick={() => updateCard(card.id, 'icon', icon)} 
-                            className={`p-2 rounded-lg transition-all border flex items-center justify-center ${card.icon === icon ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-indigo-300 hover:bg-white'}`}
-                            title={icon}
-                          >
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d={iconPaths[icon]}/></svg>
-                          </button>
-                        ))}
-                      </div>
-                    </Field>
-                  )}
-
-                  {/* COMPARATIVOS MÚLTIPLOS */}
                   <div className="space-y-3 pt-4 border-t">
                     <div className="flex justify-between items-center">
                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Comparativos</label>
-                       <button onClick={() => addComparison(card.id)} className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 text-[10px] font-bold"><PlusCircle size={12}/> ADICIONAR NOVO</button>
+                       <button onClick={() => addComparison(card.id)} className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 text-[10px] font-bold"><PlusCircle size={12}/> ADICIONAR</button>
                     </div>
                     {card.comparisons.map((comp) => (
                       <div key={comp.id} className="p-4 bg-gray-50 rounded-xl border border-gray-200 relative group transition-all hover:bg-white hover:shadow-md">
                         <button onClick={() => removeComparison(card.id, comp.id)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:scale-110"><X size={12}/></button>
                         <div className="grid grid-cols-2 gap-3 mb-3">
                            <Field label="Rótulo"><input type="text" value={comp.label} onChange={(e) => updateComparison(card.id, comp.id, 'label', e.target.value)} className="input-field bg-white" placeholder="Ex: vs Mês Ant."/></Field>
-                           <Field label="Valor Preview"><input type="text" value={comp.value} onChange={(e) => updateComparison(card.id, comp.id, 'value', e.target.value)} className="input-field bg-white font-bold" placeholder="Ex: +15%"/></Field>
+                           <Field label="Preview"><input type="text" value={comp.value} onChange={(e) => updateComparison(card.id, comp.id, 'value', e.target.value)} className="input-field bg-white font-bold"/></Field>
                         </div>
-                        <div className="grid grid-cols-3 gap-3">
-                           <Field label="Ícone">
+                        <div className="flex items-center justify-between gap-4 mt-2 bg-white/50 p-2 rounded-lg border">
+                           <Field label="Trend Icon">
                               <select value={comp.trend} onChange={(e) => updateComparison(card.id, comp.id, 'trend', e.target.value as TrendDirection)} className="input-field bg-white text-[10px] font-bold">
-                                 <option value="up">▲ Positivo</option>
-                                 <option value="down">▼ Negativo</option>
-                                 <option value="none">Nenhum</option>
+                                 <option value="up">▲</option>
+                                 <option value="down">▼</option>
+                                 <option value="none">-</option>
                               </select>
                            </Field>
-                           <div className="col-span-2">
-                              <Field label="Fórmula Lógica (DAX)">
-                                 <input type="text" value={comp.logic} onChange={(e) => updateComparison(card.id, comp.id, 'logic', e.target.value)} className="input-field bg-white font-mono text-[9px]" placeholder="Ex: [Vendas] > [Meta]"/>
-                              </Field>
-                           </div>
+                           <button onClick={() => updateComparison(card.id, comp.id, 'invertColor', !comp.invertColor)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${comp.invertColor ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-gray-50 text-gray-500 hover:border-gray-300'}`}>
+                              <RefreshCw size={10} className={comp.invertColor ? 'animate-spin-slow' : ''} /> {comp.invertColor ? 'COR INVERTIDA' : 'INVERTER'}
+                           </button>
                         </div>
                       </div>
                     ))}
@@ -255,17 +245,49 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
          .input-field { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; outline: none; transition: all 0.2s; }
          .input-field:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
          .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
          .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+         .animate-spin-slow { animation: spin 3s linear infinite; }
+         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
 };
 
 const Field = ({ label, children }: any) => <div className="space-y-1"><label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block pl-1">{label}</label>{children}</div>;
-const ColorPicker = ({ label, value, onChange }: any) => (
-  <Field label={label}><div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border transition-all hover:border-gray-300"><input type="color" value={value} onChange={(e) => onChange(e.target.value)} className="w-6 h-6 rounded cursor-pointer border-0 p-0 bg-transparent shadow-sm"/><input type="text" value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 bg-transparent text-[11px] font-mono outline-none uppercase font-bold text-gray-600"/></div></Field>
+
+const ColorPickerSimple = ({ value, onChange }: { value: string, onChange: (v: string) => void }) => (
+  <div className="flex items-center gap-2 p-1 bg-white rounded-lg border border-gray-200">
+    <input 
+      type="color" 
+      value={value.startsWith('#') ? value : '#ffffff'} 
+      onChange={(e) => onChange(e.target.value)} 
+      className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent"
+    />
+    <input 
+      type="text" 
+      value={value} 
+      onChange={(e) => onChange(e.target.value)} 
+      className="flex-1 min-w-0 bg-transparent text-[11px] font-mono outline-none font-bold text-gray-600 uppercase"
+    />
+  </div>
+);
+
+const ColorPickerWithText = ({ value, onChange, placeholder }: { value: string, onChange: (v: string) => void, placeholder?: string }) => (
+  <div className="flex items-center gap-2 p-1 bg-white rounded-lg border border-gray-200">
+    <input 
+      type="color" 
+      value={value.startsWith('#') ? value : '#ffffff'} 
+      onChange={(e) => onChange(e.target.value)} 
+      className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent flex-shrink-0"
+    />
+    <input 
+      type="text" 
+      value={value} 
+      onChange={(e) => onChange(e.target.value)} 
+      className="flex-1 min-w-0 bg-transparent text-[11px] font-mono outline-none font-bold text-gray-600"
+      placeholder={placeholder || "Hex ou linear-gradient"}
+    />
+  </div>
 );
 
 export default Editor;

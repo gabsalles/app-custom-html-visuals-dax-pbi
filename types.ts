@@ -4,7 +4,7 @@ export type AnimationType = 'none' | 'fadeInUp' | 'popIn' | 'slideRight';
 export type HoverEffect = 'none' | 'lift' | 'scale' | 'glow' | 'border';
 export type ViewportMode = 'desktop' | 'tablet' | 'mobile';
 
-export type FormatType = 'none' | 'integer' | 'decimal' | 'currency' | 'percent' | 'short';
+export type FormatType = 'none' | 'integer' | 'decimal' | 'currency' | 'currency_short' | 'percent' | 'short';
 
 export interface ComparisonConfig {
   id: string;
@@ -12,6 +12,7 @@ export interface ComparisonConfig {
   value: string;
   trend: TrendDirection;
   logic: string; // DAX Expression
+  invertColor?: boolean; // If true, positive logic = negative color
 }
 
 export interface CardConfig {
@@ -26,6 +27,7 @@ export interface CardConfig {
   progressValue: number;
   icon: string;
   isOpen?: boolean;
+  accentColor?: string; // Local accent override
   
   // Font Overrides (Optional)
   fontSizeTitle?: number;
