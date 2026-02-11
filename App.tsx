@@ -19,25 +19,25 @@ const App: React.FC = () => {
 
   const [cards, setCards] = useState<CardConfig[]>([
     {
-      id: '1', title: 'Performance Vendas', measurePlaceholder: 'FORMAT([Vendas], "R$ #,##0")', targetMeasurePlaceholder: '1000000',
-      value: 'R$ 842.500', type: 'progress', progressValue: 84, icon: 'chart', isOpen: true,
+      id: '1', title: 'Performance Vendas', measurePlaceholder: '[Vendas]', formatType: 'currency', decimalPlaces: 0, 
+      targetMeasurePlaceholder: '1000000', value: 'R$ 842.500', type: 'progress', progressValue: 84, icon: 'chart', isOpen: true,
       comparisons: [
         { id: 'c1', label: 'vs Mês Anterior', value: '+14%', trend: 'up', logic: '[Vendas] > [Vendas LM]' },
         { id: 'c2', label: 'vs Meta Anual', value: '-2.5%', trend: 'down', logic: '[Vendas] < [Meta]' }
       ]
     },
     {
-      id: '2', title: 'Novos Clientes', measurePlaceholder: 'COUNT(Clientes[ID])', targetMeasurePlaceholder: '',
-      value: '1.242', type: 'simple', progressValue: 0, icon: 'users', isOpen: false,
+      id: '2', title: 'Novos Clientes', measurePlaceholder: '[Qtd Clientes]', formatType: 'integer', decimalPlaces: 0, 
+      targetMeasurePlaceholder: '', value: '1.242', type: 'simple', progressValue: 0, icon: 'users', isOpen: false,
       comparisons: [
         { id: 'c3', label: 'Taxa Crescimento', value: '8.4%', trend: 'up', logic: 'TRUE()' }
       ]
     },
     {
-      id: '3', title: 'NPS Score', measurePlaceholder: '[NPS_Score]', targetMeasurePlaceholder: '100',
-      value: '78', type: 'ring', progressValue: 78, icon: 'activity', isOpen: false,
+      id: '3', title: 'Margem Bruta %', measurePlaceholder: '[Margem %]', formatType: 'percent', decimalPlaces: 1, 
+      targetMeasurePlaceholder: '1', value: '32.5%', type: 'ring', progressValue: 32.5, icon: 'activity', isOpen: false,
       comparisons: [
-        { id: 'c4', label: 'Zona de Excelência', value: 'Alvo: 85', trend: 'none', logic: 'TRUE()' }
+        { id: 'c4', label: 'Target 40%', value: '-7.5%', trend: 'down', logic: '[Margem %] < 0.4' }
       ]
     }
   ]);

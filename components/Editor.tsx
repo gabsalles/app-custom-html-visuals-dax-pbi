@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { CardConfig, GlobalConfig, CardType, HoverEffect, ComparisonConfig, TrendDirection } from '../types';
-import { Trash2, Plus, BarChart, PieChart, Square, Type, Palette, Layout, Settings, ChevronDown, ChevronRight, MousePointer2, Play, PlusCircle, X, Hash } from 'lucide-react';
+import { CardConfig, GlobalConfig, CardType, HoverEffect, ComparisonConfig, TrendDirection, FormatType } from '../types';
+import { Trash2, Plus, BarChart, PieChart, Square, Type, Palette, Layout, Settings, ChevronDown, ChevronRight, MousePointer2, Play, PlusCircle, X, Hash, Binary } from 'lucide-react';
 import { iconPaths } from '../utils/icons';
 
 interface EditorProps {
@@ -58,7 +58,7 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
         <div className="bg-white rounded-xl space-y-4">
           {activeTab === 'layout' && (
             <div className="grid grid-cols-2 gap-4">
@@ -107,7 +107,7 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
         </div>
 
         <div className="pt-4 space-y-3 border-t">
-          <div className="flex justify-between items-center"><h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Cards de Dados</h3><button onClick={() => setCards([...cards, { id: Math.random().toString(36).substr(2, 9), title: 'Métrica', measurePlaceholder: '[Valor]', type: 'simple', targetMeasurePlaceholder: '1', value: '0', progressValue: 50, icon: 'chart', comparisons: [], isOpen: true }])} className="p-1.5 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 shadow-lg shadow-indigo-100"><Plus size={16}/></button></div>
+          <div className="flex justify-between items-center"><h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Cards de Dados</h3><button onClick={() => setCards([...cards, { id: Math.random().toString(36).substr(2, 9), title: 'Métrica', measurePlaceholder: '[Valor]', formatType: 'integer', decimalPlaces: 0, type: 'simple', targetMeasurePlaceholder: '1', value: '0', progressValue: 50, icon: 'chart', comparisons: [], isOpen: true }])} className="p-1.5 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 shadow-lg shadow-indigo-100"><Plus size={16}/></button></div>
 
           {cards.map((card, idx) => (
             <div key={card.id} className="bg-white border rounded-xl overflow-hidden shadow-sm transition-all hover:border-indigo-200">
@@ -126,29 +126,57 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                   {/* SEÇÃO DE DADOS EM DESTAQUE */}
                   <div className="p-4 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 space-y-4">
                      <div className="flex items-center gap-2 mb-2">
-                        <Hash size={14} className="text-indigo-600"/>
-                        <span className="text-[10px] font-bold text-gray-600 uppercase">Configurações de Dados</span>
+                        <Binary size={14} className="text-indigo-600"/>
+                        <span className="text-[10px] font-bold text-gray-600 uppercase">Inteligência de Dados</span>
                      </div>
-                     <Field label="Valor Preview (App)">
-                        <input 
-                           type="text" 
-                           value={card.value} 
-                           onChange={(e) => updateCard(card.id, 'value', e.target.value)} 
-                           className="input-field bg-white border-indigo-200 text-indigo-700 font-bold text-sm"
-                           placeholder="Ex: R$ 1.500 ou 95%"
-                        />
-                     </Field>
-                     <Field label="Medida DAX (Código)">
+                     <Field label="Medida DAX (Nome da Medida)">
                         <input 
                            type="text" 
                            value={card.measurePlaceholder} 
                            onChange={(e) => updateCard(card.id, 'measurePlaceholder', e.target.value)} 
-                           className="input-field font-mono text-[10px] bg-white border-gray-200"
-                           placeholder="[Sua_Medida_PowerBI]"
+                           className="input-field font-mono text-[10px] bg-white border-indigo-200 text-indigo-700"
+                           placeholder="Ex: [Total Vendas]"
                         />
                      </Field>
+                     <div className="grid grid-cols-2 gap-3">
+                        <Field label="Formatação">
+                            <select 
+                                value={card.formatType} 
+                                onChange={(e) => updateCard(card.id, 'formatType', e.target.value as FormatType)} 
+                                className="input-field bg-white text-[11px] font-bold"
+                            >
+                                <option value="none">Nenhuma</option>
+                                <option value="integer">Inteiro (1.000)</option>
+                                <option value="decimal">Decimal (1.000,00)</option>
+                                <option value="currency">Moeda (R$)</option>
+                                <option value="percent">Porcentagem (%)</option>
+                                <option value="short">Compacto (K/M)</option>
+                            </select>
+                        </Field>
+                        <Field label="Decimais">
+                            <input 
+                                type="number" 
+                                min="0" 
+                                max="4" 
+                                value={card.decimalPlaces} 
+                                onChange={(e) => updateCard(card.id, 'decimalPlaces', +e.target.value)} 
+                                className="input-field bg-white"
+                            />
+                        </Field>
+                     </div>
+                     <div className="border-t border-gray-200 pt-3 mt-1">
+                        <Field label="Valor Preview (Somente para visualização)">
+                            <input 
+                            type="text" 
+                            value={card.value} 
+                            onChange={(e) => updateCard(card.id, 'value', e.target.value)} 
+                            className="input-field bg-white border-gray-200 text-gray-500 font-bold"
+                            placeholder="Ex: R$ 1.500"
+                            />
+                        </Field>
+                     </div>
                      {card.type !== 'simple' && (
-                       <div className="grid grid-cols-2 gap-3">
+                       <div className="grid grid-cols-2 gap-3 border-t border-gray-200 pt-3">
                           <Field label="Progresso Preview %">
                              <input type="number" value={card.progressValue} onChange={(e) => updateCard(card.id, 'progressValue', +e.target.value)} className="input-field bg-white"/>
                           </Field>

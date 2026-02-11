@@ -1,6 +1,18 @@
 import { GlobalConfig, CardConfig, ComparisonConfig } from '../types';
 import { iconPaths } from './icons';
 
+const getFormatString = (type: string, decimals: number): string => {
+  const zeros = decimals > 0 ? "." + "0".repeat(decimals) : "";
+  switch (type) {
+    case 'integer': return "#,##0";
+    case 'decimal': return `#,##0${zeros}`;
+    case 'currency': return `"R$ " & #,##0${zeros}`;
+    case 'percent': return `0${zeros}%`;
+    case 'short': return "#,0.0#K"; // Note: Power BI short format can be complex, using standard format string
+    default: return "";
+  }
+};
+
 export const generateDAX = (global: GlobalConfig, cards: CardConfig[]): string => {
   const { 
     columns, gap, padding, 
@@ -34,7 +46,7 @@ export const generateDAX = (global: GlobalConfig, cards: CardConfig[]): string =
   }
 
   let dax = `Visual_Gerado = 
-/* DAX Builder - Bradesco Edition */
+/* DAX Builder - Bradesco Edition Pro */
 -- CONFIGS GLOBAIS
 VAR _CorPrimaria = "${primaryColor}"
 VAR _CorPos      = "${positiveColor}"
@@ -46,13 +58,25 @@ VAR _CorNeu      = "${neutralColor}"
   // Processamento de Dados de Cada Card
   cards.forEach((card, cIdx) => {
     const ci = cIdx + 1;
+    const formatStr = getFormatString(card.formatType, card.decimalPlaces);
+    
     dax += `-- CARD ${ci}: ${card.title}\n`;
     dax += `VAR _C${ci}_Tit = "${card.title}"\n`;
-    dax += `VAR _C${ci}_Val = ${card.measurePlaceholder}\n`;
+    dax += `VAR _C${ci}_Val_Raw = ${card.measurePlaceholder || "0"}\n`;
+    
+    if (card.formatType !== 'none') {
+        if (card.formatType === 'currency') {
+            dax += `VAR _C${ci}_Val = "R$ " & FORMAT(_C${ci}_Val_Raw, "#,##0${card.decimalPlaces > 0 ? "." + "0".repeat(card.decimalPlaces) : ""}")\n`;
+        } else {
+            dax += `VAR _C${ci}_Val = FORMAT(_C${ci}_Val_Raw, "${formatStr}")\n`;
+        }
+    } else {
+        dax += `VAR _C${ci}_Val = _C${ci}_Val_Raw\n`;
+    }
     
     if (card.type !== 'simple') {
       dax += `VAR _C${ci}_Target = ${card.targetMeasurePlaceholder || "1"}\n`;
-      dax += `VAR _C${ci}_Pct = DIVIDE(${card.measurePlaceholder}, _C${ci}_Target, 0)\n`;
+      dax += `VAR _C${ci}_Pct = DIVIDE(_C${ci}_Val_Raw, _C${ci}_Target, 0)\n`;
     }
 
     card.comparisons.forEach((comp, cpIdx) => {

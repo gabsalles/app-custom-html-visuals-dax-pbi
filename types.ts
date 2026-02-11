@@ -4,6 +4,8 @@ export type AnimationType = 'none' | 'fadeInUp' | 'popIn' | 'slideRight';
 export type HoverEffect = 'none' | 'lift' | 'scale' | 'glow' | 'border';
 export type ViewportMode = 'desktop' | 'tablet' | 'mobile';
 
+export type FormatType = 'none' | 'integer' | 'decimal' | 'currency' | 'percent' | 'short';
+
 export interface ComparisonConfig {
   id: string;
   label: string;
@@ -16,6 +18,8 @@ export interface CardConfig {
   id: string;
   title: string;
   measurePlaceholder: string;
+  formatType: FormatType;
+  decimalPlaces: number;
   type: CardType;
   targetMeasurePlaceholder: string;
   value: string;
