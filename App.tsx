@@ -4,7 +4,7 @@ import Editor from './components/Editor';
 import Preview from './components/Preview';
 import { generateDAX } from './utils/daxGenerator';
 import { GlobalConfig, CardConfig, ViewportMode } from './types';
-import { Code, Eye, Copy, Check, Monitor, Smartphone, Tablet } from 'lucide-react';
+import { Code, Eye, Copy, Check, Monitor, Smartphone, Tablet, Settings2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [globalConfig, setGlobalConfig] = useState<GlobalConfig>({
@@ -37,7 +37,8 @@ const App: React.FC = () => {
   ]);
 
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
-  const [viewport, setViewport] = useState<ViewportMode>('desktop');
+  const [viewport, setViewport] = useState<ViewportMode | 'custom'>('desktop');
+  const [customDimensions, setCustomDimensions] = useState({ width: 800, height: 400 });
   const [copied, setCopied] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
@@ -77,12 +78,39 @@ const App: React.FC = () => {
              <button onClick={() => setViewMode('code')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${viewMode === 'code' ? 'bg-white text-indigo-600 shadow-md border border-gray-100' : 'text-gray-500 hover:text-gray-700'}`}><Code size={14} /> Código DAX</button>
            </div>
            
-           <div className="flex items-center gap-4">
+           <div className="flex items-center gap-6">
               {viewMode === 'preview' && (
-                <div className="flex items-center gap-1 bg-gray-200/50 p-1 rounded-xl border">
-                    <button onClick={() => setViewport('mobile')} className={`p-2 rounded-lg transition-all ${viewport === 'mobile' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}><Smartphone size={16} /></button>
-                    <button onClick={() => setViewport('tablet')} className={`p-2 rounded-lg transition-all ${viewport === 'tablet' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}><Tablet size={16} /></button>
-                    <button onClick={() => setViewport('desktop')} className={`p-2 rounded-lg transition-all ${viewport === 'desktop' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}><Monitor size={16} /></button>
+                <div className="flex items-center gap-4">
+                  {viewport === 'custom' && (
+                    <div className="flex items-center gap-2 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] font-black text-indigo-300 uppercase">W</span>
+                        <input 
+                          type="number" 
+                          value={customDimensions.width} 
+                          onChange={(e) => setCustomDimensions({...customDimensions, width: +e.target.value})}
+                          className="w-16 bg-transparent text-xs font-bold text-indigo-700 outline-none"
+                        />
+                      </div>
+                      <div className="w-px h-3 bg-indigo-200" />
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] font-black text-indigo-300 uppercase">H</span>
+                        <input 
+                          type="number" 
+                          value={customDimensions.height} 
+                          onChange={(e) => setCustomDimensions({...customDimensions, height: +e.target.value})}
+                          className="w-16 bg-transparent text-xs font-bold text-indigo-700 outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-1 bg-gray-200/50 p-1 rounded-xl border">
+                      <button onClick={() => setViewport('mobile')} className={`p-2 rounded-lg transition-all ${viewport === 'mobile' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Mobile"><Smartphone size={16} /></button>
+                      <button onClick={() => setViewport('tablet')} className={`p-2 rounded-lg transition-all ${viewport === 'tablet' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Tablet"><Tablet size={16} /></button>
+                      <button onClick={() => setViewport('desktop')} className={`p-2 rounded-lg transition-all ${viewport === 'desktop' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Desktop"><Monitor size={16} /></button>
+                      <button onClick={() => setViewport('custom')} className={`p-2 rounded-lg transition-all ${viewport === 'custom' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Custom Size"><Settings2 size={16} /></button>
+                  </div>
                 </div>
               )}
               
@@ -99,7 +127,8 @@ const App: React.FC = () => {
              <Preview 
                 global={globalConfig} 
                 cards={cards} 
-                viewport={viewport} 
+                viewport={viewport as ViewportMode} 
+                customDimensions={viewport === 'custom' ? customDimensions : undefined}
                 onCardClick={handleCardClick}
                 selectedCardId={selectedCardId}
              />

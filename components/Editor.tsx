@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { CardConfig, GlobalConfig, CardType, HoverEffect, ComparisonConfig, TrendDirection, FormatType } from '../types';
-import { Trash2, Plus, Type, Palette, Layout, ChevronDown, ChevronRight, MousePointer2, PlusCircle, X, Binary, RefreshCw, Sparkles, ALargeSmall } from 'lucide-react';
+import { Trash2, Plus, Type, Palette, Layout, ChevronDown, ChevronRight, MousePointer2, PlusCircle, X, Binary, RefreshCw, Sparkles, ALargeSmall, Droplets, CalendarDays, CalendarRange } from 'lucide-react';
 import { iconPaths } from '../utils/icons';
 
 interface EditorProps {
@@ -36,16 +36,31 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
     setCards(cards.map(c => c.id === id ? { ...c, [field]: value } : c));
   };
 
-  const addComparison = (cardId: string) => {
+  const addComparison = (cardId: string, preset?: 'mom' | 'yoy') => {
     const card = cards.find(c => c.id === cardId);
     if (!card) return;
+
+    let label = 'Novo Comp';
+    let logic = 'TRUE()';
+    let placeholder = '[Nova Medida]';
+
+    if (preset === 'mom') {
+      label = 'vs Mês Anterior';
+      logic = '[Variação Mês] > 0';
+      placeholder = '[Variação % MoM]';
+    } else if (preset === 'yoy') {
+      label = 'vs Ano Anterior';
+      logic = '[Variação Ano] > 0';
+      placeholder = '[Variação % YoY]';
+    }
+
     const newComp: ComparisonConfig = {
       id: Math.random().toString(36).substr(2, 9),
-      label: 'Novo Comp',
+      label: label,
       value: '0%',
-      measurePlaceholder: '[Nova Medida]',
+      measurePlaceholder: placeholder,
       trend: 'up',
-      logic: 'TRUE()',
+      logic: logic,
       invertColor: false
     };
     updateCard(cardId, 'comparisons', [...card.comparisons, newComp]);
@@ -154,13 +169,25 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
 
               {card.isOpen && (
                 <div className="p-4 border-t space-y-6 animate-fadeIn">
-                  {/* FONT OVERRIDES */}
-                  <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 space-y-3">
-                    <div className="flex items-center gap-2"><ALargeSmall size={14} className="text-indigo-600"/><span className="text-[10px] font-bold text-indigo-700 uppercase">Fontes Individuais</span></div>
-                    <div className="grid grid-cols-3 gap-2">
-                       <Field label="Título"><input type="number" placeholder={`${globalConfig.fontSizeTitle}`} value={card.fontSizeTitle || ''} onChange={(e) => updateCard(card.id, 'fontSizeTitle', e.target.value ? +e.target.value : undefined)} className="input-field bg-white"/></Field>
-                       <Field label="Valor"><input type="number" placeholder={`${globalConfig.fontSizeValue}`} value={card.fontSizeValue || ''} onChange={(e) => updateCard(card.id, 'fontSizeValue', e.target.value ? +e.target.value : undefined)} className="input-field bg-white"/></Field>
-                       <Field label="Sub"><input type="number" placeholder={`${globalConfig.fontSizeSub}`} value={card.fontSizeSub || ''} onChange={(e) => updateCard(card.id, 'fontSizeSub', e.target.value ? +e.target.value : undefined)} className="input-field bg-white"/></Field>
+                  {/* FONT & COLOR OVERRIDES */}
+                  <div className="space-y-3">
+                    <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 space-y-3">
+                      <div className="flex items-center gap-2"><ALargeSmall size={14} className="text-indigo-600"/><span className="text-[10px] font-bold text-indigo-700 uppercase">Fontes Individuais</span></div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Field label="Título"><input type="number" placeholder={`${globalConfig.fontSizeTitle}`} value={card.fontSizeTitle || ''} onChange={(e) => updateCard(card.id, 'fontSizeTitle', e.target.value ? +e.target.value : undefined)} className="input-field bg-white"/></Field>
+                        <Field label="Valor"><input type="number" placeholder={`${globalConfig.fontSizeValue}`} value={card.fontSizeValue || ''} onChange={(e) => updateCard(card.id, 'fontSizeValue', e.target.value ? +e.target.value : undefined)} className="input-field bg-white"/></Field>
+                        <Field label="Sub"><input type="number" placeholder={`${globalConfig.fontSizeSub}`} value={card.fontSizeSub || ''} onChange={(e) => updateCard(card.id, 'fontSizeSub', e.target.value ? +e.target.value : undefined)} className="input-field bg-white"/></Field>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-amber-50/50 rounded-xl border border-amber-100 space-y-3">
+                      <div className="flex items-center gap-2"><Droplets size={14} className="text-amber-600"/><span className="text-[10px] font-bold text-amber-700 uppercase">Cores Individuais</span></div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Field label="Fundo"><ColorPickerSimple value={card.cardBackgroundColor || globalConfig.cardBackgroundColor} onChange={(v) => updateCard(card.id, 'cardBackgroundColor', v)} /></Field>
+                        <Field label="Acento"><ColorPickerSimple value={card.accentColor || globalConfig.primaryColor} onChange={(v) => updateCard(card.id, 'accentColor', v)} /></Field>
+                        <Field label="Cor Título"><ColorPickerSimple value={card.textColorTitle || globalConfig.textColorTitle} onChange={(v) => updateCard(card.id, 'textColorTitle', v)} /></Field>
+                        <Field label="Cor Valor"><ColorPickerSimple value={card.textColorValue || globalConfig.textColorValue} onChange={(v) => updateCard(card.id, 'textColorValue', v)} /></Field>
+                      </div>
                     </div>
                   </div>
 
@@ -179,7 +206,31 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                   </div>
 
                   <div className="space-y-3 pt-4 border-t">
-                    <div className="flex justify-between items-center"><label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Comparativos</label><button onClick={() => addComparison(card.id)} className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 text-[10px] font-bold"><PlusCircle size={12}/> ADICIONAR</button></div>
+                    <div className="flex justify-between items-end mb-1">
+                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Comparativos</label>
+                        <div className="flex gap-1.5">
+                            <button 
+                                onClick={() => addComparison(card.id, 'mom')} 
+                                className="flex items-center gap-1 px-2 py-1 rounded-md bg-indigo-50 text-indigo-600 text-[9px] font-black border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all"
+                                title="Preset: vs Mês Anterior"
+                            >
+                                <CalendarDays size={10}/> + MÊS ANT.
+                            </button>
+                            <button 
+                                onClick={() => addComparison(card.id, 'yoy')} 
+                                className="flex items-center gap-1 px-2 py-1 rounded-md bg-indigo-50 text-indigo-600 text-[9px] font-black border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all"
+                                title="Preset: vs Ano Anterior"
+                            >
+                                <CalendarRange size={10}/> + ANO ANT.
+                            </button>
+                            <button 
+                                onClick={() => addComparison(card.id)} 
+                                className="flex items-center gap-1 px-2 py-1 rounded-md bg-indigo-600 text-white text-[9px] font-black shadow-sm hover:bg-indigo-700 transition-all"
+                            >
+                                <Plus size={10}/> ADICIONAR
+                            </button>
+                        </div>
+                    </div>
                     {card.comparisons.map((comp) => (
                       <div key={comp.id} className="p-4 bg-gray-50 rounded-xl border border-gray-200 relative group transition-all hover:bg-white hover:shadow-md">
                         <button onClick={() => removeComparison(card.id, comp.id)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:scale-110"><X size={12}/></button>
@@ -187,9 +238,20 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                            <Field label="Rótulo"><input type="text" value={comp.label} onChange={(e) => updateComparison(card.id, comp.id, 'label', e.target.value)} className="input-field bg-white" placeholder="Ex: vs Mês Ant."/></Field>
                            <Field label="Medida DAX"><input type="text" value={comp.measurePlaceholder} onChange={(e) => updateComparison(card.id, comp.id, 'measurePlaceholder', e.target.value)} className="input-field bg-white font-mono text-[10px] text-indigo-600" placeholder="Ex: [Vendas LM]"/></Field>
                         </div>
-                        <div className="flex items-center justify-between gap-4 mt-2 bg-white/50 p-2 rounded-lg border">
-                           <Field label="Tendência"><select value={comp.trend} onChange={(e) => updateComparison(card.id, comp.id, 'trend', e.target.value as TrendDirection)} className="input-field bg-white text-[10px] font-bold"><option value="up">▲</option><option value="down">▼</option><option value="none">-</option></select></Field>
-                           <button onClick={() => updateComparison(card.id, comp.id, 'invertColor', !comp.invertColor)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${comp.invertColor ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-gray-50 text-gray-500 hover:border-gray-300'}`}><RefreshCw size={10} /> {comp.invertColor ? 'COR INVERTIDA' : 'INVERTER'}</button>
+                        <div className="space-y-3 mt-2 bg-white/50 p-3 rounded-lg border">
+                           <Field label="Lógica de Tendência (Vade/Falso)">
+                              <input 
+                                type="text" 
+                                value={comp.logic} 
+                                onChange={(e) => updateComparison(card.id, comp.id, 'logic', e.target.value)} 
+                                className="input-field bg-white font-mono text-[10px] text-green-700"
+                                placeholder="Ex: [Vendas] > 0"
+                              />
+                           </Field>
+                           <div className="flex items-center justify-between gap-4">
+                              <Field label="Tendência"><select value={comp.trend} onChange={(e) => updateComparison(card.id, comp.id, 'trend', e.target.value as TrendDirection)} className="input-field bg-white text-[10px] font-bold"><option value="up">▲</option><option value="down">▼</option><option value="none">-</option></select></Field>
+                              <button onClick={() => updateComparison(card.id, comp.id, 'invertColor', !comp.invertColor)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all mt-4 ${comp.invertColor ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-gray-50 text-gray-500 hover:border-gray-300'}`}><RefreshCw size={10} /> {comp.invertColor ? 'COR INVERTIDA' : 'INVERTER'}</button>
+                           </div>
                         </div>
                       </div>
                     ))}
@@ -212,10 +274,10 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
 
 const Field = ({ label, children }: any) => <div className="space-y-1"><label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block pl-1">{label}</label>{children}</div>;
 const ColorPickerSimple = ({ value, onChange }: { value: string, onChange: (v: string) => void }) => (
-  <div className="flex items-center gap-2 p-1 bg-white rounded-lg border border-gray-200"><input type="color" value={value.startsWith('#') ? value : '#ffffff'} onChange={(e) => onChange(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent"/><input type="text" value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 min-w-0 bg-transparent text-[11px] font-mono outline-none font-bold text-gray-600 uppercase"/></div>
+  <div className="flex items-center gap-2 p-1 bg-white rounded-lg border border-gray-200"><input type="color" value={value && value.startsWith('#') ? value : '#ffffff'} onChange={(e) => onChange(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent"/><input type="text" value={value || ''} onChange={(e) => onChange(e.target.value)} className="flex-1 min-w-0 bg-transparent text-[11px] font-mono outline-none font-bold text-gray-600 uppercase"/></div>
 );
 const ColorPickerWithText = ({ value, onChange, placeholder }: { value: string, onChange: (v: string) => void, placeholder?: string }) => (
-  <div className="flex items-center gap-2 p-1 bg-white rounded-lg border border-gray-200"><input type="color" value={value.startsWith('#') ? value : '#ffffff'} onChange={(e) => onChange(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent flex-shrink-0"/><input type="text" value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 min-w-0 bg-transparent text-[11px] font-mono outline-none font-bold text-gray-600" placeholder={placeholder || "Hex ou linear-gradient"}/></div>
+  <div className="flex items-center gap-2 p-1 bg-white rounded-lg border border-gray-200"><input type="color" value={value && value.startsWith('#') ? value : '#ffffff'} onChange={(e) => onChange(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent flex-shrink-0"/><input type="text" value={value || ''} onChange={(e) => onChange(e.target.value)} className="flex-1 min-w-0 bg-transparent text-[11px] font-mono outline-none font-bold text-gray-600" placeholder={placeholder || "Hex ou linear-gradient"}/></div>
 );
 
 export default Editor;

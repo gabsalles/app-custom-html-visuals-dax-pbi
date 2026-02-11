@@ -13,8 +13,8 @@ export interface ComparisonConfig {
   value: string;
   trend: TrendDirection;
   logic: string; // DAX Expression
-  measurePlaceholder: string; // New: DAX Measure name for the value
-  invertColor?: boolean; // If true, positive logic = negative color
+  measurePlaceholder: string; 
+  invertColor?: boolean; 
 }
 
 export interface CardConfig {
@@ -29,12 +29,18 @@ export interface CardConfig {
   progressValue: number;
   icon: string;
   isOpen?: boolean;
-  accentColor?: string; // Local accent override
+  accentColor?: string; 
   
-  // Font Overrides (Optional)
+  // Font Overrides
   fontSizeTitle?: number;
   fontSizeValue?: number;
   fontSizeSub?: number;
+
+  // Color Overrides
+  cardBackgroundColor?: string;
+  textColorTitle?: string;
+  textColorValue?: string;
+  textColorSub?: string;
   
   // Multiple Comparisons
   comparisons: ComparisonConfig[];

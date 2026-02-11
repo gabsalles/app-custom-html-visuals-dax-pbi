@@ -49,7 +49,7 @@ export const generateDAX = (global: GlobalConfig, cards: CardConfig[]): string =
   let dax = `Visual_Gerado = 
 /*
 ================================================================================
-   MANUAL DE CONFIGURAÇÃO - CARDS HTML BRADESCO PRO V3.1 (SYNC EDITION)
+   MANUAL DE CONFIGURAÇÃO - CARDS HTML BRADESCO PRO V3.5 (RESPONSIVE PRO)
 ================================================================================
    1. Crie uma NOVA MEDIDA e cole este código completo.
    2. No bloco 'DADOS DOS CARDS', procure pelos marcadores '<--- SUBSTITUA'.
@@ -60,7 +60,7 @@ export const generateDAX = (global: GlobalConfig, cards: CardConfig[]): string =
 ================================================================================
 */
 
--- [ SEÇÃO 1: DESIGN E CORES ]
+-- [ SEÇÃO 1: DESIGN E CORES GLOBAIS ]
 VAR _CorPrimariaGlobal = "${primaryColor}"
 VAR _CorPos            = "${positiveColor}"
 VAR _CorNeg            = "${negativeColor}"
@@ -76,8 +76,14 @@ VAR _CorNeu            = "${neutralColor}"
     dax += `-- --- CARD ${ci}: ${card.title || "Métrica"} ---\n`;
     dax += `VAR _C${ci}_Tit = "${card.title}"\n`;
     dax += `VAR _C${ci}_Val_Raw = ${card.measurePlaceholder || "0"} -- <--- SUBSTITUA PELO VALOR PRINCIPAL\n`;
-    dax += `VAR _C${ci}_Accent = ${card.accentColor ? `"${card.accentColor}"` : "_CorPrimariaGlobal"}\n`;
     
+    // Cores Individuais
+    dax += `VAR _C${ci}_Accent = ${card.accentColor ? `"${card.accentColor}"` : "_CorPrimariaGlobal"}\n`;
+    dax += `VAR _C${ci}_Bg = ${card.cardBackgroundColor ? `"${card.cardBackgroundColor}"` : `"${cardBackgroundColor}"`}\n`;
+    dax += `VAR _C${ci}_CTit = ${card.textColorTitle ? `"${card.textColorTitle}"` : `"${textColorTitle}"`}\n`;
+    dax += `VAR _C${ci}_CVal = ${card.textColorValue ? `"${card.textColorValue}"` : `"${textColorValue}"`}\n`;
+    dax += `VAR _C${ci}_CSub = ${card.textColorSub ? `"${card.textColorSub}"` : `"${textColorSub}"`}\n`;
+
     if (card.formatType !== 'none') {
         if (card.formatType === 'currency') {
             dax += `VAR _C${ci}_Val = "R$ " & FORMAT(_C${ci}_Val_Raw, "#,##0${card.decimalPlaces > 0 ? "." + "0".repeat(card.decimalPlaces) : ""}")\n`;
@@ -135,24 +141,44 @@ VAR _CSS = "
         box-sizing: border-box;
     }
     .card { 
-        background: ${cardBackgroundColor}; 
         border-radius: ${borderRadius}px; 
         padding: ${padding}px; 
         border: 1px solid rgba(0,0,0,0.05); 
         display: flex; flex-direction: column; 
         transition: all 0.3s ease; position: relative; overflow: hidden;
         min-height: ${cardMinHeight}px;
+        container-type: size;
     }
     .card::before { 
         content: ''; position: absolute; left: 0; top: 15px; bottom: 15px; width: 4px; 
         background: var(--card-accent); border-radius: 0 4px 4px 0; 
     }
     ${hoverCSS} ${animationCSS}
+    
+    .card-content { display: flex; flex-direction: column; height: 100%; width: 100%; }
+    .header-body { flex: 1; display: flex; flex-direction: column; }
+    
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .title { color: ${textColorTitle}; text-transform: uppercase; letter-spacing: 1px; }
-    .value { color: ${textColorValue}; margin-bottom: 4px; }
-    .footer { margin-top: auto; display: flex; flex-direction: column; gap: 5px; }
-    .row { display: flex; justify-content: space-between; align-items: center; color: ${textColorSub}; font-weight: 600; }
+    .title { text-transform: uppercase; letter-spacing: 1px; }
+    .value { margin-bottom: 4px; }
+    
+    .footer { 
+        margin-top: auto; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 5px; 
+        padding-top: 10px;
+        border-top: 1px solid rgba(0,0,0,0.03);
+    }
+    
+    @container (max-height: 180px) {
+        .card-content { flex-direction: row; align-items: center; gap: 20px; }
+        .header-body { border-right: 1px solid rgba(0,0,0,0.05); padding-right: 15px; }
+        .footer { margin-top: 0; border-top: none; padding-top: 0; min-width: 140px; justify-content: center; }
+        .track { margin: 5px 0; }
+    }
+
+    .row { display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
     .badge { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; display: flex; align-items: center; gap: 3px; background: rgba(0,0,0,0.03); }
     .track { width: 100%; height: 6px; background: rgba(0,0,0,0.04); border-radius: 10px; margin: 8px 0; overflow: hidden; }
     .fill { height: 100%; background: var(--card-accent); animation: loadBar 1s ease-out; }
@@ -180,7 +206,7 @@ VAR _HTML = "<div class='container'>" &
         `"<span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${posCol}, ${negCol}) & "'>" & IF(_C${ci}_Comp${cpi}_Log, "▲", "▼") & " " & _C${ci}_Comp${cpi}_Val & "</span>"`;
       
       comparisonsHtml += `
-            "<div class='row' style='font-size: ${fSub}px;'>
+            "<div class='row' style='font-size: ${fSub}px; color: " & _C${ci}_CSub & ";'>
                 <span>" & _C${ci}_Comp${cpi}_Lab & "</span>
                 " & ${trendPart} & "
             </div>" & `;
@@ -191,20 +217,24 @@ VAR _HTML = "<div class='container'>" &
       visualHtml = `"<div class='track'><div class='fill' style='width: " & MIN(100, MAX(0, _C${ci}_Pct * 100)) & "%'></div></div>"`;
     }
 
-    const iconSvg = `"<div style='opacity:0.2;color:${textColorSub}'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2'><path d='${iconPaths[card.icon]}'/></svg></div>"`;
+    const iconSvg = `"<div style='opacity:0.2;color: " & _C${ci}_CSub & ";'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2'><path d='${iconPaths[card.icon]}'/></svg></div>"`;
 
     dax += `
-    "<div class='card animate' style='animation-delay: ${delay}s; --card-accent: " & _C${ci}_Accent & ";'>
-        <div class='header'>
-            <div class='title' style='font-size: ${fTitle}px; font-weight: ${fontWeightTitle};'>" & _C${ci}_Tit & "</div>
-            " & ${iconSvg} & "
-        </div>
-        <div class='body'>
-            <div class='value' style='font-size: ${fValue}px; font-weight: ${fontWeightValue};'>" & _C${ci}_Val & "</div>
-            " & ${visualHtml} & "
-        </div>
-        <div class='footer'>
-            " & ${comparisonsHtml} "" & "
+    "<div class='card animate' style='animation-delay: ${delay}s; background: " & _C${ci}_Bg & "; --card-accent: " & _C${ci}_Accent & ";'>
+        <div class='card-content'>
+            <div class='header-body'>
+                <div class='header'>
+                    <div class='title' style='font-size: ${fTitle}px; font-weight: ${fontWeightTitle}; color: " & _C${ci}_CTit & ";'>" & _C${ci}_Tit & "</div>
+                    " & ${iconSvg} & "
+                </div>
+                <div class='body'>
+                    <div class='value' style='font-size: ${fValue}px; font-weight: ${fontWeightValue}; color: " & _C${ci}_CVal & ";'>" & _C${ci}_Val & "</div>
+                    " & ${visualHtml} & "
+                </div>
+            </div>
+            <div class='footer'>
+                " & ${comparisonsHtml} "" & "
+            </div>
         </div>
     </div>" & `;
   });
