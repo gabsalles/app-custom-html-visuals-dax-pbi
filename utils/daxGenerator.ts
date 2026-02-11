@@ -51,8 +51,20 @@ export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'c
 
   let hoverCSS = '';
   switch (hoverEffect) {
-    case 'lift': hoverCSS = `.v-item:hover { transform: translateY(-6px); box-shadow: 0 ${shadowDistance + 10}px ${shadowBlur + 10}px rgba(0,0,0,${shadowAlpha + 0.1}); }`; break;
-    case 'scale': hoverCSS = `.v-item:hover { transform: scale(1.02); z-index: 10; }`; break;
+    case 'lift': 
+      hoverCSS = `.v-item:hover { 
+        transform: translateY(-6px) !important; 
+        transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s ease !important;
+        box-shadow: 0 ${shadowDistance + 10}px ${shadowBlur + 10}px rgba(0,0,0,${shadowAlpha + 0.1}); 
+      }`; 
+      break;
+    case 'scale': 
+      hoverCSS = `.v-item:hover { 
+        transform: scale(1.02) !important; 
+        transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+        z-index: 10; 
+      }`; 
+      break;
     case 'glow': hoverCSS = `.v-item:hover { box-shadow: 0 0 30px ${primaryColor.includes('gradient') ? '#cc092f' : global.primaryColor}55; }`; break;
     case 'border': hoverCSS = `.v-item:hover { border-color: ${primaryColor.includes('gradient') ? '#cc092f' : global.primaryColor}; }`; break;
   }

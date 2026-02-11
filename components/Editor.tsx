@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { CardConfig, GlobalConfig, CardType, HoverEffect, ComparisonConfig, DonutChartConfig, AppTab } from '../types';
 import { iconDefinitions, IconCategory } from '../utils/icons';
-import { Trash2, Plus, Type, Palette, Layout, ChevronDown, ChevronRight, MousePointer2, X, Binary, Sparkles, ALargeSmall, Droplets, CalendarDays, CalendarRange, PieChart, Layers, Wand2, AlignLeft, AlignCenter, AlignRight, Component, BarChart3, Search, Database, PanelTop, PanelLeft, PanelRight, Save } from 'lucide-react';
+import { Trash2, Plus, Type, Palette, Layout, ChevronDown, ChevronRight, MousePointer2, X, Binary, Sparkles, ALargeSmall, Droplets, CalendarDays, CalendarRange, PieChart, Layers, Wand2, AlignLeft, AlignCenter, AlignRight, Component, BarChart3, Search, Database, PanelTop, PanelLeft, PanelRight, Save, Sun} from 'lucide-react';
 
 interface EditorProps {
   globalConfig: GlobalConfig;

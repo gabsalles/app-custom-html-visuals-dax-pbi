@@ -113,10 +113,24 @@ const Preview: React.FC<PreviewProps> = ({
 
   let hoverStyles = '';
   switch (global.hoverEffect) {
-    case 'lift': hoverStyles = `transform: translateY(-6px); box-shadow: 0 15px 30px rgba(0,0,0,0.15); border-color: var(--p-primary);`; break;
-    case 'scale': hoverStyles = `transform: scale(1.02); z-index: 10;`; break;
-    case 'glow': hoverStyles = `box-shadow: 0 0 25px rgba(${primaryRgb}, 0.5); border-color: var(--p-primary);`; break;
-    case 'border': hoverStyles = `border-color: var(--p-primary); border-width: 2px; padding: calc(var(--p-pad) - 1px);`; break;
+    case 'lift': 
+      // Adicionamos transition: transform ... !important para garantir a suavidade
+      hoverStyles = `
+        transform: translateY(-6px) !important; 
+        transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s ease !important;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.15); 
+        border-color: var(--p-primary);
+      `; 
+      break;
+    case 'scale': 
+      hoverStyles = `
+        transform: scale(1.02) !important; 
+        transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+        z-index: 10;
+      `; 
+      break;
+    case 'glow': hoverStyles = `box-shadow: 0 0 25px rgba(${primaryRgb}, 0.5) !important; border-color: var(--p-primary);`; break;
+    case 'border': hoverStyles = `border-color: var(--p-primary) !important; border-width: 2px; padding: calc(var(--p-pad) - 1px);`; break;
   }
 
   const animationRule = global.animation !== 'none' ? `${global.animation} ${dur} cubic-bezier(0.2, 0.8, 0.2, 1) forwards` : 'none';
