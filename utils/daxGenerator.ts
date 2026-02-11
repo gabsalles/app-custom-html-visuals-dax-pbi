@@ -13,7 +13,6 @@ export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'c
     shadowIntensity, shadowBlur, shadowDistance
   } = global;
 
-  // Lógica Smart: Se for menor que 140px, ativa modo compacto
   const isCompact = cardMinHeight < 140;
 
   const getFormatString = (type: string, decimals: number): string => {
@@ -41,7 +40,6 @@ export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'c
   const shadowCSS = `0 ${shadowDistance}px ${shadowBlur}px rgba(0,0,0,${shadowAlpha})`;
   const dur = `${animationDuration}s`;
   
-  // Animation CSS
   let animationCSS = '';
   if (animation === 'fadeInUp') {
     animationCSS = `.animate { animation: fadeInUp ${dur} ease-out forwards; opacity: 0; } @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`;
@@ -51,7 +49,6 @@ export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'c
     animationCSS = `.animate { animation: slideRight ${dur} ease-out forwards; opacity: 0; } @keyframes slideRight { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }`;
   }
 
-  // Hover CSS - Aplicado agora ao .v-item
   let hoverCSS = '';
   switch (hoverEffect) {
     case 'lift': hoverCSS = `.v-item:hover { transform: translateY(-6px); box-shadow: 0 ${shadowDistance + 10}px ${shadowBlur + 10}px rgba(0,0,0,${shadowAlpha + 0.1}); }`; break;
@@ -60,50 +57,37 @@ export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'c
     case 'border': hoverCSS = `.v-item:hover { border-color: ${primaryColor.includes('gradient') ? '#cc092f' : global.primaryColor}; }`; break;
   }
 
-  // CSS Condicional para Modo Compacto
   const cssCompacto = isCompact ? `
-      /* MODO COMPACTO */
       .v-item { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; padding-right: 12px; }
-      
-      /* Traz a barra lateral de volta */
       .v-item::before { top: 15%; bottom: 15%; width: 4px; display: block; }
-      
       .compact-left { display: flex; flex-direction: column; justify-content: center; z-index: 2; flex: 1; min-width: 0; margin-left: 8px; }
       .compact-right { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px; z-index: 2; }
-      
-      /* Estilo do Header com Ícone */
       .compact-header { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
       .compact-icon { width: 14px; height: 14px; opacity: 0.7; }
-      
       .title { font-size: ${Math.max(9, fontSizeTitle - 1)}px; margin-bottom: 0; }
       .value { font-size: ${Math.max(14, fontSizeValue - 6)}px; line-height: 1; }
-      
       .footer { margin-top: 0; padding-top: 0; align-items: flex-end; }
       .progress-bar-bottom { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--accent); transition: width 1s ease; }
     ` : `
-      /* MODO PADRÃO (MANTENHA O QUE ESTAVA AQUI) */
       .v-item { flex-direction: column; }
+      /* Adicionada classe .header que faltava */
+      .header { display: flex; align-items: center; margin-bottom: 6px; width: 100%; gap: 8px; }
       .content-wrapper { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 0; }
       .footer { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
     `;
 
   let dax = `Visual_Gerado = 
-/* DAX Builder - Bradesco Smart Layout */
-
 VAR _CorPrimaria = "${primaryColor}"
 VAR _CorPos      = "${positiveColor}"
 VAR _CorNeg      = "${negativeColor}"
 VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
-
 `;
 
-  // --- PREPARAÇÃO DAS VARIÁVEIS DAX ---
   if (tab === 'cards') {
     (items || []).forEach((card, cIdx) => {
       const ci = cIdx + 1;
       const formatStr = getFormatString(card.formatType, card.decimalPlaces);
       
-      dax += `-- CARD ${ci}: ${card.title}\n`;
       dax += `VAR _C${ci}_Tit = "${card.title}"\n`;
       dax += `VAR _C${ci}_Val_Raw = ${card.measurePlaceholder || "0"}\n`;
       
@@ -129,7 +113,6 @@ VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
       dax += `\n`;
     });
   } else {
-     // Lógica Donut (mantida simples)
      (items || []).forEach((donut, dIdx) => {
         const di = dIdx + 1;
         dax += `VAR _D${di}_Tit = "${donut.title}"\n`;
@@ -149,7 +132,6 @@ VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
      });
   }
 
-  // --- GERAÇÃO HTML & CSS ---
   dax += `
 VAR _CSS = "
 <style>
@@ -192,19 +174,11 @@ VAR _CSS = "
       font-size: ${fontSizeBadge || 10}px; padding: 3px 8px; border-radius: 6px; font-weight: 800; display: flex; align-items: center; gap: 4px; letter-spacing: -0.02em;
     }
     .badge svg { width: 12px; height: 12px; stroke-width: 2.5; }
-    
-    /* ICON */
     .icon-box { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    
-    /* PROGRESS */
     .progress-track { width: 100%; background: #f3f4f6; border-radius: 100px; overflow: hidden; }
     .progress-fill { height: 100%; background: var(--accent); border-radius: 100px; transition: width 1s ease; }
-
-    /* CHARTS */
     .chart-box { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; padding: 5px; }
     .center-text { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-
-    /* SMART LAYOUT (Horizontal/Vertical) */
     ${cssCompacto}
 </style>"
 
@@ -218,13 +192,11 @@ VAR _HTML = "<div class='container'>" &
       const iconPath = iconPaths[card.icon || 'chart'];
       const iconColor = card.iconColor || card.accentColor || primaryColor;
       
-      // Ícone Padrão
       const iconHTML = `
-        <div class='icon-box' style='width:${card.iconSize || 24}px; height:${card.iconSize || 24}px; padding:${card.iconPadding || 8}px; background:${card.iconBackgroundColor || 'transparent'}; border-radius:${card.iconRounded ? '50%' : '8px'}; color:${iconColor}'>
+        <div class='icon-box' style='width:${card.iconSize || 40}px; height:${card.iconSize || 24}px; padding:${card.iconPadding || 8}px; background:${card.iconBackgroundColor || 'transparent'}; border-radius:${card.iconRounded ? '50%' : '8px'}; color:${iconColor}'>
             <svg viewBox='0 0 24 24' width='100%' height='100%' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='${iconPath}'/></svg>
         </div>`;
 
-      // Gerador de Comparativos
       let compsHTML = "";
       (card.comparisons || []).forEach((c, cpIdx) => {
         const cpi = cpIdx + 1;
@@ -243,9 +215,7 @@ VAR _HTML = "<div class='container'>" &
             </div>" & `;
       });
 
-      // --- BIFURCAÇÃO DE LAYOUT (SMART COMPACT) ---
       if (isCompact) {
-          // Layout Horizontal Compacto
           let visualHtml = '""';
           if (card.type === 'progress') {
              visualHtml = `"<div class='progress-bar-bottom' style='width: \" & (_C${ci}_Prog_Pct * 100) & \"%;'></div>"`;
@@ -267,17 +237,21 @@ VAR _HTML = "<div class='container'>" &
           </div>" & `;
       
       } else {
-          // Layout Vertical Padrão (Seu código original de estrutura)
+          // --- CORREÇÃO DA LÓGICA DE POSIÇÃO ---
           const align = card.textAlign || textAlign;
           const flexAlign = getFlexAlign(align);
           const iconPos = card.iconPosition || 'top';
           let headerHTML = "";
           
           if (iconPos === 'top') {
-              headerHTML = `<div class='header' style='justify-content: ${flexAlign}'>${iconHTML} <div class='title'>\" & _C${ci}_Tit & \"</div></div>`;
+              // Topo: Flex Column e alinhado conforme o texto
+              let colAlign = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start';
+              headerHTML = `<div class='header' style='flex-direction: column; align-items: ${colAlign}; justify-content: center'>${iconHTML} <div class='title'>\" & _C${ci}_Tit & \"</div></div>`;
           } else if (iconPos === 'left') {
+              // Esquerda: Flex Row
               headerHTML = `<div class='header' style='justify-content: ${flexAlign}'>${iconHTML} <div class='title'>\" & _C${ci}_Tit & \"</div></div>`;
           } else { 
+              // Direita: Space Between
               headerHTML = `<div class='header' style='justify-content: space-between'><div class='title'>\" & _C${ci}_Tit & \"</div> ${iconHTML}</div>`;
           }
 
@@ -309,7 +283,6 @@ VAR _HTML = "<div class='container'>" &
       }
     });
   } else {
-     // Donut Logic
      (items || []).forEach((donut, idx) => {
       const di = idx + 1;
       const flexAlign = getFlexAlign(donut.textAlign || textAlign);

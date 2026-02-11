@@ -25,6 +25,12 @@ export interface ComparisonConfig {
   showIcon?: boolean; // New
 }
 
+export interface DataBinding {
+  id: string;
+  label: string; // Ex: "Faturamento Total"
+  value: string; // Ex: "[Total Vendas]"
+}
+
 export interface CardConfig {
   id: string;
   title: string;
@@ -128,4 +134,6 @@ export interface GlobalConfig {
   animation: AnimationType;
   animationDuration: number;
   hoverEffect: HoverEffect;
+  dataBindings: DataBinding[];
+
 }
