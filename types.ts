@@ -1,0 +1,57 @@
+export type CardType = 'simple' | 'progress' | 'ring';
+export type TrendDirection = 'up' | 'down' | 'neutral' | 'none';
+export type AnimationType = 'none' | 'fadeInUp' | 'popIn' | 'slideRight';
+export type HoverEffect = 'none' | 'lift' | 'scale' | 'glow' | 'border';
+export type ViewportMode = 'desktop' | 'tablet' | 'mobile';
+
+export interface ComparisonConfig {
+  id: string;
+  label: string;
+  value: string;
+  trend: TrendDirection;
+  logic: string; // DAX Expression
+}
+
+export interface CardConfig {
+  id: string;
+  title: string;
+  measurePlaceholder: string;
+  type: CardType;
+  targetMeasurePlaceholder: string;
+  value: string;
+  progressValue: number;
+  icon: string;
+  isOpen?: boolean;
+  
+  // Font Overrides (Optional)
+  fontSizeTitle?: number;
+  fontSizeValue?: number;
+  fontSizeSub?: number;
+  
+  // Multiple Comparisons
+  comparisons: ComparisonConfig[];
+}
+
+export interface GlobalConfig {
+  columns: number;
+  gap: number;
+  padding: number;
+  primaryColor: string;
+  cardBackgroundColor: string;
+  textColorTitle: string;
+  textColorValue: string;
+  textColorSub: string;
+  positiveColor: string;
+  negativeColor: string;
+  neutralColor: string;
+  borderRadius: number;
+  cardMinHeight: number;
+  fontSizeTitle: number;
+  fontSizeValue: number;
+  fontSizeSub: number;
+  fontWeightTitle: number;
+  fontWeightValue: number;
+  animation: AnimationType;
+  animationDuration: number;
+  hoverEffect: HoverEffect;
+}

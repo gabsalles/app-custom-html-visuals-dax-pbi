@@ -1,0 +1,5 @@
+{
+  "name": "DAX HTML Card Generator",
+  "description": "A visual builder for Power BI HTML Content visual cards. Generates DAX code based on high-end CSS designs.",
+  "requestFramePermissions": []
+}
