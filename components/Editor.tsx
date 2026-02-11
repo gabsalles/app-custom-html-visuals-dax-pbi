@@ -91,7 +91,7 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
   const applyBradescoPreset = () => {
     setGlobalConfig({
       ...globalConfig,
-      primaryColor: '#cc092f',,
+      primaryColor: '#cc092f',
       cardBackgroundColor: '#ffffff',
       textColorTitle: '#86868B',
       textColorValue: '#1D1D1F',
