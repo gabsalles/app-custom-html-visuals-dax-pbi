@@ -1,21 +1,21 @@
-
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { GlobalConfig, CardConfig, ViewportMode } from '../types';
-import { TrendingUp, TrendingDown, ZoomIn, ZoomOut, RotateCcw, BoxSelect, Grip, Eye } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { GlobalConfig, CardConfig, ViewportMode, DonutChartConfig, AppTab } from '../types';
+import { ZoomIn, ZoomOut, RotateCcw, BoxSelect, TrendingUp, TrendingDown } from 'lucide-react';
 import { iconPaths } from '../utils/icons';
 
 interface PreviewProps {
   global: GlobalConfig;
   cards: CardConfig[];
+  donuts: DonutChartConfig[];
+  activeAppTab: AppTab;
   viewport: ViewportMode | 'custom';
   customDimensions?: { width: number, height: number };
   onCardClick?: (id: string) => void;
   selectedCardId?: string | null;
 }
 
-const Preview: React.FC<PreviewProps> = ({ global, cards, viewport, customDimensions, onCardClick, selectedCardId }) => {
-  // Navigation State
-  const [scale, setScale] = useState(0.85); // Start slightly zoomed out
+const Preview: React.FC<PreviewProps> = ({ global, cards, donuts, activeAppTab, viewport, customDimensions, onCardClick, selectedCardId }) => {
+  const [scale, setScale] = useState(0.85);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [isSpacePressed, setIsSpacePressed] = useState(false);
@@ -23,63 +23,51 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, viewport, customDimens
   const containerRef = useRef<HTMLDivElement>(null);
   const lastMousePos = useRef({ x: 0, y: 0 });
 
-  // Handle Spacebar for Pan Mode
+  // Atalhos de teclado para Pan (Espaço)
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => { 
-      if (e.code === 'Space') { 
-        setIsSpacePressed(true); 
-        if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); 
-      } 
-    };
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.code === 'Space') setIsSpacePressed(true); };
     const handleKeyUp = (e: KeyboardEvent) => { if (e.code === 'Space') setIsSpacePressed(false); };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
+    return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp); };
   }, []);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (isSpacePressed || e.button === 1) { 
-      setIsPanning(true);
-      lastMousePos.current = { x: e.clientX, y: e.clientY };
-      e.preventDefault();
-    }
-  };
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (isPanning) {
-      const dx = e.clientX - lastMousePos.current.x;
-      const dy = e.clientY - lastMousePos.current.y;
-      setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-      lastMousePos.current = { x: e.clientX, y: e.clientY };
-    }
-  }, [isPanning]);
-
-  const handleMouseUp = () => setIsPanning(false);
-
-  const handleWheel = (e: React.WheelEvent) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      const newScale = Math.min(Math.max(scale * delta, 0.05), 5);
-      setScale(newScale);
-    }
-  };
-
-  const resetView = () => {
-    setScale(0.85);
-    setOffset({ x: 0, y: 0 });
-  };
+  const resetView = () => { setScale(0.85); setOffset({ x: 0, y: 0 }); };
 
   const hexToRgb = (hex: string) => {
-    if (!hex || !hex.startsWith('#')) return '79, 70, 229'; 
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '79, 70, 229';
   };
 
+  const primaryRgb = hexToRgb(global.primaryColor);
+  const isCompact = global.cardMinHeight < 140; // Definição global do modo compacto
+
+  // Animações e Efeitos
+  let animationKeyframes = '';
+  const dur = `${global.animationDuration}s`;
+  if (global.animation === 'fadeInUp') {
+    animationKeyframes = `@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`;
+  } else if (global.animation === 'popIn') {
+    animationKeyframes = `@keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }`;
+  } else if (global.animation === 'slideRight') {
+    animationKeyframes = `@keyframes slideRight { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }`;
+  }
+
+  let hoverStyles = '';
+  switch (global.hoverEffect) {
+    case 'lift': hoverStyles = `transform: translateY(-6px); box-shadow: 0 15px 30px rgba(0,0,0,0.15); border-color: var(--p-primary);`; break;
+    case 'scale': hoverStyles = `transform: scale(1.02); z-index: 10;`; break;
+    case 'glow': hoverStyles = `box-shadow: 0 0 25px rgba(${primaryRgb}, 0.5); border-color: var(--p-primary);`; break;
+    case 'border': hoverStyles = `border-color: var(--p-primary); border-width: 2px; padding: calc(var(--p-pad) - 1px);`; break;
+  }
+
+  const animationRule = global.animation !== 'none' ? `${global.animation} ${dur} cubic-bezier(0.2, 0.8, 0.2, 1) forwards` : 'none';
+
   const dynamicStyles = `
+    ${animationKeyframes}
+    @keyframes loadBar { from { width: 0; } }
+    @keyframes fillRing { to { stroke-dashoffset: var(--offset); } }
+
     :root {
       --p-primary: ${global.primaryColor};
       --p-bg: ${global.cardBackgroundColor};
@@ -92,215 +80,265 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, viewport, customDimens
       --p-min-h: ${global.cardMinHeight}px;
     }
 
-    * { font-family: 'Bradesco Sans', 'Inter', -apple-system, sans-serif !important; }
-
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes loadBar { from { width: 0; } }
-
-    .artboard { 
-        display: grid; 
-        grid-template-columns: repeat(${global.columns}, 1fr); 
-        gap: var(--p-gap); 
-        width: 100%; 
-        height: 100%;
-        padding: var(--p-pad);
-        box-sizing: border-box;
-    }
+    .p-container { display: grid; grid-template-columns: repeat(${global.columns}, 1fr); gap: var(--p-gap); padding: 10px; width: 100%; height: 100%; box-sizing: border-box; }
+    
+    /* === ESTILO UNIFICADO DO CARD === */
     .p-card { 
-      background: var(--card-bg, var(--p-bg)); 
+      background: var(--p-bg); 
       border-radius: var(--p-radius); 
       padding: var(--p-pad); 
       min-height: var(--p-min-h); 
-      border: 1px solid rgba(0,0,0,0.06); 
-      display: flex; 
-      flex-direction: column; 
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
-      position: relative; 
-      overflow: hidden;
-      opacity: ${global.animation === 'none' ? 1 : 0}; 
-      animation: ${global.animation !== 'none' ? `${global.animation} ${global.animationDuration}s cubic-bezier(0.2, 0.8, 0.2, 1) forwards` : 'none'};
-      cursor: pointer;
-      container-type: size;
+      border: 1px solid rgba(0,0,0,0.08); 
+      display: flex; flex-direction: column; 
+      transition: all 0.25s; 
+      position: relative; overflow: hidden; 
+      opacity: ${global.animation !== 'none' ? 0 : 1};
+      animation: ${animationRule};
     }
-    .p-card.selected { 
-      border-color: var(--card-accent); 
-      box-shadow: 0 0 30px rgba(var(--card-accent-rgb), 0.3); 
-      z-index: 10;
-      transform: scale(1.02);
-    }
-    .p-card::before { content: ''; position: absolute; left: 0; top: 15px; bottom: 15px; width: 4px; background: var(--card-accent); border-radius: 0 4px 4px 0; }
+    .p-card:hover { ${hoverStyles} }
+    .p-card.selected { border-color: var(--p-primary); box-shadow: 0 0 0 4px rgba(${primaryRgb}, 0.2); }
     
-    .card-content { display: flex; flex-direction: column; height: 100%; width: 100%; }
-    .body-section { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-
-    .footer { 
-        margin-top: auto; 
-        display: flex; 
-        flex-direction: column; 
-        gap: 6px; 
-        padding-top: 10px; 
-        border-top: 1px solid rgba(0,0,0,0.03); 
+    /* Barra lateral padrão */
+    .p-card::before { content: ''; position: absolute; left: 0; top: 15%; bottom: 15%; width: 4px; background: var(--p-primary); border-radius: 0 4px 4px 0; }
+    
+    /* === MODO COMPACTO (OVERRIDE) === */
+    .p-card.compact {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 12px;
+        padding-right: 12px;
     }
+    .p-card.compact::before { top: 15%; bottom: 15%; display: block; }
+    
+    /* ELEMENTOS INTERNOS */
+    .p-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; width: 100%; }
+    .p-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 0; }
+    .p-footer { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid rgba(0,0,0,0.03); }
+    
+    .p-card.compact .p-footer { margin-top: 0; padding-top: 0; border-top: none; align-items: flex-end; justify-content: center; }
 
-    @container (max-height: 180px) {
-      .card-content { flex-direction: row; align-items: center; gap: 20px; }
-      .header-body { flex: 1; border-right: 1px solid rgba(0,0,0,0.05); padding-right: 15px; }
-      .footer { margin-top: 0; border-top: none; border-left: none; padding-top: 0; justify-content: center; min-width: 120px; }
-    }
-
-    .p-row { display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: var(--card-text-sub, var(--p-text-sub)); }
+    .p-row { display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: var(--p-text-sub); }
     .p-badge { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.04); display: flex; align-items: center; gap: 3px; }
+    
     .p-track { width: 100%; height: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; overflow: hidden; margin: 10px 0; }
-    .p-fill { height: 100%; background: var(--card-accent); border-radius: 10px; width: 0; animation: loadBar 1s ease-out forwards; }
+    .p-fill { height: 100%; background: var(--p-primary); border-radius: 10px; width: 0; animation: loadBar 1s ease-out forwards; }
+    
+    .ring-box { position: relative; width: 48px; height: 48px; }
+    .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+    .ring-bg { fill: none; stroke: rgba(0,0,0,0.05); stroke-width: 5; }
+    .ring-val { fill: none; stroke: var(--p-primary); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 126; stroke-dashoffset: 126; animation: fillRing 1.2s ease-out forwards; }
 
-    ${viewport === 'mobile' ? `.artboard { grid-template-columns: 1fr !important; }` : ''}
-    ${viewport === 'tablet' ? `.artboard { grid-template-columns: repeat(2, 1fr) !important; }` : ''}
-
-    .dot-grid {
-      background-image: radial-gradient(#2d2d30 1px, transparent 1px);
-      background-size: 24px 24px;
-    }
-
-    .transparent-pattern {
-      background-image: linear-gradient(45deg, #1a1a1c 25%, transparent 25%), 
-                        linear-gradient(-45deg, #1a1a1c 25%, transparent 25%), 
-                        linear-gradient(45deg, transparent 75%, #1a1a1c 75%), 
-                        linear-gradient(-45deg, transparent 75%, #1a1a1c 75%);
-      background-size: 20px 20px;
-      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-      background-color: #161618;
-    }
+    /* DONUT STYLES */
+    .donut-ring { fill: transparent; stroke: #f3f4f6; transition: stroke-dasharray 0.5s ease; }
+    .donut-segment { fill: transparent; transition: stroke-dasharray 0.5s ease; }
   `;
 
-  const isCustom = viewport === 'custom' && customDimensions;
-  const simWidth = isCustom ? customDimensions.width : viewport === 'mobile' ? 375 : viewport === 'tablet' ? 768 : 1000;
-  const simHeight = isCustom ? customDimensions.height : 600;
+  const simWidth = viewport === 'custom' && customDimensions ? customDimensions.width : viewport === 'mobile' ? 375 : viewport === 'tablet' ? 768 : 1000;
+  const simHeight = viewport === 'custom' && customDimensions ? customDimensions.height : 600;
 
   return (
     <div 
       ref={containerRef}
-      className={`w-full h-full bg-[#0f0f11] overflow-hidden relative dot-grid ${isPanning || isSpacePressed ? 'cursor-grabbing' : 'cursor-default'}`}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onWheel={handleWheel}
+      className={`w-full h-full bg-[#0f0f11] overflow-hidden relative ${isPanning || isSpacePressed ? 'cursor-grabbing' : 'cursor-default'}`}
+      onMouseDown={(e) => { if (isSpacePressed || e.button === 1) { setIsPanning(true); lastMousePos.current = { x: e.clientX, y: e.clientY }; e.preventDefault(); } }}
+      onMouseMove={(e) => { if (isPanning) { setOffset(prev => ({ x: prev.x + (e.clientX - lastMousePos.current.x), y: prev.y + (e.clientY - lastMousePos.current.y) })); lastMousePos.current = { x: e.clientX, y: e.clientY }; } }}
+      onMouseUp={() => setIsPanning(false)}
+      onWheel={(e) => { if (e.ctrlKey || e.altKey) { e.preventDefault(); setScale(prev => Math.min(Math.max(prev * (e.deltaY > 0 ? 0.9 : 1.1), 0.05), 5)); } }}
     >
         <style>{dynamicStyles}</style>
         
-        {/* TOP UI LAYER */}
+        {/* UI TOOLBARS */}
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-            <div className="bg-black/40 backdrop-blur-xl text-white/90 px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-4 border border-white/10 ring-1 ring-white/5">
+            <div className="bg-black/40 backdrop-blur-xl text-white/90 px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-4 border border-white/10">
                 <BoxSelect size={14} className="text-indigo-400" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
-                    Visual <span className="text-indigo-300">{simWidth} x {simHeight}</span>
-                </span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Preview: <span className="text-indigo-300">{simWidth}x{simHeight}</span></span>
                 <div className="w-px h-3 bg-white/10" />
-                <div className="flex items-center gap-1.5">
-                   <Eye size={12} className="text-indigo-400" />
-                   <span className="text-[10px] font-bold text-white/50">{Math.round(scale * 100)}%</span>
-                </div>
+                <span className="text-[10px] font-bold opacity-50">{Math.round(scale * 100)}%</span>
             </div>
         </div>
 
-        {/* NAVIGATION TOOLBAR */}
         <div className="absolute bottom-8 right-8 flex flex-col gap-3 z-50">
-           <div className="flex flex-col bg-black/40 backdrop-blur-xl p-1.5 rounded-2xl shadow-2xl border border-white/10 ring-1 ring-white/5">
-             <button onClick={() => setScale(prev => Math.min(prev + 0.1, 5))} className="p-3 hover:bg-white/5 rounded-xl text-white/60 hover:text-white transition-all" title="Zoom In"><ZoomIn size={20}/></button>
-             <button onClick={() => setScale(prev => Math.max(prev - 0.1, 0.05))} className="p-3 hover:bg-white/5 rounded-xl text-white/60 hover:text-white transition-all" title="Zoom Out"><ZoomOut size={20}/></button>
+           <div className="flex flex-col bg-black/40 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10">
+             <button onClick={() => setScale(prev => Math.min(prev + 0.1, 5))} className="p-3 text-white/60 hover:text-white"><ZoomIn size={20}/></button>
+             <button onClick={() => setScale(prev => Math.max(prev - 0.1, 0.05))} className="p-3 text-white/60 hover:text-white"><ZoomOut size={20}/></button>
              <div className="h-px bg-white/5 mx-2 my-1" />
-             <button onClick={resetView} className="p-3 hover:bg-indigo-500/20 text-indigo-400 rounded-xl transition-all" title="Reset Camera"><RotateCcw size={20}/></button>
-           </div>
-           
-           <div className="bg-black/40 backdrop-blur-xl px-4 py-2.5 rounded-xl shadow-2xl border border-white/10 text-[9px] font-black text-white/30 uppercase text-center flex items-center gap-2 tracking-widest">
-              <Grip size={12} className="text-indigo-500/50" /> [Espaço] + Arrastar
+             <button onClick={resetView} className="p-3 text-indigo-400 hover:text-indigo-300"><RotateCcw size={20}/></button>
            </div>
         </div>
 
-        {/* WORLD LAYER */}
+        {/* WORLD */}
         <div 
-          className="absolute inset-0 flex items-center justify-center transition-transform duration-100 ease-out"
-          style={{ 
-            transformOrigin: 'center center',
-            transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-            pointerEvents: isPanning ? 'none' : 'auto'
-          }}
+          className="absolute inset-0 flex items-center justify-center transition-transform duration-100"
+          style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, pointerEvents: isPanning ? 'none' : 'auto' }}
         >
-          {/* Simulation Object - Now Transparent/Checkerboard */}
           <div 
-            className="transparent-pattern rounded-sm relative transition-all shadow-[0_0_150px_rgba(0,0,0,0.4)] ring-1 ring-white/10"
-            style={{ 
-              width: simWidth, 
-              height: simHeight,
-              minWidth: simWidth,
-              minHeight: simHeight,
-              border: '1px solid #3f3f46'
-            }}
+            className="bg-[#161618] rounded-sm relative border border-white/10 shadow-2xl transition-all duration-300"
+            style={{ width: simWidth, height: simHeight, minWidth: simWidth, minHeight: simHeight }}
           >
-            {/* Context Label */}
-            <div className="absolute -top-7 left-0 text-[10px] font-black text-white/20 uppercase tracking-[0.3em] flex items-center gap-2 select-none">
-                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
-                Power BI Visual Area
-            </div>
+            <div className="p-container">
+              {activeAppTab === 'cards' ? cards.map((card, idx) => {
+                const baseFTitle = card.fontSizeTitle || global.fontSizeTitle;
+                const baseFValue = card.fontSizeValue || global.fontSizeValue;
+                const fSub = card.fontSizeSub || global.fontSizeSub;
 
-            <div className="artboard">
-              {cards.map((card, idx) => {
-                const fTitle = card.fontSizeTitle || global.fontSizeTitle;
-                const fValue = card.fontSizeValue || global.fontSizeValue;
-                const fSub   = card.fontSizeSub   || global.fontSizeSub;
-                const accent = card.accentColor || global.primaryColor;
-                const cardBg = card.cardBackgroundColor || global.cardBackgroundColor;
-                const textColorTitle = card.textColorTitle || global.textColorTitle;
-                const textColorValue = card.textColorValue || global.textColorValue;
-                const textColorSub = card.textColorSub || global.textColorSub;
-                
-                const accentRgb = hexToRgb(accent);
-                const isSelected = selectedCardId === card.id;
+                // Ajuste fino de fonte para modo compacto
+                const fTitle = isCompact ? Math.min(baseFTitle, 10) : baseFTitle;
+                const fValue = isCompact ? Math.min(baseFValue, 26) : baseFValue;
 
+                // --- MODO COMPACTO (HORIZONTAL) ---
+                if (isCompact) {
+                   return (
+                    <div key={card.id} className={`p-card compact ${selectedCardId === card.id ? 'selected' : ''}`} 
+                         style={{ animationDelay: `${idx * 0.1}s` } as any}
+                         onClick={() => onCardClick?.(card.id)}>
+                      
+                      {/* Adicionei margem na esquerda para não colar na barra colorida */}
+                      <div className="flex flex-col justify-center z-10" style={{ maxWidth: '60%', marginLeft: '8px' }}>
+                        
+                        {/* NOVO BLOCO COM ÍCONE + TÍTULO */}
+                        <div className="flex items-center gap-2 mb-0.5">
+                           <div className="text-gray-400 opacity-80">
+                              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d={iconPaths[card.icon] || iconPaths['circle']} /></svg>
+                           </div>
+                           <span style={{ fontSize: `${fTitle}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle }} className="uppercase tracking-widest whitespace-nowrap overflow-hidden text-ellipsis">
+                             {card.title}
+                           </span>
+                        </div>
+                        
+                        <div style={{ fontSize: `${fValue}px`, fontWeight: global.fontWeightValue, color: global.textColorValue, lineHeight: 1, whiteSpace: 'nowrap' }}>
+                          {card.value}
+                        </div>
+                      </div>
+    
+                      {/* Direita: Comparativos */}
+                      <div className="flex flex-col items-end justify-center gap-1 z-10 h-full">
+                         {card.comparisons.map((comp) => (
+                            <div key={comp.id} className="flex items-center gap-2" style={{ fontSize: `${fSub}px`, fontWeight: 600, color: global.textColorSub }}>
+                               <span className="hidden sm:inline">{comp.label}</span>
+                               {comp.trend !== 'none' && (
+                                 <span className="p-badge" style={{ color: comp.trend === 'up' ? global.positiveColor : global.negativeColor }}>
+                                   {comp.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>} {comp.value}
+                                 </span>
+                               )}
+                            </div>
+                         ))}
+                      </div>
+    
+                      {/* Ícone Marca d'água (Fundo) */}
+                      <div className="absolute -right-4 -bottom-6 opacity-10 pointer-events-none" style={{ color: global.textColorValue }}>
+                          <svg viewBox="0 0 24 24" width="90" height="90" fill="currentColor"><path d={iconPaths[card.icon] || iconPaths['circle']} /></svg>
+                      </div>
+    
+                      {/* Barra de Progresso no Rodapé */}
+                      {card.type === 'progress' && (
+                         <div className="absolute bottom-0 left-0 h-1 transition-all duration-1000" style={{ width: `${card.progressValue}%`, backgroundColor: global.primaryColor }} />
+                      )}
+                    </div>
+                   );
+                }
+    
+                // --- MODO PADRÃO (VERTICAL) ---
                 return (
-                <div 
-                  key={`${card.id}-${global.animation}-${cards.length}`} 
-                  className={`p-card ${isSelected ? 'selected' : ''}`}
-                  onClick={(e) => { e.stopPropagation(); onCardClick?.(card.id); }}
-                  style={{ 
-                    '--card-accent': accent, 
-                    '--card-accent-rgb': accentRgb,
-                    '--card-bg': cardBg,
-                    '--card-text-title': textColorTitle,
-                    '--card-text-val': textColorValue,
-                    '--card-text-sub': textColorSub
-                  } as any}
-                >
-                  <div className="card-content">
-                    <div className="header-body">
-                      <div className="flex justify-between items-center mb-2">
-                        <span style={{ fontSize: `${fTitle}px`, fontWeight: global.fontWeightTitle, color: 'var(--card-text-title)' }} className="uppercase tracking-widest leading-none truncate pr-4">{card.title}</span>
-                        <div className="text-gray-400 opacity-20 flex-shrink-0">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={iconPaths[card.icon] || iconPaths['circle']} /></svg>
-                        </div>
-                      </div>
-
-                      <div className="body-section">
-                        <div style={{ fontSize: `${fValue}px`, fontWeight: global.fontWeightValue, color: 'var(--card-text-val)', letterSpacing: '-0.5px', lineHeight: 1.1 }}>{card.value}</div>
-                        {card.type === 'progress' && <div className="p-track"><div className="p-fill" style={{ width: `${card.progressValue}%` }} /></div>}
-                      </div>
-                    </div>
-
-                    <div className="footer">
-                      {card.comparisons.map((comp) => (
-                        <div key={comp.id} className="p-row" style={{ fontSize: `${fSub}px` }}>
-                            <span className="truncate pr-2">{comp.label}</span>
-                            {comp.trend !== 'none' && (
-                              <span className="p-badge whitespace-nowrap" style={{ color: comp.trend === 'up' ? (comp.invertColor ? global.negativeColor : global.positiveColor) : (comp.invertColor ? global.positiveColor : global.negativeColor) }}>
-                                {comp.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>} {comp.value}
-                              </span>
-                            )}
-                        </div>
-                      ))}
-                    </div>
+                <div key={card.id} className={`p-card ${selectedCardId === card.id ? 'selected' : ''}`} 
+                     style={{ animationDelay: `${idx * 0.1}s` } as any}
+                     onClick={() => onCardClick?.(card.id)}>
+                  
+                  <div className="p-header">
+                    <span style={{ fontSize: `${fTitle}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle }} className="uppercase tracking-widest">{card.title}</span>
+                    {card.type === 'ring' ? (
+                       <div className="ring-box">
+                          <svg viewBox="0 0 50 50" className="ring-svg">
+                            <circle className="ring-bg" cx="25" cy="25" r="20" />
+                            <circle className="ring-val" cx="25" cy="25" r="20" style={{"--offset": 126 - (126 * Math.min(1, Math.max(0, card.progressValue / 100)))} as any} />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold" style={{color: global.textColorValue}}>{card.progressValue}%</div>
+                       </div>
+                    ) : (
+                       <div className="text-gray-400 opacity-70 transition-transform hover:scale-110">
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={iconPaths[card.icon] || iconPaths['circle']} /></svg>
+                       </div>
+                    )}
+                  </div>
+    
+                  <div className="p-body">
+                     <div style={{ fontSize: `${fValue}px`, fontWeight: global.fontWeightValue, color: global.textColorValue, letterSpacing: '-0.5px' }}>{card.value}</div>
+                     {card.type === 'progress' && <div className="p-track"><div className="p-fill" style={{ width: `${card.progressValue}%` }} /></div>}
+                  </div>
+    
+                  <div className="p-footer">
+                    {card.comparisons.map((comp) => (
+                       <div key={comp.id} className="p-row" style={{ fontSize: `${fSub}px` }}>
+                          <span>{comp.label}</span>
+                          {comp.trend !== 'none' && (
+                            <span className="p-badge" style={{ color: comp.trend === 'up' ? global.positiveColor : global.negativeColor }}>
+                              {comp.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>} {comp.value}
+                            </span>
+                          )}
+                       </div>
+                    ))}
                   </div>
                 </div>
-              )})}
+              )}) : donuts.map((donut, idx) => {
+                 // --- RENDERIZAÇÃO DE DONUTS (Mantida igual) ---
+                const isSemi = donut.geometry === 'semicircle';
+                const radius = 40;
+                const circ = 2 * Math.PI * radius;
+                const isSelected = selectedCardId === donut.id;
+                const align = donut.textAlign || global.textAlign || 'left';
+                const flexAlign = align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center';
+                const rotation = isSemi ? -180 : -90;
+                const circumferenceDivisor = isSemi ? 2 : 1;
+
+                return (
+                  <div key={donut.id} className={`p-card ${isSelected ? 'selected' : ''}`} style={{ background: donut.cardBackgroundColor || global.cardBackgroundColor, animationDelay: `${idx * 0.1}s` } as any} onClick={() => onCardClick?.(donut.id)}>
+                    <div className="mb-4 flex" style={{ justifyContent: flexAlign }}>
+                       <span style={{ fontSize: `${donut.fontSizeTitle || global.fontSizeTitle}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle }} className="uppercase tracking-widest">{donut.title}</span>
+                    </div>
+                    <div className="flex-1 relative flex justify-center p-2" style={{ alignItems: isSemi ? 'flex-end' : 'center' }}>
+                       <svg viewBox="0 0 100 100" className="w-full h-full" style={{ maxHeight: isSemi ? '60%' : '100%', overflow: 'visible' }}>
+                          <circle cx="50" cy="50" r={radius} className="donut-ring" strokeWidth={donut.ringThickness} strokeDasharray={isSemi ? `${circ/2} ${circ}` : '0 0'} transform={`rotate(${rotation} 50 50)`} />
+                          {donut.mode === 'completeness' ? (
+                             <circle 
+                               cx="50" cy="50" r={radius} 
+                               className="donut-segment" 
+                               stroke={donut.accentColor || global.primaryColor} 
+                               strokeWidth={donut.ringThickness} 
+                               strokeDasharray={`${(75/100) * (circ/circumferenceDivisor)} ${circ}`} 
+                               strokeDashoffset="0"
+                               strokeLinecap={donut.roundedCorners ? 'round' : 'butt'}
+                               transform={`rotate(${rotation} 50 50)`}
+                             />
+                          ) : (
+                             donut.slices.reduce((acc: React.ReactNode[], slice, i) => {
+                                const val = parseFloat(slice.value) || 0;
+                                const currentOffset = donut.slices.slice(0, i).reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
+                                acc.push(
+                                  <circle 
+                                    key={slice.id} cx="50" cy="50" r={radius} 
+                                    className="donut-segment" 
+                                    stroke={slice.color} 
+                                    strokeWidth={donut.ringThickness} 
+                                    strokeDasharray={`${(val/100) * (circ/circumferenceDivisor)} ${circ}`} 
+                                    strokeDashoffset={`${-(currentOffset/100) * (circ/circumferenceDivisor)}`}
+                                    strokeLinecap={donut.roundedCorners ? 'round' : 'butt'}
+                                    transform={`rotate(${rotation} 50 50)`}
+                                  />
+                                );
+                                return acc;
+                             }, [])
+                          )}
+                       </svg>
+                       {donut.showCenterText && (
+                          <div className="absolute flex flex-col items-center justify-center text-center pointer-events-none" style={{ top: isSemi ? '65%' : '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+                             <div className="text-[8px] font-black uppercase text-gray-400 leading-none">{donut.centerTextLabel}</div>
+                             <div className="text-sm font-black text-gray-700 leading-none mt-1">75%</div>
+                          </div>
+                       )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>

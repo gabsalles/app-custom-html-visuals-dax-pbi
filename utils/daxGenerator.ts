@@ -1,243 +1,360 @@
-
-import { GlobalConfig, CardConfig, ComparisonConfig } from '../types';
+import { GlobalConfig, CardConfig, AppTab } from '../types';
 import { iconPaths } from './icons';
 
-const getFormatString = (type: string, decimals: number): string => {
-  const zeros = decimals > 0 ? "." + "0".repeat(decimals) : "";
-  switch (type) {
-    case 'integer': return "#,##0";
-    case 'decimal': return `#,##0${zeros}`;
-    case 'currency': return `"R$ " & #,##0${zeros}`;
-    case 'percent': return `0${zeros}%`;
-    case 'short': return "#,0.0#K"; 
-    default: return "";
-  }
-};
-
-export const generateDAX = (global: GlobalConfig, cards: CardConfig[]): string => {
+export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'cards'): string => {
   const { 
     columns, gap, padding, 
     primaryColor, cardBackgroundColor,
     textColorTitle, textColorValue, textColorSub,
-    positiveColor, negativeColor, neutralColor,
+    positiveColor, negativeColor,
     animation, animationDuration, hoverEffect, borderRadius, cardMinHeight, 
-    fontSizeTitle, fontSizeValue, fontSizeSub,
-    fontWeightTitle, fontWeightValue
+    fontSizeTitle, fontSizeValue, fontSizeSub, fontSizeBadge,
+    fontWeightTitle, fontWeightValue, textAlign,
+    shadowIntensity, shadowBlur, shadowDistance
   } = global;
 
+  // Lógica Smart: Se for menor que 140px, ativa modo compacto
+  const isCompact = cardMinHeight < 140;
+
+  const getFormatString = (type: string, decimals: number): string => {
+    const zeros = decimals > 0 ? "." + "0".repeat(decimals) : "";
+    switch (type) {
+      case 'integer': return "#,##0";
+      case 'decimal': return `#,##0${zeros}`;
+      case 'currency': return `"R$ " #,##0${zeros}`; 
+      case 'currency_short': return `"R$ " #,0.0,, "M"`;
+      case 'short': return `#,0.0,, "M"`;
+      case 'percent': return `0${zeros}%`;
+      default: return "";
+    }
+  };
+
+  const getFlexAlign = (align: string) => {
+      switch(align) {
+          case 'center': return 'center';
+          case 'right': return 'flex-end';
+          default: return 'flex-start';
+      }
+  }
+
+  const shadowAlpha = (shadowIntensity || 0) / 100;
+  const shadowCSS = `0 ${shadowDistance}px ${shadowBlur}px rgba(0,0,0,${shadowAlpha})`;
   const dur = `${animationDuration}s`;
+  
+  // Animation CSS
   let animationCSS = '';
   if (animation === 'fadeInUp') {
-    animationCSS = `@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    .animate { animation: fadeInUp ${dur} ease-out forwards; opacity: 0; }`;
+    animationCSS = `.animate { animation: fadeInUp ${dur} ease-out forwards; opacity: 0; } @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`;
   } else if (animation === 'popIn') {
-    animationCSS = `@keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
-    .animate { animation: popIn ${dur} cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; }`;
+    animationCSS = `.animate { animation: popIn ${dur} cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; } @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }`;
   } else if (animation === 'slideRight') {
-    animationCSS = `@keyframes slideRight { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-    .animate { animation: slideRight ${dur} ease-out forwards; opacity: 0; }`;
+    animationCSS = `.animate { animation: slideRight ${dur} ease-out forwards; opacity: 0; } @keyframes slideRight { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }`;
   }
 
+  // Hover CSS - Aplicado agora ao .v-item
   let hoverCSS = '';
   switch (hoverEffect) {
-    case 'lift': hoverCSS = `.card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(0,0,0,0.1); border-color: rgba(0,0,0,0.08); }`; break;
-    case 'scale': hoverCSS = `.card:hover { transform: scale(1.02); }`; break;
-    case 'glow': hoverCSS = `.card:hover { box-shadow: 0 0 20px var(--card-accent)33; }`; break;
-    case 'border': hoverCSS = `.card:hover { border-color: var(--card-accent); border-width: 2px; }`; break;
+    case 'lift': hoverCSS = `.v-item:hover { transform: translateY(-6px); box-shadow: 0 ${shadowDistance + 10}px ${shadowBlur + 10}px rgba(0,0,0,${shadowAlpha + 0.1}); }`; break;
+    case 'scale': hoverCSS = `.v-item:hover { transform: scale(1.02); z-index: 10; }`; break;
+    case 'glow': hoverCSS = `.v-item:hover { box-shadow: 0 0 30px ${primaryColor.includes('gradient') ? '#cc092f' : global.primaryColor}55; }`; break;
+    case 'border': hoverCSS = `.v-item:hover { border-color: ${primaryColor.includes('gradient') ? '#cc092f' : global.primaryColor}; }`; break;
   }
 
+  // CSS Condicional para Modo Compacto
+  const cssCompacto = isCompact ? `
+      /* MODO COMPACTO */
+      .v-item { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; padding-right: 12px; }
+      
+      /* Traz a barra lateral de volta */
+      .v-item::before { top: 15%; bottom: 15%; width: 4px; display: block; }
+      
+      .compact-left { display: flex; flex-direction: column; justify-content: center; z-index: 2; flex: 1; min-width: 0; margin-left: 8px; }
+      .compact-right { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px; z-index: 2; }
+      
+      /* Estilo do Header com Ícone */
+      .compact-header { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+      .compact-icon { width: 14px; height: 14px; opacity: 0.7; }
+      
+      .title { font-size: ${Math.max(9, fontSizeTitle - 1)}px; margin-bottom: 0; }
+      .value { font-size: ${Math.max(14, fontSizeValue - 6)}px; line-height: 1; }
+      
+      .footer { margin-top: 0; padding-top: 0; align-items: flex-end; }
+      .progress-bar-bottom { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--accent); transition: width 1s ease; }
+    ` : `
+      /* MODO PADRÃO (MANTENHA O QUE ESTAVA AQUI) */
+      .v-item { flex-direction: column; }
+      .content-wrapper { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 0; }
+      .footer { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+    `;
+
   let dax = `Visual_Gerado = 
-/*
-================================================================================
-   MANUAL DE CONFIGURAÇÃO - CARDS HTML BRADESCO PRO V3.5 (RESPONSIVE PRO)
-================================================================================
-   1. Crie uma NOVA MEDIDA e cole este código completo.
-   2. No bloco 'DADOS DOS CARDS', procure pelos marcadores '<--- SUBSTITUA'.
-   3. Substitua os [Placeholders] pelas suas medidas reais do modelo.
-   4. Configure o visual 'HTML Content':
-      - Values: arraste esta medida.
-      - Desabilite: 'Padding' e 'Background' nas opções do visual nativo.
-================================================================================
-*/
+/* DAX Builder - Bradesco Smart Layout */
 
--- [ SEÇÃO 1: DESIGN E CORES GLOBAIS ]
-VAR _CorPrimariaGlobal = "${primaryColor}"
-VAR _CorPos            = "${positiveColor}"
-VAR _CorNeg            = "${negativeColor}"
-VAR _CorNeu            = "${neutralColor}"
+VAR _CorPrimaria = "${primaryColor}"
+VAR _CorPos      = "${positiveColor}"
+VAR _CorNeg      = "${negativeColor}"
+VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
 
--- [ SEÇÃO 2: DADOS DOS CARDS ]
 `;
 
-  cards.forEach((card, cIdx) => {
-    const ci = cIdx + 1;
-    const formatStr = getFormatString(card.formatType, card.decimalPlaces);
-    
-    dax += `-- --- CARD ${ci}: ${card.title || "Métrica"} ---\n`;
-    dax += `VAR _C${ci}_Tit = "${card.title}"\n`;
-    dax += `VAR _C${ci}_Val_Raw = ${card.measurePlaceholder || "0"} -- <--- SUBSTITUA PELO VALOR PRINCIPAL\n`;
-    
-    // Cores Individuais
-    dax += `VAR _C${ci}_Accent = ${card.accentColor ? `"${card.accentColor}"` : "_CorPrimariaGlobal"}\n`;
-    dax += `VAR _C${ci}_Bg = ${card.cardBackgroundColor ? `"${card.cardBackgroundColor}"` : `"${cardBackgroundColor}"`}\n`;
-    dax += `VAR _C${ci}_CTit = ${card.textColorTitle ? `"${card.textColorTitle}"` : `"${textColorTitle}"`}\n`;
-    dax += `VAR _C${ci}_CVal = ${card.textColorValue ? `"${card.textColorValue}"` : `"${textColorValue}"`}\n`;
-    dax += `VAR _C${ci}_CSub = ${card.textColorSub ? `"${card.textColorSub}"` : `"${textColorSub}"`}\n`;
-
-    if (card.formatType !== 'none') {
-        if (card.formatType === 'currency') {
-            dax += `VAR _C${ci}_Val = "R$ " & FORMAT(_C${ci}_Val_Raw, "#,##0${card.decimalPlaces > 0 ? "." + "0".repeat(card.decimalPlaces) : ""}")\n`;
-        } else if (card.formatType === 'currency_short') {
-            dax += `VAR _C${ci}_Val = "R$ " & SWITCH(TRUE(), 
-                ABS(_C${ci}_Val_Raw) >= 1000000, FORMAT(_C${ci}_Val_Raw/1000000, "#,##0${card.decimalPlaces > 0 ? "." + "0".repeat(card.decimalPlaces) : ""}M"),
-                ABS(_C${ci}_Val_Raw) >= 1000, FORMAT(_C${ci}_Val_Raw/1000, "#,##0${card.decimalPlaces > 0 ? "." + "0".repeat(card.decimalPlaces) : ""}K"),
-                FORMAT(_C${ci}_Val_Raw, "#,##0${card.decimalPlaces > 0 ? "." + "0".repeat(card.decimalPlaces) : ""}")
-            )\n`;
-        } else {
-            dax += `VAR _C${ci}_Val = FORMAT(_C${ci}_Val_Raw, "${formatStr}")\n`;
-        }
-    } else {
-        dax += `VAR _C${ci}_Val = _C${ci}_Val_Raw\n`;
-    }
-    
-    if (card.type !== 'simple') {
-      dax += `VAR _C${ci}_Target = ${card.targetMeasurePlaceholder || "1"} -- <--- SUBSTITUA PELO ALVO/META\n`;
-      dax += `VAR _C${ci}_Pct = DIVIDE(_C${ci}_Val_Raw, _C${ci}_Target, 0)\n`;
-    }
-
-    card.comparisons.forEach((comp, cpIdx) => {
-      const cpi = cpIdx + 1;
-      dax += `VAR _C${ci}_Comp${cpi}_Lab = "${comp.label}"\n`;
-      dax += `VAR _C${ci}_Comp${cpi}_Val_Raw = ${comp.measurePlaceholder || "0"} -- <--- SUBSTITUA PELA MEDIDA DO COMPARATIVO\n`;
-      dax += `VAR _C${ci}_Comp${cpi}_Val = IF(ISBLANK(_C${ci}_Comp${cpi}_Val_Raw), "0%", FORMAT(_C${ci}_Comp${cpi}_Val_Raw, "+0.0%;-0.0%;0%"))\n`;
-      if (comp.trend !== 'none') {
-        dax += `VAR _C${ci}_Comp${cpi}_Log = ${comp.logic} -- <--- LÓGICA DE TENDÊNCIA (V/F)\n`;
+  // --- PREPARAÇÃO DAS VARIÁVEIS DAX ---
+  if (tab === 'cards') {
+    (items || []).forEach((card, cIdx) => {
+      const ci = cIdx + 1;
+      const formatStr = getFormatString(card.formatType, card.decimalPlaces);
+      
+      dax += `-- CARD ${ci}: ${card.title}\n`;
+      dax += `VAR _C${ci}_Tit = "${card.title}"\n`;
+      dax += `VAR _C${ci}_Val_Raw = ${card.measurePlaceholder || "0"}\n`;
+      
+      if (card.formatType === 'none') {
+          dax += `VAR _C${ci}_Val = "${card.prefix || ''}" & _C${ci}_Val_Raw & "${card.suffix || ''}"\n`;
+      } else {
+          dax += `VAR _C${ci}_Val = "${card.prefix || ''}" & FORMAT(_C${ci}_Val_Raw, "${formatStr}") & "${card.suffix || ''}"\n`;
       }
-    });
-    dax += `\n`;
-  });
+      
+      if (card.type === 'progress') {
+         dax += `VAR _C${ci}_Prog_Val = ${card.progressMeasure || card.measurePlaceholder || "0"}\n`;
+         dax += `VAR _C${ci}_Prog_Tgt = ${card.progressTarget || "100"}\n`;
+         dax += `VAR _C${ci}_Prog_Pct = MIN(1, MAX(0, DIVIDE(_C${ci}_Prog_Val, _C${ci}_Prog_Tgt, 0)))\n`;
+      }
 
+      (card.comparisons || []).forEach((comp, cpIdx) => {
+        const cpi = cpIdx + 1;
+        dax += `VAR _C${ci}_Comp${cpi}_Lab = "${comp.label}"\n`;
+        dax += `VAR _C${ci}_Comp${cpi}_Val_Raw = ${comp.measurePlaceholder || "0"}\n`;
+        dax += `VAR _C${ci}_Comp${cpi}_Val = FORMAT(_C${ci}_Comp${cpi}_Val_Raw, "+0.0%;-0.0%;0%")\n`;
+        dax += `VAR _C${ci}_Comp${cpi}_Log = ${comp.logic}\n`;
+      });
+      dax += `\n`;
+    });
+  } else {
+     // Lógica Donut (mantida simples)
+     (items || []).forEach((donut, dIdx) => {
+        const di = dIdx + 1;
+        dax += `VAR _D${di}_Tit = "${donut.title}"\n`;
+        if (donut.mode === 'completeness') {
+            dax += `VAR _D${di}_Val_Raw = ${donut.completenessMeasure || "0"}\n`;
+            dax += `VAR _D${di}_Target = ${donut.completenessTarget || "1"}\n`;
+            dax += `VAR _D${di}_Pct = MIN(1, MAX(0, DIVIDE(_D${di}_Val_Raw, _D${di}_Target, 0)))\n`;
+        } else {
+            (donut.slices || []).forEach((slice, sIdx) => {
+               dax += `VAR _D${di}_S${sIdx+1}_Val = ${slice.measurePlaceholder || "0"}\n`;
+            });
+            dax += `VAR _D${di}_Total = ` + (donut.slices || []).map((_, i) => `_D${di}_S${i+1}_Val`).join(" + ") + `\n`;
+        }
+        if (donut.showCenterText) {
+            dax += `VAR _D${di}_CenterVal = ${donut.centerTextValueMeasure || '""'}\n`;
+        }
+     });
+  }
+
+  // --- GERAÇÃO HTML & CSS ---
   dax += `
--- [ SEÇÃO 3: ESTRUTURA VISUAL ]
 VAR _CSS = "
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
-    * { box-sizing: border-box; }
-    html, body { 
-        height: 100vh; 
-        margin: 0; 
-        padding: 0; 
-        overflow: hidden; 
-        background: transparent !important; 
-        font-family: 'Bradesco Sans', 'Inter', sans-serif;
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body { margin: 0; padding: 0; background: transparent; font-family: 'Inter', -apple-system, sans-serif; overflow: hidden; }
+    
     .container { 
         display: grid; 
         grid-template-columns: repeat(${columns}, 1fr); 
         gap: ${gap}px; 
         padding: ${padding}px;
-        width: 100%; 
-        height: 100vh;
-        box-sizing: border-box;
+        width: 100vw; height: 100vh; box-sizing: border-box;
     }
-    .card { 
+    
+    .v-item { 
+        background: ${cardBackgroundColor}; 
         border-radius: ${borderRadius}px; 
         padding: ${padding}px; 
-        border: 1px solid rgba(0,0,0,0.05); 
-        display: flex; flex-direction: column; 
-        transition: all 0.3s ease; position: relative; overflow: hidden;
+        border: 1px solid rgba(0,0,0,0.06);
+        display: flex; 
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+        position: relative; overflow: hidden;
         min-height: ${cardMinHeight}px;
-        container-type: size;
+        box-shadow: ${shadowCSS};
     }
-    .card::before { 
-        content: ''; position: absolute; left: 0; top: 15px; bottom: 15px; width: 4px; 
-        background: var(--card-accent); border-radius: 0 4px 4px 0; 
+    .v-item::before { 
+        content: ''; position: absolute; left: 0; top: 15%; bottom: 15%; width: 5px; 
+        background: var(--accent); border-radius: 0 100px 100px 0; 
+        display: var(--accent-display, block);
     }
     ${hoverCSS} ${animationCSS}
     
-    .card-content { display: flex; flex-direction: column; height: 100%; width: 100%; }
-    .header-body { flex: 1; display: flex; flex-direction: column; }
+    .title { text-transform: uppercase; font-size: ${fontSizeTitle}px; font-weight: ${fontWeightTitle}; color: ${textColorTitle}; letter-spacing: 0.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .value { font-size: ${fontSizeValue}px; font-weight: ${fontWeightValue}; color: ${textColorValue}; white-space: nowrap; }
     
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .title { text-transform: uppercase; letter-spacing: 1px; }
-    .value { margin-bottom: 4px; }
+    .row { display: flex; justify-content: ${isCompact ? 'flex-end' : 'space-between'}; align-items: center; font-weight: 600; color: ${textColorSub}; gap: 6px; }
+    .row-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; ${isCompact ? 'display: none;' : ''} }
     
-    .footer { 
-        margin-top: auto; 
-        display: flex; 
-        flex-direction: column; 
-        gap: 5px; 
-        padding-top: 10px;
-        border-top: 1px solid rgba(0,0,0,0.03);
+    .badge { 
+      font-size: ${fontSizeBadge || 10}px; padding: 3px 8px; border-radius: 6px; font-weight: 800; display: flex; align-items: center; gap: 4px; letter-spacing: -0.02em;
     }
+    .badge svg { width: 12px; height: 12px; stroke-width: 2.5; }
     
-    @container (max-height: 180px) {
-        .card-content { flex-direction: row; align-items: center; gap: 20px; }
-        .header-body { border-right: 1px solid rgba(0,0,0,0.05); padding-right: 15px; }
-        .footer { margin-top: 0; border-top: none; padding-top: 0; min-width: 140px; justify-content: center; }
-        .track { margin: 5px 0; }
-    }
+    /* ICON */
+    .icon-box { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    
+    /* PROGRESS */
+    .progress-track { width: 100%; background: #f3f4f6; border-radius: 100px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--accent); border-radius: 100px; transition: width 1s ease; }
 
-    .row { display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
-    .badge { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; display: flex; align-items: center; gap: 3px; background: rgba(0,0,0,0.03); }
-    .track { width: 100%; height: 6px; background: rgba(0,0,0,0.04); border-radius: 10px; margin: 8px 0; overflow: hidden; }
-    .fill { height: 100%; background: var(--card-accent); animation: loadBar 1s ease-out; }
-    @keyframes loadBar { from { width: 0; } }
+    /* CHARTS */
+    .chart-box { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; padding: 5px; }
+    .center-text { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+
+    /* SMART LAYOUT (Horizontal/Vertical) */
+    ${cssCompacto}
 </style>"
 
 VAR _HTML = "<div class='container'>" & 
 `;
 
-  cards.forEach((card, cIdx) => {
-    const ci = cIdx + 1;
-    const delay = (cIdx * 0.1).toFixed(1);
-
-    const fTitle = card.fontSizeTitle || fontSizeTitle;
-    const fValue = card.fontSizeValue || fontSizeValue;
-    const fSub   = card.fontSizeSub   || fontSizeSub;
-
-    let comparisonsHtml = "";
-    card.comparisons.forEach((comp, cpIdx) => {
-      const cpi = cpIdx + 1;
-      const posCol = comp.invertColor ? '_CorNeg' : '_CorPos';
-      const negCol = comp.invertColor ? '_CorPos' : '_CorNeg';
-
-      const trendPart = comp.trend === 'none' ? '""' : 
-        `"<span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${posCol}, ${negCol}) & "'>" & IF(_C${ci}_Comp${cpi}_Log, "▲", "▼") & " " & _C${ci}_Comp${cpi}_Val & "</span>"`;
+  if (tab === 'cards') {
+    (items || []).forEach((card, idx) => {
+      const ci = idx + 1;
+      const delay = (idx * 0.1).toFixed(1);
+      const iconPath = iconPaths[card.icon || 'chart'];
+      const iconColor = card.iconColor || card.accentColor || primaryColor;
       
-      comparisonsHtml += `
-            "<div class='row' style='font-size: ${fSub}px; color: " & _C${ci}_CSub & ";'>
-                <span>" & _C${ci}_Comp${cpi}_Lab & "</span>
-                " & ${trendPart} & "
+      // Ícone Padrão
+      const iconHTML = `
+        <div class='icon-box' style='width:${card.iconSize || 24}px; height:${card.iconSize || 24}px; padding:${card.iconPadding || 8}px; background:${card.iconBackgroundColor || 'transparent'}; border-radius:${card.iconRounded ? '50%' : '8px'}; color:${iconColor}'>
+            <svg viewBox='0 0 24 24' width='100%' height='100%' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='${iconPath}'/></svg>
+        </div>`;
+
+      // Gerador de Comparativos
+      let compsHTML = "";
+      (card.comparisons || []).forEach((c, cpIdx) => {
+        const cpi = cpIdx + 1;
+        const trendUp = iconPaths['trendingUp'];
+        const trendDown = iconPaths['trendingDown'];
+        const trueColor = c.invertColor ? "_CorNeg" : "_CorPos";
+        const falseColor = c.invertColor ? "_CorPos" : "_CorNeg"; 
+        const iconSvg = `<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round'><path d='" & IF(_C${ci}_Comp${cpi}_Log, "${trendUp}", "${trendDown}") & "'/></svg>`;
+
+        compsHTML += `
+            "<div class='row' style='font-size: ${c.labelFontSize || fontSizeSub}px;'>
+                <span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span>
+                <span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>
+                    ${iconSvg} " & _C${ci}_Comp${cpi}_Val & "
+                </span>
             </div>" & `;
+      });
+
+      // --- BIFURCAÇÃO DE LAYOUT (SMART COMPACT) ---
+      if (isCompact) {
+          // Layout Horizontal Compacto
+          let visualHtml = '""';
+          if (card.type === 'progress') {
+             visualHtml = `"<div class='progress-bar-bottom' style='width: \" & (_C${ci}_Prog_Pct * 100) & \"%;'></div>"`;
+          }
+
+          dax += `
+          "<div class='v-item animate' style='animation-delay: ${delay}s; --accent: " & IF(ISBLANK("${card.accentColor}"), _CorPrimaria, "${card.accentColor}") & "; background: " & IF(ISBLANK("${card.cardBackgroundColor}"), "${cardBackgroundColor}", "${card.cardBackgroundColor}") & "'>
+              <div class='compact-left'>
+                  <div class='compact-header'>
+                     <div class='compact-icon' style='color:${iconColor}'><svg viewBox='0 0 24 24' width='100%' height='100%' fill='none' stroke='currentColor' stroke-width='2'><path d='${iconPath}'/></svg></div>
+                     <div class='title'>\" & _C${ci}_Tit & \"</div>
+                  </div>
+                  <div class='value'>\" & _C${ci}_Val & \"</div>
+              </div>
+              <div class='compact-right'>
+                  <div class='footer'>\" & ${compsHTML} \"\" & \"</div>
+              </div>
+              ${visualHtml}
+          </div>" & `;
+      
+      } else {
+          // Layout Vertical Padrão (Seu código original de estrutura)
+          const align = card.textAlign || textAlign;
+          const flexAlign = getFlexAlign(align);
+          const iconPos = card.iconPosition || 'top';
+          let headerHTML = "";
+          
+          if (iconPos === 'top') {
+              headerHTML = `<div class='header' style='justify-content: ${flexAlign}'>${iconHTML} <div class='title'>\" & _C${ci}_Tit & \"</div></div>`;
+          } else if (iconPos === 'left') {
+              headerHTML = `<div class='header' style='justify-content: ${flexAlign}'>${iconHTML} <div class='title'>\" & _C${ci}_Tit & \"</div></div>`;
+          } else { 
+              headerHTML = `<div class='header' style='justify-content: space-between'><div class='title'>\" & _C${ci}_Tit & \"</div> ${iconHTML}</div>`;
+          }
+
+          let progressHTML = "";
+          if (card.type === 'progress') {
+             progressHTML = `
+                <div class='progress-track' style='height: ${card.progressHeight || 8}px; background: ${card.progressBackgroundColor || '#f3f4f6'}; margin-top: auto;'>
+                   <div class='progress-fill' style='width: \" & (_C${ci}_Prog_Pct * 100) & \"%;'></div>
+                </div>`;
+          }
+
+          const contentHTML = `
+            <div class='content-box'>
+                <div class='value' style='text-align: ${align}'>\" & _C${ci}_Val & \"</div>
+                ${progressHTML}
+            </div>
+          `;
+
+          dax += `
+            "<div class='v-item animate' style='animation-delay: ${delay}s; --accent: " & IF(ISBLANK("${card.accentColor}"), _CorPrimaria, "${card.accentColor}") & "; background: " & IF(ISBLANK("${card.cardBackgroundColor}"), "${cardBackgroundColor}", "${card.cardBackgroundColor}") & "'>
+                <div class='content-wrapper'>
+                    ${headerHTML}
+                    ${contentHTML}
+                </div>
+                <div class='footer'>
+                    \" & ${compsHTML} \"\" & \"
+                </div>
+            </div>" & `;
+      }
     });
+  } else {
+     // Donut Logic
+     (items || []).forEach((donut, idx) => {
+      const di = idx + 1;
+      const flexAlign = getFlexAlign(donut.textAlign || textAlign);
+      const isSemi = donut.geometry === 'semicircle';
+      const radius = 40;
+      const circ = 2 * Math.PI * radius;
+      const sw = donut.ringThickness || 12;
+      const lcap = donut.roundedCorners ? "round" : "butt";
+      const rotation = isSemi ? "rotate(-180 50 50)" : "rotate(-90 50 50)";
+      
+      let chartContent = "";
+      if (donut.mode === 'completeness') {
+        const conversion = isSemi ? `(${circ}/2)` : `${circ}`;
+        chartContent = `
+          "<circle cx='50' cy='50' r='${radius}' fill='transparent' stroke='rgba(0,0,0,0.05)' stroke-width='${sw}' stroke-dasharray='${isSemi ? circ/2 : 0} ${circ}' transform='${rotation}' />" &
+          "<circle cx='50' cy='50' r='${radius}' fill='transparent' stroke='" & IF(ISBLANK("${donut.accentColor}"), _CorPrimaria, "${donut.accentColor}") & "' stroke-width='${sw}' 
+            stroke-dasharray='" & (_D${di}_Pct * ${conversion}) & " ${circ}' 
+            stroke-linecap='${lcap}' transform='${rotation}' />"`;
+      } else {
+         let currentOffset = "0";
+        (donut.slices || []).forEach((slice, sIdx) => {
+            const si = sIdx + 1;
+            const conversion = isSemi ? `(${circ}/2)` : `${circ}`;
+            const pct = `DIVIDE(_D${di}_S${si}_Val, _D${di}_Total, 0)`;
+            chartContent += ` & "<circle cx='50' cy='50' r='${radius}' fill='transparent' stroke='${slice.color}' stroke-width='${sw}' 
+                stroke-dasharray='" & (${pct} * ${conversion}) & " ${circ}' 
+                stroke-dashoffset='" & (-(${currentOffset}) * ${conversion}) & "'
+                stroke-linecap='${lcap}' transform='${rotation}' />"`;
+            currentOffset += ` + ${pct}`;
+        });
+      }
+      const centerTop = isSemi ? "65%" : "50%";
+      const center = donut.showCenterText ? `"<div class='center-text' style='top: ${centerTop}; left: 50%; transform: translate(-50%, -50%);'><div style='font-size: 9px; font-weight: 800; color: ${textColorSub}; text-transform: uppercase; letter-spacing: 0.05em;'>${donut.centerTextLabel}</div><div style='font-size: 16px; font-weight: 800; color: ${textColorValue}; margin-top: 2px;'>" & _D${di}_CenterVal & "</div></div>"` : '""';
+      const svgHeight = isSemi ? "60%" : "100%";
+      const svgMargin = isSemi ? "margin-top: 10px;" : "";
 
-    let visualHtml = '""';
-    if (card.type === 'progress') {
-      visualHtml = `"<div class='track'><div class='fill' style='width: " & MIN(100, MAX(0, _C${ci}_Pct * 100)) & "%'></div></div>"`;
-    }
-
-    const iconSvg = `"<div style='opacity:0.2;color: " & _C${ci}_CSub & ";'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2'><path d='${iconPaths[card.icon]}'/></svg></div>"`;
-
-    dax += `
-    "<div class='card animate' style='animation-delay: ${delay}s; background: " & _C${ci}_Bg & "; --card-accent: " & _C${ci}_Accent & ";'>
-        <div class='card-content'>
-            <div class='header-body'>
-                <div class='header'>
-                    <div class='title' style='font-size: ${fTitle}px; font-weight: ${fontWeightTitle}; color: " & _C${ci}_CTit & ";'>" & _C${ci}_Tit & "</div>
-                    " & ${iconSvg} & "
-                </div>
-                <div class='body'>
-                    <div class='value' style='font-size: ${fValue}px; font-weight: ${fontWeightValue}; color: " & _C${ci}_CVal & ";'>" & _C${ci}_Val & "</div>
-                    " & ${visualHtml} & "
-                </div>
-            </div>
-            <div class='footer'>
-                " & ${comparisonsHtml} "" & "
-            </div>
+      dax += `
+    "<div class='v-item' style='--accent: " & IF(ISBLANK("${donut.accentColor}"), _CorPrimaria, "${donut.accentColor}") & "; background: " & IF(ISBLANK("${donut.cardBackgroundColor}"), "${cardBackgroundColor}", "${donut.cardBackgroundColor}") & "'>
+        <div class='header' style='justify-content: ${flexAlign}'><div class='title'>" & _D${di}_Tit & "</div></div>
+        <div class='chart-box' style='align-items: ${isSemi ? 'flex-end' : 'center'};'>
+            <svg viewBox='0 0 100 100' style='width: 100%; height: ${svgHeight}; ${svgMargin} overflow: visible;'>" & ${chartContent} & "</svg>" & ${center} & "
         </div>
     </div>" & `;
-  });
+    });
+  }
 
   dax += `"" & "</div>"
 RETURN _CSS & _HTML`;
