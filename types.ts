@@ -1,3 +1,4 @@
+
 export type CardType = 'simple' | 'progress' | 'ring';
 export type TrendDirection = 'up' | 'down' | 'neutral' | 'none';
 export type AnimationType = 'none' | 'fadeInUp' | 'popIn' | 'slideRight';
@@ -12,6 +13,7 @@ export interface ComparisonConfig {
   value: string;
   trend: TrendDirection;
   logic: string; // DAX Expression
+  measurePlaceholder: string; // New: DAX Measure name for the value
   invertColor?: boolean; // If true, positive logic = negative color
 }
 

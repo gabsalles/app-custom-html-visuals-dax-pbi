@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { CardConfig, GlobalConfig, CardType, HoverEffect, ComparisonConfig, TrendDirection, FormatType } from '../types';
-import { Trash2, Plus, Type, Palette, Layout, ChevronDown, ChevronRight, MousePointer2, PlusCircle, X, Binary, RefreshCw, Sparkles } from 'lucide-react';
+import { Trash2, Plus, Type, Palette, Layout, ChevronDown, ChevronRight, MousePointer2, PlusCircle, X, Binary, RefreshCw, Sparkles, ALargeSmall } from 'lucide-react';
 import { iconPaths } from '../utils/icons';
 
 interface EditorProps {
@@ -42,6 +43,7 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
       id: Math.random().toString(36).substr(2, 9),
       label: 'Novo Comp',
       value: '0%',
+      measurePlaceholder: '[Nova Medida]',
       trend: 'up',
       logic: 'TRUE()',
       invertColor: false
@@ -91,7 +93,7 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
         <div className="bg-white rounded-xl space-y-4">
           {activeTab === 'layout' && (
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Colunas"><input type="number" value={globalConfig.columns} onChange={(e) => setGlobalConfig({...globalConfig, columns: +e.target.value})} className="input-field"/></Field>
+              <Field label="Colunas (Desktop)"><input type="number" value={globalConfig.columns} onChange={(e) => setGlobalConfig({...globalConfig, columns: +e.target.value})} className="input-field"/></Field>
               <Field label="Espaço (px)"><input type="number" value={globalConfig.gap} onChange={(e) => setGlobalConfig({...globalConfig, gap: +e.target.value})} className="input-field"/></Field>
               <Field label="Altura Min"><input type="number" value={globalConfig.cardMinHeight} onChange={(e) => setGlobalConfig({...globalConfig, cardMinHeight: +e.target.value})} className="input-field"/></Field>
               <Field label="Padding"><input type="number" value={globalConfig.padding} onChange={(e) => setGlobalConfig({...globalConfig, padding: +e.target.value})} className="input-field"/></Field>
@@ -103,11 +105,11 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Tamanho Titulo"><input type="number" value={globalConfig.fontSizeTitle} onChange={(e) => setGlobalConfig({...globalConfig, fontSizeTitle: +e.target.value})} className="input-field"/></Field>
-                <Field label="Peso Titulo"><select value={globalConfig.fontWeightTitle} onChange={(e) => setGlobalConfig({...globalConfig, fontWeightTitle: +e.target.value})} className="input-field"><option value={400}>Regular</option><option value={700}>Bold</option></select></Field>
+                <Field label="Peso Titulo"><select value={globalConfig.fontWeightTitle} onChange={(e) => setGlobalConfig({...globalConfig, fontWeightTitle: +e.target.value})} className="input-field"><option value={400}>Regular</option><option value={700}>Bold</option><option value={800}>Extra Bold</option></select></Field>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Tamanho Valor"><input type="number" value={globalConfig.fontSizeValue} onChange={(e) => setGlobalConfig({...globalConfig, fontSizeValue: +e.target.value})} className="input-field"/></Field>
-                <Field label="Peso Valor"><select value={globalConfig.fontWeightValue} onChange={(e) => setGlobalConfig({...globalConfig, fontWeightValue: +e.target.value})} className="input-field"><option value={400}>Regular</option><option value={800}>Extra Bold</option></select></Field>
+                <Field label="Peso Valor"><select value={globalConfig.fontWeightValue} onChange={(e) => setGlobalConfig({...globalConfig, fontWeightValue: +e.target.value})} className="input-field"><option value={400}>Regular</option><option value={700}>Bold</option><option value={800}>Extra Bold</option></select></Field>
               </div>
             </div>
           )}
@@ -124,10 +126,6 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                 <Field label="Cor Título"><ColorPickerSimple value={globalConfig.textColorTitle} onChange={(v) => setGlobalConfig({...globalConfig, textColorTitle: v})} /></Field>
                 <Field label="Cor Valor"><ColorPickerSimple value={globalConfig.textColorValue} onChange={(v) => setGlobalConfig({...globalConfig, textColorValue: v})} /></Field>
               </div>
-              <div className="grid grid-cols-2 gap-3 border-t pt-3">
-                <Field label="Cor Positivo"><ColorPickerSimple value={globalConfig.positiveColor} onChange={(v) => setGlobalConfig({...globalConfig, positiveColor: v})} /></Field>
-                <Field label="Cor Negativo"><ColorPickerSimple value={globalConfig.negativeColor} onChange={(v) => setGlobalConfig({...globalConfig, negativeColor: v})} /></Field>
-              </div>
             </div>
           )}
 
@@ -140,9 +138,6 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                   ))}
                 </div>
               </Field>
-              <Field label="Animação Entrada">
-                <select value={globalConfig.animation} onChange={(e) => setGlobalConfig({...globalConfig, animation: e.target.value as any})} className="input-field mt-1"><option value="none">Nenhuma</option><option value="fadeInUp">Fade Up</option><option value="popIn">Pop In</option><option value="slideRight">Slide Right</option></select>
-              </Field>
             </div>
           )}
         </div>
@@ -151,7 +146,7 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
           <div className="flex justify-between items-center"><h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Cards de Dados</h3><button onClick={() => setCards([...cards, { id: Math.random().toString(36).substr(2, 9), title: 'Métrica', measurePlaceholder: '[Valor]', formatType: 'integer', decimalPlaces: 0, type: 'simple', targetMeasurePlaceholder: '1', value: '0', progressValue: 50, icon: 'chart', comparisons: [], isOpen: true }])} className="p-1.5 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 shadow-lg shadow-indigo-100"><Plus size={16}/></button></div>
 
           {cards.map((card) => (
-            <div key={card.id} className="bg-white border rounded-xl overflow-hidden shadow-sm transition-all hover:border-indigo-200">
+            <div key={card.id} id={`editor-card-${card.id}`} className={`bg-white border rounded-xl overflow-hidden shadow-sm transition-all ${card.isOpen ? 'ring-2 ring-indigo-100 border-indigo-200' : 'hover:border-indigo-200'}`}>
               <div className="flex justify-between items-center p-3 cursor-pointer bg-gray-50/50" onClick={() => setCards(cards.map(c => c.id === card.id ? {...c, isOpen: !c.isOpen} : {...c, isOpen: false}))}>
                 <div className="flex items-center gap-2">{card.isOpen ? <ChevronDown size={14} className="text-indigo-500"/> : <ChevronRight size={14} className="text-gray-400"/>}<span className="text-[11px] font-bold text-gray-700 uppercase tracking-tight">{card.title || 'Novo Card'}</span></div>
                 <button onClick={(e) => { e.stopPropagation(); setCards(cards.filter(c => c.id !== card.id)); }} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={14}/></button>
@@ -159,78 +154,42 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
 
               {card.isOpen && (
                 <div className="p-4 border-t space-y-6 animate-fadeIn">
+                  {/* FONT OVERRIDES */}
+                  <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 space-y-3">
+                    <div className="flex items-center gap-2"><ALargeSmall size={14} className="text-indigo-600"/><span className="text-[10px] font-bold text-indigo-700 uppercase">Fontes Individuais</span></div>
+                    <div className="grid grid-cols-3 gap-2">
+                       <Field label="Título"><input type="number" placeholder={`${globalConfig.fontSizeTitle}`} value={card.fontSizeTitle || ''} onChange={(e) => updateCard(card.id, 'fontSizeTitle', e.target.value ? +e.target.value : undefined)} className="input-field bg-white"/></Field>
+                       <Field label="Valor"><input type="number" placeholder={`${globalConfig.fontSizeValue}`} value={card.fontSizeValue || ''} onChange={(e) => updateCard(card.id, 'fontSizeValue', e.target.value ? +e.target.value : undefined)} className="input-field bg-white"/></Field>
+                       <Field label="Sub"><input type="number" placeholder={`${globalConfig.fontSizeSub}`} value={card.fontSizeSub || ''} onChange={(e) => updateCard(card.id, 'fontSizeSub', e.target.value ? +e.target.value : undefined)} className="input-field bg-white"/></Field>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="Título"><input type="text" value={card.title} onChange={(e) => updateCard(card.id, 'title', e.target.value)} className="input-field"/></Field>
                     <Field label="Visual"><select value={card.type} onChange={(e) => updateCard(card.id, 'type', e.target.value)} className="input-field"><option value="simple">Simples</option><option value="progress">Barra</option><option value="ring">Anel</option></select></Field>
                   </div>
                   
                   <div className="p-4 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 space-y-4">
-                     <div className="flex items-center gap-2 mb-2">
-                        <Binary size={14} className="text-indigo-600"/>
-                        <span className="text-[10px] font-bold text-gray-600 uppercase">Inteligência de Dados</span>
-                     </div>
-                     <Field label="Medida DAX">
-                        <input type="text" value={card.measurePlaceholder} onChange={(e) => updateCard(card.id, 'measurePlaceholder', e.target.value)} className="input-field font-mono text-[10px] bg-white border-indigo-200 text-indigo-700" placeholder="Ex: [Vendas]"/>
-                     </Field>
+                     <div className="flex items-center gap-2 mb-2"><Binary size={14} className="text-indigo-600"/><span className="text-[10px] font-bold text-gray-600 uppercase">Inteligência de Dados</span></div>
+                     <Field label="Medida DAX Principal"><input type="text" value={card.measurePlaceholder} onChange={(e) => updateCard(card.id, 'measurePlaceholder', e.target.value)} className="input-field font-mono text-[10px] bg-white border-indigo-200 text-indigo-700" placeholder="Ex: [Vendas]"/></Field>
                      <div className="grid grid-cols-2 gap-3">
-                        <Field label="Formatação">
-                            <select value={card.formatType} onChange={(e) => updateCard(card.id, 'formatType', e.target.value as FormatType)} className="input-field bg-white text-[11px] font-bold">
-                                <option value="none">Nenhuma</option>
-                                <option value="integer">Inteiro (1.000)</option>
-                                <option value="decimal">Decimal (1.000,00)</option>
-                                <option value="currency">Moeda (R$)</option>
-                                <option value="currency_short">Moeda Compacta (R$ K/M)</option>
-                                <option value="percent">Porcentagem (%)</option>
-                                <option value="short">Compacto (K/M)</option>
-                            </select>
-                        </Field>
+                        <Field label="Formatação"><select value={card.formatType} onChange={(e) => updateCard(card.id, 'formatType', e.target.value as FormatType)} className="input-field bg-white text-[11px] font-bold"><option value="none">Nenhuma</option><option value="integer">Inteiro (1.000)</option><option value="decimal">Decimal (1.000,00)</option><option value="currency">Moeda (R$)</option><option value="currency_short">Moeda Compacta (R$ K/M)</option><option value="percent">Porcentagem (%)</option><option value="short">Compacto (K/M)</option></select></Field>
                         <Field label="Decimais"><input type="number" min="0" max="4" value={card.decimalPlaces} onChange={(e) => updateCard(card.id, 'decimalPlaces', +e.target.value)} className="input-field bg-white"/></Field>
-                     </div>
-                     
-                     <div className="border-t border-gray-200 pt-3">
-                        <Field label="Destaque Individual (Cor ou Gradient)">
-                          <ColorPickerWithText value={card.accentColor || ''} onChange={(v) => updateCard(card.id, 'accentColor', v || undefined)} placeholder="Global" />
-                        </Field>
-                     </div>
-
-                     <div className="border-t border-gray-200 pt-3 mt-1">
-                        <Field label="Valor Preview (Editor)"><input type="text" value={card.value} onChange={(e) => updateCard(card.id, 'value', e.target.value)} className="input-field bg-white border-gray-200 text-gray-500 font-bold" placeholder="Ex: R$ 1.5M"/></Field>
                      </div>
                   </div>
 
-                  <Field label="Escolher Ícone">
-                    <div className="grid grid-cols-6 gap-2 mt-2 p-3 bg-white rounded-lg border max-h-48 overflow-y-auto custom-scrollbar shadow-inner">
-                      {Object.keys(iconPaths).map(icon => (
-                        <button key={icon} onClick={() => updateCard(card.id, 'icon', icon)} className={`p-2 rounded-lg transition-all border flex items-center justify-center ${card.icon === icon ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-indigo-300 hover:bg-white'}`} title={icon}>
-                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d={iconPaths[icon]}/></svg>
-                        </button>
-                      ))}
-                    </div>
-                  </Field>
-
                   <div className="space-y-3 pt-4 border-t">
-                    <div className="flex justify-between items-center">
-                       <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Comparativos</label>
-                       <button onClick={() => addComparison(card.id)} className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 text-[10px] font-bold"><PlusCircle size={12}/> ADICIONAR</button>
-                    </div>
+                    <div className="flex justify-between items-center"><label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Comparativos</label><button onClick={() => addComparison(card.id)} className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 text-[10px] font-bold"><PlusCircle size={12}/> ADICIONAR</button></div>
                     {card.comparisons.map((comp) => (
                       <div key={comp.id} className="p-4 bg-gray-50 rounded-xl border border-gray-200 relative group transition-all hover:bg-white hover:shadow-md">
                         <button onClick={() => removeComparison(card.id, comp.id)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:scale-110"><X size={12}/></button>
                         <div className="grid grid-cols-2 gap-3 mb-3">
                            <Field label="Rótulo"><input type="text" value={comp.label} onChange={(e) => updateComparison(card.id, comp.id, 'label', e.target.value)} className="input-field bg-white" placeholder="Ex: vs Mês Ant."/></Field>
-                           <Field label="Preview"><input type="text" value={comp.value} onChange={(e) => updateComparison(card.id, comp.id, 'value', e.target.value)} className="input-field bg-white font-bold"/></Field>
+                           <Field label="Medida DAX"><input type="text" value={comp.measurePlaceholder} onChange={(e) => updateComparison(card.id, comp.id, 'measurePlaceholder', e.target.value)} className="input-field bg-white font-mono text-[10px] text-indigo-600" placeholder="Ex: [Vendas LM]"/></Field>
                         </div>
                         <div className="flex items-center justify-between gap-4 mt-2 bg-white/50 p-2 rounded-lg border">
-                           <Field label="Trend Icon">
-                              <select value={comp.trend} onChange={(e) => updateComparison(card.id, comp.id, 'trend', e.target.value as TrendDirection)} className="input-field bg-white text-[10px] font-bold">
-                                 <option value="up">▲</option>
-                                 <option value="down">▼</option>
-                                 <option value="none">-</option>
-                              </select>
-                           </Field>
-                           <button onClick={() => updateComparison(card.id, comp.id, 'invertColor', !comp.invertColor)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${comp.invertColor ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-gray-50 text-gray-500 hover:border-gray-300'}`}>
-                              <RefreshCw size={10} className={comp.invertColor ? 'animate-spin-slow' : ''} /> {comp.invertColor ? 'COR INVERTIDA' : 'INVERTER'}
-                           </button>
+                           <Field label="Tendência"><select value={comp.trend} onChange={(e) => updateComparison(card.id, comp.id, 'trend', e.target.value as TrendDirection)} className="input-field bg-white text-[10px] font-bold"><option value="up">▲</option><option value="down">▼</option><option value="none">-</option></select></Field>
+                           <button onClick={() => updateComparison(card.id, comp.id, 'invertColor', !comp.invertColor)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${comp.invertColor ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-gray-50 text-gray-500 hover:border-gray-300'}`}><RefreshCw size={10} /> {comp.invertColor ? 'COR INVERTIDA' : 'INVERTER'}</button>
                         </div>
                       </div>
                     ))}
@@ -246,48 +205,17 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
          .input-field:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
          .custom-scrollbar::-webkit-scrollbar { width: 4px; }
          .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-         .animate-spin-slow { animation: spin 3s linear infinite; }
-         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
 };
 
 const Field = ({ label, children }: any) => <div className="space-y-1"><label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block pl-1">{label}</label>{children}</div>;
-
 const ColorPickerSimple = ({ value, onChange }: { value: string, onChange: (v: string) => void }) => (
-  <div className="flex items-center gap-2 p-1 bg-white rounded-lg border border-gray-200">
-    <input 
-      type="color" 
-      value={value.startsWith('#') ? value : '#ffffff'} 
-      onChange={(e) => onChange(e.target.value)} 
-      className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent"
-    />
-    <input 
-      type="text" 
-      value={value} 
-      onChange={(e) => onChange(e.target.value)} 
-      className="flex-1 min-w-0 bg-transparent text-[11px] font-mono outline-none font-bold text-gray-600 uppercase"
-    />
-  </div>
+  <div className="flex items-center gap-2 p-1 bg-white rounded-lg border border-gray-200"><input type="color" value={value.startsWith('#') ? value : '#ffffff'} onChange={(e) => onChange(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent"/><input type="text" value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 min-w-0 bg-transparent text-[11px] font-mono outline-none font-bold text-gray-600 uppercase"/></div>
 );
-
 const ColorPickerWithText = ({ value, onChange, placeholder }: { value: string, onChange: (v: string) => void, placeholder?: string }) => (
-  <div className="flex items-center gap-2 p-1 bg-white rounded-lg border border-gray-200">
-    <input 
-      type="color" 
-      value={value.startsWith('#') ? value : '#ffffff'} 
-      onChange={(e) => onChange(e.target.value)} 
-      className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent flex-shrink-0"
-    />
-    <input 
-      type="text" 
-      value={value} 
-      onChange={(e) => onChange(e.target.value)} 
-      className="flex-1 min-w-0 bg-transparent text-[11px] font-mono outline-none font-bold text-gray-600"
-      placeholder={placeholder || "Hex ou linear-gradient"}
-    />
-  </div>
+  <div className="flex items-center gap-2 p-1 bg-white rounded-lg border border-gray-200"><input type="color" value={value.startsWith('#') ? value : '#ffffff'} onChange={(e) => onChange(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent flex-shrink-0"/><input type="text" value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 min-w-0 bg-transparent text-[11px] font-mono outline-none font-bold text-gray-600" placeholder={placeholder || "Hex ou linear-gradient"}/></div>
 );
 
 export default Editor;

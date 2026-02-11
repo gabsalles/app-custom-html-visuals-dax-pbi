@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { GlobalConfig, CardConfig, ViewportMode } from '../types';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
@@ -7,20 +8,22 @@ interface PreviewProps {
   global: GlobalConfig;
   cards: CardConfig[];
   viewport: ViewportMode;
+  onCardClick?: (id: string) => void;
+  selectedCardId?: string | null;
 }
 
-const Preview: React.FC<PreviewProps> = ({ global, cards, viewport }) => {
+const Preview: React.FC<PreviewProps> = ({ global, cards, viewport, onCardClick, selectedCardId }) => {
   const hexToRgb = (hex: string) => {
-    if (!hex.startsWith('#')) return '79, 70, 229'; // Fallback for gradients
+    if (!hex.startsWith('#')) return '79, 70, 229'; 
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '79, 70, 229';
   };
 
   let hoverStyles = '';
   switch (global.hoverEffect) {
-    case 'lift': hoverStyles = `transform: translateY(-6px); box-shadow: 0 15px 30px rgba(0,0,0,0.12); border-color: rgba(0,0,0,0.1);`; break;
-    case 'scale': hoverStyles = `transform: scale(1.03);`; break;
-    case 'glow': hoverStyles = `box-shadow: 0 0 25px rgba(var(--card-accent-rgb), 0.4);`; break;
+    case 'lift': hoverStyles = `transform: translateY(-6px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); border-color: rgba(0,0,0,0.1);`; break;
+    case 'scale': hoverStyles = `transform: scale(1.02);`; break;
+    case 'glow': hoverStyles = `box-shadow: 0 0 25px rgba(var(--card-accent-rgb), 0.3);`; break;
     case 'border': hoverStyles = `border-color: var(--card-accent); border-width: 2px; padding: calc(var(--p-pad) - 1px);`; break;
   }
 
@@ -54,7 +57,7 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, viewport }) => {
         grid-template-columns: repeat(${global.columns}, 1fr); 
         gap: var(--p-gap); 
         width: 100%; 
-        padding: 20px;
+        padding: var(--p-pad);
         min-height: 100%;
         box-sizing: border-box;
     }
@@ -63,9 +66,14 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, viewport }) => {
       min-height: var(--p-min-h); border: 1px solid rgba(0,0,0,0.06); display: flex; flex-direction: column; 
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;
       opacity: ${global.animation === 'none' ? 1 : 0}; animation: ${animationRule};
-      flex: 1;
+      cursor: pointer;
     }
     .p-card:hover { ${hoverStyles} }
+    .p-card.selected { 
+      border-color: var(--card-accent); 
+      box-shadow: 0 0 0 2px var(--card-accent); 
+      z-index: 10;
+    }
     .p-card::before { content: ''; position: absolute; left: 0; top: 15px; bottom: 15px; width: 4px; background: var(--card-accent); border-radius: 0 4px 4px 0; }
     .footer { margin-top: auto; display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.03); }
     .p-row { display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: var(--p-text-sub); }
@@ -80,7 +88,7 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, viewport }) => {
   const containerWidth = viewport === 'mobile' ? '375px' : viewport === 'tablet' ? '768px' : '100%';
 
   return (
-    <div className="w-full h-full bg-[#f0f2f5] overflow-y-auto flex justify-center items-stretch">
+    <div className="w-full h-full bg-[#f0f2f5] overflow-y-auto flex justify-center items-stretch p-12">
         <style>{dynamicStyles}</style>
         <div style={{ width: containerWidth, transition: 'width 0.4s ease' }} className="artboard">
           {cards.map((card, idx) => {
@@ -89,12 +97,18 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, viewport }) => {
             const fSub   = card.fontSizeSub   || global.fontSizeSub;
             const accent = card.accentColor || global.primaryColor;
             const accentRgb = hexToRgb(accent);
+            const isSelected = selectedCardId === card.id;
 
             return (
-            <div key={`${card.id}-${global.animation}-${global.hoverEffect}-${cards.length}`} className="p-card" style={{ animationDelay: `${idx * 0.1}s`, '--card-accent': accent, '--card-accent-rgb': accentRgb } as any}>
+            <div 
+              key={`${card.id}-${global.animation}-${global.hoverEffect}-${cards.length}`} 
+              className={`p-card ${isSelected ? 'selected' : ''}`}
+              onClick={() => onCardClick?.(card.id)}
+              style={{ animationDelay: `${idx * 0.1}s`, '--card-accent': accent, '--card-accent-rgb': accentRgb } as any}
+            >
               <div className="flex justify-between items-center mb-2">
                 <span style={{ fontSize: `${fTitle}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle }} className="uppercase tracking-widest">{card.title}</span>
-                <div className="text-gray-400 opacity-40 transition-transform hover:scale-110">
+                <div className="text-gray-400 opacity-20 transition-transform hover:scale-110">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={iconPaths[card.icon] || iconPaths['circle']} /></svg>
                 </div>
               </div>

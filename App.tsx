@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useCallback } from 'react';
 import Editor from './components/Editor';
 import Preview from './components/Preview';
 import { generateDAX } from './utils/daxGenerator';
@@ -22,22 +23,15 @@ const App: React.FC = () => {
       id: '1', title: 'Performance Vendas', measurePlaceholder: '[Vendas]', formatType: 'currency', decimalPlaces: 0, 
       targetMeasurePlaceholder: '1000000', value: 'R$ 842.500', type: 'progress', progressValue: 84, icon: 'chart', isOpen: true,
       comparisons: [
-        { id: 'c1', label: 'vs Mês Anterior', value: '+14%', trend: 'up', logic: '[Vendas] > [Vendas LM]' },
-        { id: 'c2', label: 'vs Meta Anual', value: '-2.5%', trend: 'down', logic: '[Vendas] < [Meta]' }
+        { id: 'c1', label: 'vs Mês Anterior', value: '+14%', trend: 'up', logic: '[Vendas] > [Vendas LM]', measurePlaceholder: '[Vendas LM]' },
+        { id: 'c2', label: 'vs Meta Anual', value: '-2.5%', trend: 'down', logic: '[Vendas] < [Meta]', measurePlaceholder: '[Meta]' }
       ]
     },
     {
       id: '2', title: 'Novos Clientes', measurePlaceholder: '[Qtd Clientes]', formatType: 'integer', decimalPlaces: 0, 
       targetMeasurePlaceholder: '', value: '1.242', type: 'simple', progressValue: 0, icon: 'users', isOpen: false,
       comparisons: [
-        { id: 'c3', label: 'Taxa Crescimento', value: '8.4%', trend: 'up', logic: 'TRUE()' }
-      ]
-    },
-    {
-      id: '3', title: 'Margem Bruta %', measurePlaceholder: '[Margem %]', formatType: 'percent', decimalPlaces: 1, 
-      targetMeasurePlaceholder: '1', value: '32.5%', type: 'ring', progressValue: 32.5, icon: 'activity', isOpen: false,
-      comparisons: [
-        { id: 'c4', label: 'Target 40%', value: '-7.5%', trend: 'down', logic: '[Margem %] < 0.4' }
+        { id: 'c3', label: 'Taxa Crescimento', value: '8.4%', trend: 'up', logic: 'TRUE()', measurePlaceholder: '[Crescimento]' }
       ]
     }
   ]);
@@ -45,13 +39,35 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [viewport, setViewport] = useState<ViewportMode>('desktop');
   const [copied, setCopied] = useState(false);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
   const daxCode = useMemo(() => generateDAX(globalConfig, cards), [globalConfig, cards]);
+
+  const handleCardClick = useCallback((id: string) => {
+    setSelectedCardId(id);
+    setCards(prev => prev.map(c => ({
+      ...c,
+      isOpen: c.id === id
+    })));
+    
+    // Scroll editor to element
+    setTimeout(() => {
+      const element = document.getElementById(`editor-card-${id}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  }, []);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-gray-100 font-sans text-gray-900">
       <div className="w-[420px] z-20 shadow-2xl relative">
-        <Editor globalConfig={globalConfig} setGlobalConfig={setGlobalConfig} cards={cards} setCards={setCards} />
+        <Editor 
+          globalConfig={globalConfig} 
+          setGlobalConfig={setGlobalConfig} 
+          cards={cards} 
+          setCards={setCards} 
+        />
       </div>
 
       <div className="flex-1 flex flex-col relative">
@@ -80,7 +96,13 @@ const App: React.FC = () => {
 
         <div className="flex-1 overflow-hidden relative">
           {viewMode === 'preview' ? (
-             <Preview global={globalConfig} cards={cards} viewport={viewport} />
+             <Preview 
+                global={globalConfig} 
+                cards={cards} 
+                viewport={viewport} 
+                onCardClick={handleCardClick}
+                selectedCardId={selectedCardId}
+             />
           ) : (
             <div className="w-full h-full bg-[#1e1e1e] p-10 overflow-auto">
                <div className="max-w-4xl mx-auto bg-black/20 rounded-2xl p-6 border border-white/5">
