@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { CardConfig, GlobalConfig, CardType, HoverEffect, ComparisonConfig, DonutChartConfig, AppTab } from '../types';
 import { iconDefinitions, IconCategory } from '../utils/icons';
-import { Trash2, Plus, Type, Palette, Layout, ChevronDown, ChevronRight, MousePointer2, X, Binary, Sparkles, ALargeSmall, Droplets, CalendarDays, CalendarRange, PieChart, Layers, Wand2, AlignLeft, AlignCenter, AlignRight, Component, BarChart3, Search, Database, PanelTop, PanelLeft, PanelRight, Save, Sun} from 'lucide-react';
+import { Trash2, Plus, Type, Palette, Layout, ChevronDown, ChevronRight, MousePointer2, X, Binary, Sparkles, ALargeSmall, Droplets, CalendarDays, CalendarRange, PieChart, Layers, Wand2, AlignLeft, AlignCenter, AlignRight, Component, BarChart3, Search, Database, PanelTop, PanelLeft, PanelRight, Save, Sun, Grid3X3} from 'lucide-react';
 
 interface EditorProps {
   globalConfig: GlobalConfig;
@@ -164,7 +164,7 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
       {/* ABAS GLOBAIS */}
       <div className="flex border-b overflow-x-auto custom-scrollbar">
         {[
-          { id: 'data', icon: Database, label: 'Dados' }, // NOVA ABA
+          { id: 'data', icon: Database, label: 'Dados' }, 
           { id: 'layout', icon: Layout, label: 'Layout' },
           { id: 'style', icon: Type, label: 'Fontes' },
           { id: 'colors', icon: Palette, label: 'Cores' },
@@ -276,7 +276,6 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
           )}
           {activeTab === 'interactive' && (
              <div className="space-y-6 animate-fadeIn">
-              {/* ... (Igual ao anterior) ... */}
               <div className="p-4 bg-white border rounded-2xl space-y-4">
                  <div className="flex items-center gap-2"><Sun size={14} className="text-orange-500"/><span className="text-[10px] font-black text-orange-600 uppercase">Sombras & Profundidade</span></div>
                  <Field label={`Intensidade: ${globalConfig.shadowIntensity || 0}%`}><input type="range" min="0" max="100" value={globalConfig.shadowIntensity || 0} onChange={(e) => setGlobalConfig({...globalConfig, shadowIntensity: +e.target.value})} className="range-slider accent-orange-500"/></Field>
@@ -306,7 +305,7 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
         <div className="pt-6 border-t space-y-4">
           <div className="flex justify-between items-center px-1">
              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Gerenciar {activeAppTab === 'cards' ? 'Cards' : 'Gráficos'}</h3>
-             <button onClick={() => activeAppTab === 'cards' ? setCards([...cards, { id: Math.random().toString(36).substr(2, 9), title: 'Nova Métrica', measurePlaceholder: '[Vendas]', formatType: 'currency', decimalPlaces: 0, prefix: '', suffix: '', type: 'simple', targetMeasurePlaceholder: '1', value: 'R$ 0', progressValue: 0, icon: 'chart', iconPosition: 'top', iconSize: 40, iconPadding: 8, iconRounded: false, isOpen: true, comparisons: [] }]) : setDonuts([...donuts, { id: Math.random().toString(36).substr(2, 9), title: 'Nova Rosca', mode: 'completeness', geometry: 'full', ringThickness: 12, roundedCorners: true, showCenterText: true, centerTextLabel: 'KPI', centerTextValueMeasure: '[Valor]', completenessMeasure: '[Vendas]', completenessTarget: '[Meta]', slices: [], isOpen: true }])} className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-transform active:scale-90"><Plus size={20}/></button>
+             <button onClick={() => activeAppTab === 'cards' ? setCards([...cards, { id: Math.random().toString(36).substr(2, 9), title: 'Nova Métrica', measurePlaceholder: '[Vendas]', formatType: 'currency', decimalPlaces: 0, prefix: '', suffix: '', type: 'simple', targetMeasurePlaceholder: '1', value: 'R$ 0', progressValue: 0, icon: 'chart', iconPosition: 'top', iconSize: 40, iconPadding: 8, iconRounded: false, isOpen: true, comparisons: [], colSpan: 1, rowSpan: 1 }]) : setDonuts([...donuts, { id: Math.random().toString(36).substr(2, 9), title: 'Nova Rosca', mode: 'completeness', geometry: 'full', ringThickness: 12, roundedCorners: true, showCenterText: true, centerTextLabel: 'KPI', centerTextValueMeasure: '[Valor]', completenessMeasure: '[Vendas]', completenessTarget: '[Meta]', slices: [], isOpen: true, colSpan: 1, rowSpan: 1 }])} className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-transform active:scale-90"><Plus size={20}/></button>
           </div>
 
           <div className="space-y-3">
@@ -321,17 +320,23 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                     <div className="p-5 border-t space-y-6 animate-fadeIn">
                       <Field label="Título"><input value={card.title} onChange={(e) => updateCard(card.id, 'title', e.target.value)} className="input-field font-bold"/></Field>
                       
+                      {/* --- NOVO BLOCO: DIMENSÕES GRID --- */}
+                      <div className="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 space-y-4">
+                         <div className="flex items-center gap-2"><Grid3X3 size={14} className="text-purple-600"/><span className="text-[10px] font-black text-purple-700 uppercase">Dimensões do Card (Grid)</span></div>
+                         <div className="grid grid-cols-2 gap-4">
+                             <Field label="Ocupar Colunas"><input type="number" min="1" max={globalConfig.columns} value={card.colSpan || 1} onChange={(e) => updateCard(card.id, 'colSpan', +e.target.value)} className="input-field"/></Field>
+                             <Field label="Ocupar Linhas"><input type="number" min="1" value={card.rowSpan || 1} onChange={(e) => updateCard(card.id, 'rowSpan', +e.target.value)} className="input-field"/></Field>
+                         </div>
+                      </div>
+
                       <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
                          <div className="flex items-center gap-2"><Binary size={14} className="text-gray-600"/><span className="text-[10px] font-black text-gray-700 uppercase">Dados & Formato</span></div>
-                         
-                         {/* USO DO NOVO COMPONENTE DE MEDIDAS */}
                          <MeasureSelect 
                             label="Medida (DAX)" 
                             value={card.measurePlaceholder} 
                             onChange={(v) => updateCard(card.id, 'measurePlaceholder', v)} 
                             bindings={globalConfig.dataBindings || []} 
                          />
-                         
                          <div className="grid grid-cols-2 gap-3">
                             <Field label="Formato">
                                <select value={card.formatType} onChange={(e) => updateCard(card.id, 'formatType', e.target.value)} className="input-field">
@@ -379,11 +384,10 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                          )}
                       </div>
 
-                      {/* ICONOGRAFIA (Mantida igual ao anterior) */}
+                      {/* ICONOGRAFIA */}
                       <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-4">
                          <div className="flex items-center gap-2"><Component size={14} className="text-indigo-600"/><span className="text-[10px] font-black text-indigo-700 uppercase">Iconografia</span></div>
                          <div className="space-y-4">
-                           {/* ... (Seletor de Ícones igual ao anterior) ... */}
                            <div className="col-span-2">
                                <div className="flex justify-between items-center mb-2">
                                  <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Ícone Selecionado</label>
@@ -451,7 +455,7 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                          </div>
                       </div>
                       
-                      {/* Override de Estilo (Igual ao anterior) */}
+                      {/* Override de Estilo */}
                       <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100 space-y-4">
                         <div className="flex items-center gap-2"><Droplets size={14} className="text-amber-600"/><span className="text-[10px] font-black text-amber-700 uppercase">Override de Estilo</span></div>
                         <div className="grid grid-cols-2 gap-4">
@@ -482,8 +486,6 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                                 <button onClick={() => updateCard(card.id, 'comparisons', card.comparisons.filter(c => c.id !== comp.id))} className="absolute top-2 right-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><X size={14}/></button>
                                 <div className="grid grid-cols-2 gap-3 mb-3">
                                   <Field label="Rótulo"><input value={comp.label} onChange={(e) => { const newC = [...card.comparisons]; const idx = newC.findIndex(x => x.id === comp.id); newC[idx].label = e.target.value; updateCard(card.id, 'comparisons', newC); }} className="input-field text-[11px]"/></Field>
-                                  
-                                  {/* SELETOR TAMBÉM NO COMPARATIVO */}
                                   <MeasureSelect 
                                      label="Medida Variância" 
                                      value={comp.measurePlaceholder} 
@@ -491,7 +493,6 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                                      bindings={globalConfig.dataBindings || []} 
                                   />
                                 </div>
-                                {/* ... (Toggle Invert Colors) ... */}
                                 <div className="flex items-center gap-2 mb-3 bg-gray-50 p-2 rounded-lg border border-gray-100">
                                     <button onClick={() => { const newC = [...card.comparisons]; const idx = newC.findIndex(x => x.id === comp.id); newC[idx].invertColor = !newC[idx].invertColor; updateCard(card.id, 'comparisons', newC); }} className={`w-10 h-6 rounded-full relative transition-all flex-shrink-0 ${comp.invertColor ? 'bg-red-500' : 'bg-green-500'}`}><div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${comp.invertColor ? 'left-5' : 'left-1'}`} /></button>
                                     <span className="text-[10px] font-bold text-gray-600">{comp.invertColor ? 'Invertido (Aumentar é Ruim)' : 'Padrão (Aumentar é Bom)'}</span>
@@ -506,7 +507,7 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                 </div>
               ))
             ) : (
-              // LÓGICA DE DONUTS COM MEDIDAS
+              // LÓGICA DE DONUTS
               donuts.map(donut => (
                 <div key={donut.id} className={`bg-white border rounded-2xl overflow-hidden shadow-sm transition-all ${donut.isOpen ? 'ring-2 ring-indigo-500/20 border-indigo-200' : 'hover:border-indigo-200'}`}>
                    <div className="flex justify-between items-center p-4 cursor-pointer bg-gray-50/50" onClick={() => updateDonut(donut.id, 'isOpen', !donut.isOpen)}>
@@ -516,6 +517,16 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                    {donut.isOpen && (
                      <div className="p-5 border-t space-y-6 animate-fadeIn">
                        <Field label="Título"><input value={donut.title} onChange={(e) => updateDonut(donut.id, 'title', e.target.value)} className="input-field font-bold"/></Field>
+                       
+                       {/* --- NOVO BLOCO: DIMENSÕES GRID (DONUTS) --- */}
+                       <div className="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 space-y-4">
+                         <div className="flex items-center gap-2"><Grid3X3 size={14} className="text-purple-600"/><span className="text-[10px] font-black text-purple-700 uppercase">Dimensões do Card (Grid)</span></div>
+                         <div className="grid grid-cols-2 gap-4">
+                             <Field label="Ocupar Colunas"><input type="number" min="1" max={globalConfig.columns} value={donut.colSpan || 1} onChange={(e) => updateDonut(donut.id, 'colSpan', +e.target.value)} className="input-field"/></Field>
+                             <Field label="Ocupar Linhas"><input type="number" min="1" value={donut.rowSpan || 1} onChange={(e) => updateDonut(donut.id, 'rowSpan', +e.target.value)} className="input-field"/></Field>
+                         </div>
+                       </div>
+
                        <div className="grid grid-cols-2 gap-4">
                          <Field label="Modo">
                             <select value={donut.mode} onChange={(e) => updateDonut(donut.id, 'mode', e.target.value)} className="input-field">

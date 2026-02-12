@@ -1,4 +1,3 @@
-
 export type CardType = 'simple' | 'progress' | 'ring';
 export type TrendDirection = 'up' | 'down' | 'neutral' | 'none';
 export type AnimationType = 'none' | 'fadeInUp' | 'popIn' | 'slideRight';
@@ -19,16 +18,16 @@ export interface ComparisonConfig {
   measurePlaceholder: string; 
   invertColor?: boolean;
   // Advanced Customization
-  labelColor?: string; // New
-  labelFontSize?: number; // New
-  icon?: string; // New: Icon specific for comparison
-  showIcon?: boolean; // New
+  labelColor?: string;
+  labelFontSize?: number;
+  icon?: string;
+  showIcon?: boolean;
 }
 
 export interface DataBinding {
   id: string;
-  label: string; // Ex: "Faturamento Total"
-  value: string; // Ex: "[Total Vendas]"
+  label: string;
+  value: string;
 }
 
 export interface CardConfig {
@@ -39,15 +38,19 @@ export interface CardConfig {
   decimalPlaces: number;
   prefix: string;
   suffix: string;
-  type: CardType; // 'simple' | 'progress' | 'ring'
+  type: CardType;
   
+  // Grid Dimensions (Novos campos)
+  colSpan?: number;
+  rowSpan?: number;
+
   // Progress Bar Specifics
-  progressMeasure?: string; // Measure for the progress calculation
-  progressTarget?: string; // Target for progress
+  progressMeasure?: string;
+  progressTarget?: string;
   progressColor?: string;
   progressBackgroundColor?: string;
   progressHeight?: number;
-  progressValue: number; // For preview
+  progressValue: number;
 
   targetMeasurePlaceholder: string;
   value: string;
@@ -80,7 +83,7 @@ export interface DonutSlice {
   label: string;
   measurePlaceholder: string;
   color: string;
-  value: string; // Preview value
+  value: string;
 }
 
 export interface DonutChartConfig {
@@ -88,6 +91,11 @@ export interface DonutChartConfig {
   title: string;
   mode: 'completeness' | 'distribution';
   geometry: 'full' | 'semicircle';
+  
+  // Grid Dimensions (Novos campos)
+  colSpan?: number;
+  rowSpan?: number;
+
   ringThickness: number;
   roundedCorners: boolean;
   showCenterText: boolean;
@@ -135,5 +143,4 @@ export interface GlobalConfig {
   animationDuration: number;
   hoverEffect: HoverEffect;
   dataBindings: DataBinding[];
-
 }

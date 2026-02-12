@@ -10,10 +10,13 @@ interface PreviewProps {
   activeAppTab: AppTab;
   viewport: ViewportMode | 'custom';
   customDimensions?: { width: number, height: number };
-  setCustomDimensions?: (dim: { width: number, height: number }) => void; // NOVO: Setter para resize
+  setCustomDimensions?: (dim: { width: number, height: number }) => void;
   onCardClick?: (id: string) => void;
   selectedCardId?: string | null;
 }
+
+// Tipos de redimensionamento
+type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 
 const Preview: React.FC<PreviewProps> = ({ 
   global, cards, donuts, activeAppTab, viewport, 
@@ -25,8 +28,8 @@ const Preview: React.FC<PreviewProps> = ({
   const [isPanning, setIsPanning] = useState(false);
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   
-  // Estado para Resize
-  const [isResizing, setIsResizing] = useState<'right' | 'bottom' | 'corner' | null>(null);
+  // Estado para Resize expandido
+  const [isResizing, setIsResizing] = useState<ResizeHandle | null>(null);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const lastMousePos = useRef({ x: 0, y: 0 });
@@ -42,21 +45,20 @@ const Preview: React.FC<PreviewProps> = ({
 
   const resetView = () => { setScale(0.85); setOffset({ x: 0, y: 0 }); };
 
-  // Handlers de Mouse Unificados (Pan e Resize)
-  const handleMouseDown = (e: React.MouseEvent, type: 'pan' | 'resize-right' | 'resize-bottom' | 'resize-corner') => {
+  // Handler de Mouse Unificado
+  const handleMouseDown = (e: React.MouseEvent, type: 'pan' | ResizeHandle) => {
       lastMousePos.current = { x: e.clientX, y: e.clientY };
       
       if (type === 'pan') {
-          if (isSpacePressed || e.button === 1 || e.button === 0) { // Agora permite botão esquerdo se space não estiver apertado, mas clicando no fundo
+          if (isSpacePressed || e.button === 1 || e.button === 0) {
              setIsPanning(true);
              e.preventDefault();
           }
       } else {
-          // Iniciar Resize
           if (customDimensions) {
               startDim.current = { w: customDimensions.width, h: customDimensions.height };
-              setIsResizing(type.replace('resize-', '') as any);
-              e.stopPropagation(); // Impede pan ao clicar no handle
+              setIsResizing(type);
+              e.stopPropagation();
               e.preventDefault();
           }
       }
@@ -69,20 +71,47 @@ const Preview: React.FC<PreviewProps> = ({
 
       if (isPanning) {
           setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-      } else if (isResizing && setCustomDimensions) {
-          // Matemática do Resize ajustada pelo Scale
-          // Se o zoom é 0.5, mover o mouse 10px deve aumentar o box em 20px
-          const deltaW = (isResizing === 'right' || isResizing === 'corner') ? dx / scale : 0;
-          const deltaH = (isResizing === 'bottom' || isResizing === 'corner') ? dy / scale : 0;
+      } else if (isResizing && setCustomDimensions && customDimensions) {
+          // Lógica de Redimensionamento em 8 direções
+          // Como o container é flex center, redimensionar expande para os dois lados.
+          // Para "fixar" um lado, precisamos ajustar o offset (posição) simultaneamente.
+          // A regra mágica é: offset move dx/2 sempre.
+
+          const scaledDx = dx / scale;
+          const scaledDy = dy / scale;
+
+          let newW = startDim.current.w;
+          let newH = startDim.current.h;
+          let offX = 0;
+          let offY = 0;
+
+          // Horizontal
+          if (isResizing.includes('e')) { // Direita (East)
+             newW += scaledDx;
+             offX = scaledDx / 2;
+          } else if (isResizing.includes('w')) { // Esquerda (West)
+             newW -= scaledDx;
+             offX = scaledDx / 2; // Sim, positivo, pois o mouse moveu negativo
+          }
+
+          // Vertical
+          if (isResizing.includes('s')) { // Baixo (South)
+             newH += scaledDy;
+             offY = scaledDy / 2;
+          } else if (isResizing.includes('n')) { // Cima (North)
+             newH -= scaledDy;
+             offY = scaledDy / 2;
+          }
+
+          // Atualiza Dimensões (Limitando mínimo)
+          const finalW = Math.max(100, Math.round(newW));
+          const finalH = Math.max(100, Math.round(newH));
           
-          setCustomDimensions({
-              width: Math.max(100, Math.round(startDim.current.w + deltaW)),
-              height: Math.max(100, Math.round(startDim.current.h + deltaH))
-          });
-          startDim.current = { 
-              w: startDim.current.w + deltaW, 
-              h: startDim.current.h + deltaH 
-          };
+          setCustomDimensions({ width: finalW, height: finalH });
+          startDim.current = { w: finalW, h: finalH };
+          
+          // Atualiza Offset para compensar o centro
+          setOffset(prev => ({ x: prev.x + offX, y: prev.y + offY }));
       }
   };
 
@@ -91,7 +120,6 @@ const Preview: React.FC<PreviewProps> = ({
       setIsResizing(null);
   };
 
-  // --- LÓGICA DE RENDERIZAÇÃO (Mantida, mas com melhoria no CSS) ---
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '79, 70, 229';
@@ -100,7 +128,6 @@ const Preview: React.FC<PreviewProps> = ({
   const primaryRgb = hexToRgb(global.primaryColor);
   const isCompact = global.cardMinHeight < 140;
 
-  // ... (Animações e Styles mantidos igual ao anterior, omitindo para brevidade, mas o CSS está injetado abaixo) ...
   let animationKeyframes = '';
   const dur = `${global.animationDuration}s`;
   if (global.animation === 'fadeInUp') {
@@ -114,7 +141,6 @@ const Preview: React.FC<PreviewProps> = ({
   let hoverStyles = '';
   switch (global.hoverEffect) {
     case 'lift': 
-      // Adicionamos transition: transform ... !important para garantir a suavidade
       hoverStyles = `
         transform: translateY(-6px) !important; 
         transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s ease !important;
@@ -157,7 +183,6 @@ const Preview: React.FC<PreviewProps> = ({
     .p-fill { height: 100%; background: var(--p-primary); border-radius: 10px; width: 0; animation: loadBar 1s ease-out forwards; }
     .ring-box { position: relative; width: 48px; height: 48px; }
     .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
-    .ring-bg { fill: none; stroke: rgba(0,0,0,0.05); stroke-width: 5; }
     .ring-val { fill: none; stroke: var(--p-primary); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 126; stroke-dashoffset: 126; animation: fillRing 1.2s ease-out forwards; }
     .donut-ring { fill: transparent; stroke: #f3f4f6; transition: stroke-dasharray 0.5s ease; }
     .donut-segment { fill: transparent; transition: stroke-dasharray 0.5s ease; }
@@ -165,6 +190,16 @@ const Preview: React.FC<PreviewProps> = ({
 
   const simWidth = viewport === 'custom' && customDimensions ? customDimensions.width : viewport === 'mobile' ? 375 : viewport === 'tablet' ? 768 : 1000;
   const simHeight = viewport === 'custom' && customDimensions ? customDimensions.height : 600;
+
+  // Renderizadores de Handles (Auxiliar)
+  const Handle = ({ dir, className, children }: { dir: ResizeHandle, className: string, children?: React.ReactNode }) => (
+    <div 
+        onMouseDown={(e) => handleMouseDown(e, dir)}
+        className={`absolute z-50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center group ${className}`}
+    >
+        {children || <div className="bg-indigo-500 rounded-full shadow-lg" style={{ width: '100%', height: '100%' }} />}
+    </div>
+  );
 
   return (
     <div 
@@ -178,7 +213,6 @@ const Preview: React.FC<PreviewProps> = ({
     >
         <style>{dynamicStyles}</style>
         
-        {/* HUD de Zoom/Tamanho */}
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
             <div className="bg-black/40 backdrop-blur-xl text-white/90 px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-4 border border-white/10">
                 <BoxSelect size={14} className="text-indigo-400" />
@@ -188,7 +222,6 @@ const Preview: React.FC<PreviewProps> = ({
             </div>
         </div>
 
-        {/* Controles de Zoom */}
         <div className="absolute bottom-8 right-8 flex flex-col gap-3 z-50">
            <div className="flex flex-col bg-black/40 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10">
              <button onClick={() => setScale(prev => Math.min(prev + 0.1, 5))} className="p-3 text-white/60 hover:text-white"><ZoomIn size={20}/></button>
@@ -202,7 +235,6 @@ const Preview: React.FC<PreviewProps> = ({
           className="absolute inset-0 flex items-center justify-center origin-center"
           style={{ 
               transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, 
-              // AQUI ESTÁ A CORREÇÃO DO LAG: Desliga transição durante pan/resize
               transition: isPanning || isResizing ? 'none' : 'transform 0.2s cubic-bezier(0.1, 0.7, 0.1, 1)' 
           }}
         >
@@ -210,31 +242,21 @@ const Preview: React.FC<PreviewProps> = ({
             className="bg-[#161618] rounded-sm relative border border-white/10 shadow-2xl"
             style={{ width: simWidth, height: simHeight, minWidth: simWidth, minHeight: simHeight }}
           >
-            {/* ALÇAS DE REDIMENSIONAMENTO (HANDLES) */}
             {viewport === 'custom' && (
                 <>
-                    {/* Direita */}
-                    <div 
-                        onMouseDown={(e) => handleMouseDown(e, 'resize-right')}
-                        className="absolute -right-3 top-0 bottom-6 w-6 cursor-ew-resize flex items-center justify-center opacity-0 hover:opacity-100 group transition-opacity z-50"
-                    >
-                        <div className="w-1.5 h-12 bg-indigo-500 rounded-full shadow-lg" />
-                    </div>
-                    {/* Baixo */}
-                    <div 
-                        onMouseDown={(e) => handleMouseDown(e, 'resize-bottom')}
-                        className="absolute -bottom-3 left-0 right-6 h-6 cursor-ns-resize flex items-center justify-center opacity-0 hover:opacity-100 group transition-opacity z-50"
-                    >
-                        <div className="h-1.5 w-12 bg-indigo-500 rounded-full shadow-lg" />
-                    </div>
-                    {/* Canto (Corner) */}
-                    <div 
-                        onMouseDown={(e) => handleMouseDown(e, 'resize-corner')}
-                        className="absolute -right-3 -bottom-3 w-8 h-8 cursor-nwse-resize flex items-center justify-center opacity-0 hover:opacity-100 z-50 text-indigo-500"
-                    >
-                        <GripHorizontal size={24} className="drop-shadow-lg" />
-                    </div>
-                    {/* Linhas Guias (Bordas ativas) */}
+                    {/* BORDAS (LADOS) */}
+                    <Handle dir="n" className="top-0 left-0 right-0 h-4 -mt-2 cursor-ns-resize"><div className="w-12 h-1.5 bg-indigo-500 rounded-full" /></Handle>
+                    <Handle dir="s" className="bottom-0 left-0 right-0 h-4 -mb-2 cursor-ns-resize"><div className="w-12 h-1.5 bg-indigo-500 rounded-full" /></Handle>
+                    <Handle dir="e" className="right-0 top-0 bottom-0 w-4 -mr-2 cursor-ew-resize"><div className="h-12 w-1.5 bg-indigo-500 rounded-full" /></Handle>
+                    <Handle dir="w" className="left-0 top-0 bottom-0 w-4 -ml-2 cursor-ew-resize"><div className="h-12 w-1.5 bg-indigo-500 rounded-full" /></Handle>
+
+                    {/* CANTOS */}
+                    <Handle dir="nw" className="-top-3 -left-3 w-8 h-8 cursor-nwse-resize text-indigo-500"><GripHorizontal size={20} className="drop-shadow-lg rotate-90" /></Handle>
+                    <Handle dir="ne" className="-top-3 -right-3 w-8 h-8 cursor-nesw-resize text-indigo-500"><GripHorizontal size={20} className="drop-shadow-lg rotate-90" /></Handle>
+                    <Handle dir="sw" className="-bottom-3 -left-3 w-8 h-8 cursor-nesw-resize text-indigo-500"><GripHorizontal size={20} className="drop-shadow-lg" /></Handle>
+                    <Handle dir="se" className="-bottom-3 -right-3 w-8 h-8 cursor-nwse-resize text-indigo-500"><GripHorizontal size={20} className="drop-shadow-lg" /></Handle>
+
+                    {/* LINHAS GUIAS (Hover) */}
                     <div className="absolute inset-0 border-2 border-indigo-500/0 hover:border-indigo-500/30 transition-colors pointer-events-none" />
                 </>
             )}
@@ -272,10 +294,15 @@ const Preview: React.FC<PreviewProps> = ({
                   </div>
                 );
 
+                const gridStyle = {
+                    gridColumn: `span ${card.colSpan || 1}`,
+                    gridRow: `span ${card.rowSpan || 1}`
+                };
+
                 if (isCompact) {
                    return (
                     <div key={card.id} className={`p-card compact ${selectedCardId === card.id ? 'selected' : ''}`} 
-                         style={{ animationDelay: `${idx * 0.1}s` } as any}
+                         style={{ animationDelay: `${idx * 0.1}s`, ...gridStyle } as any}
                          onClick={(e) => { e.stopPropagation(); onCardClick?.(card.id); }}>
                       
                       <div className="flex flex-col justify-center z-10" style={{ maxWidth: '60%', marginLeft: '8px' }}>
@@ -294,15 +321,12 @@ const Preview: React.FC<PreviewProps> = ({
     
                       <div className="flex flex-col items-end justify-center gap-1 z-10 h-full">
                          {card.comparisons.map((comp) => {
-                            // CÁLCULO DA COR
                             let badgeColor = global.neutralColor;
-                            
                             if (comp.trend === 'up') {
                                 badgeColor = comp.invertColor ? global.negativeColor : global.positiveColor;
                             } else if (comp.trend === 'down') {
                                 badgeColor = comp.invertColor ? global.positiveColor : global.negativeColor;
                             }
-
                             return (
                                 <div key={comp.id} className="flex items-center gap-2" style={{ fontSize: `${fSub}px`, fontWeight: 600, color: global.textColorSub }}>
                                    <span className="hidden sm:inline">{comp.label}</span>
@@ -327,7 +351,6 @@ const Preview: React.FC<PreviewProps> = ({
                    );
                 }
     
-                // MODO VERTICAL (PADRÃO)
                 let headerContent;
                 let headerStyle: React.CSSProperties = {};
 
@@ -359,7 +382,7 @@ const Preview: React.FC<PreviewProps> = ({
 
                 return (
                 <div key={card.id} className={`p-card ${selectedCardId === card.id ? 'selected' : ''}`} 
-                     style={{ animationDelay: `${idx * 0.1}s`, '--p-bg': card.cardBackgroundColor || global.cardBackgroundColor } as any}
+                     style={{ animationDelay: `${idx * 0.1}s`, '--p-bg': card.cardBackgroundColor || global.cardBackgroundColor, ...gridStyle } as any}
                      onClick={(e) => { e.stopPropagation(); onCardClick?.(card.id); }}>
                   
                   <div className="p-header" style={headerStyle}>
@@ -373,18 +396,12 @@ const Preview: React.FC<PreviewProps> = ({
     
                   <div className="p-footer">
                     {card.comparisons.map((comp) => {
-                       // 1. Calculamos a cor correta antes de desenhar
                        let badgeColor = global.neutralColor;
-                       
                        if (comp.trend === 'up') {
-                           // Se subiu: É ruim se invertido (Vermelho), Bom se normal (Verde)
                            badgeColor = comp.invertColor ? global.negativeColor : global.positiveColor;
                        } else if (comp.trend === 'down') {
-                           // Se desceu: É bom se invertido (Verde), Ruim se normal (Vermelho)
                            badgeColor = comp.invertColor ? global.positiveColor : global.negativeColor;
                        }
-
-                       // 2. Retornamos o HTML usando essa cor calculada
                        return (
                            <div key={comp.id} className="p-row" style={{ fontSize: `${fSub}px` }}>
                               <span>{comp.label}</span>
@@ -407,9 +424,13 @@ const Preview: React.FC<PreviewProps> = ({
                  const flexAlign = align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center';
                  const rotation = isSemi ? -180 : -90;
                  const circumferenceDivisor = isSemi ? 2 : 1;
+                 const gridStyle = {
+                    gridColumn: `span ${donut.colSpan || 1}`,
+                    gridRow: `span ${donut.rowSpan || 1}`
+                 };
 
                 return (
-                  <div key={donut.id} className={`p-card ${isSelected ? 'selected' : ''}`} style={{ background: donut.cardBackgroundColor || global.cardBackgroundColor, animationDelay: `${idx * 0.1}s` } as any} onClick={(e) => { e.stopPropagation(); onCardClick?.(donut.id); }}>
+                  <div key={donut.id} className={`p-card ${isSelected ? 'selected' : ''}`} style={{ background: donut.cardBackgroundColor || global.cardBackgroundColor, animationDelay: `${idx * 0.1}s`, ...gridStyle } as any} onClick={(e) => { e.stopPropagation(); onCardClick?.(donut.id); }}>
                     <div className="mb-4 flex" style={{ justifyContent: flexAlign }}>
                        <span style={{ fontSize: `${donut.fontSizeTitle || global.fontSizeTitle}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle }} className="uppercase tracking-widest">{donut.title}</span>
                     </div>

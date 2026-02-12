@@ -203,6 +203,9 @@ VAR _HTML = "<div class='container'>" &
       const delay = (idx * 0.1).toFixed(1);
       const iconPath = iconPaths[card.icon || 'chart'];
       const iconColor = card.iconColor || card.accentColor || primaryColor;
+      // --- CAPTURA DE SPANS ---
+      const colSpan = card.colSpan || 1;
+      const rowSpan = card.rowSpan || 1;
       
       const iconHTML = `
         <div class='icon-box' style='width:${card.iconSize || 40}px; height:${card.iconSize || 24}px; padding:${card.iconPadding || 8}px; background:${card.iconBackgroundColor || 'transparent'}; border-radius:${card.iconRounded ? '50%' : '8px'}; color:${iconColor}'>
@@ -227,6 +230,9 @@ VAR _HTML = "<div class='container'>" &
             </div>" & `;
       });
 
+      // --- INJEÇÃO DO STYLE GRID ---
+      const gridStyle = `grid-column: span ${colSpan}; grid-row: span ${rowSpan};`;
+
       if (isCompact) {
           let visualHtml = '""';
           if (card.type === 'progress') {
@@ -234,7 +240,7 @@ VAR _HTML = "<div class='container'>" &
           }
 
           dax += `
-          "<div class='v-item animate' style='animation-delay: ${delay}s; --accent: " & IF(ISBLANK("${card.accentColor}"), _CorPrimaria, "${card.accentColor}") & "; background: " & IF(ISBLANK("${card.cardBackgroundColor}"), "${cardBackgroundColor}", "${card.cardBackgroundColor}") & "'>
+          "<div class='v-item animate' style='${gridStyle} animation-delay: ${delay}s; --accent: " & IF(ISBLANK("${card.accentColor}"), _CorPrimaria, "${card.accentColor}") & "; background: " & IF(ISBLANK("${card.cardBackgroundColor}"), "${cardBackgroundColor}", "${card.cardBackgroundColor}") & "'>
               <div class='compact-left'>
                   <div class='compact-header'>
                      <div class='compact-icon' style='color:${iconColor}'><svg viewBox='0 0 24 24' width='100%' height='100%' fill='none' stroke='currentColor' stroke-width='2'><path d='${iconPath}'/></svg></div>
@@ -249,21 +255,17 @@ VAR _HTML = "<div class='container'>" &
           </div>" & `;
       
       } else {
-          // --- CORREÇÃO DA LÓGICA DE POSIÇÃO ---
           const align = card.textAlign || textAlign;
           const flexAlign = getFlexAlign(align);
           const iconPos = card.iconPosition || 'top';
           let headerHTML = "";
           
           if (iconPos === 'top') {
-              // Topo: Flex Column e alinhado conforme o texto
               let colAlign = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start';
               headerHTML = `<div class='header' style='flex-direction: column; align-items: ${colAlign}; justify-content: center'>${iconHTML} <div class='title'>\" & _C${ci}_Tit & \"</div></div>`;
           } else if (iconPos === 'left') {
-              // Esquerda: Flex Row
               headerHTML = `<div class='header' style='justify-content: ${flexAlign}'>${iconHTML} <div class='title'>\" & _C${ci}_Tit & \"</div></div>`;
           } else { 
-              // Direita: Space Between
               headerHTML = `<div class='header' style='justify-content: space-between'><div class='title'>\" & _C${ci}_Tit & \"</div> ${iconHTML}</div>`;
           }
 
@@ -283,7 +285,7 @@ VAR _HTML = "<div class='container'>" &
           `;
 
           dax += `
-            "<div class='v-item animate' style='animation-delay: ${delay}s; --accent: " & IF(ISBLANK("${card.accentColor}"), _CorPrimaria, "${card.accentColor}") & "; background: " & IF(ISBLANK("${card.cardBackgroundColor}"), "${cardBackgroundColor}", "${card.cardBackgroundColor}") & "'>
+            "<div class='v-item animate' style='${gridStyle} animation-delay: ${delay}s; --accent: " & IF(ISBLANK("${card.accentColor}"), _CorPrimaria, "${card.accentColor}") & "; background: " & IF(ISBLANK("${card.cardBackgroundColor}"), "${cardBackgroundColor}", "${card.cardBackgroundColor}") & "'>
                 <div class='content-wrapper'>
                     ${headerHTML}
                     ${contentHTML}
@@ -305,6 +307,10 @@ VAR _HTML = "<div class='container'>" &
       const lcap = donut.roundedCorners ? "round" : "butt";
       const rotation = isSemi ? "rotate(-180 50 50)" : "rotate(-90 50 50)";
       
+      const colSpan = donut.colSpan || 1;
+      const rowSpan = donut.rowSpan || 1;
+      const gridStyle = `grid-column: span ${colSpan}; grid-row: span ${rowSpan};`;
+
       let chartContent = "";
       if (donut.mode === 'completeness') {
         const conversion = isSemi ? `(${circ}/2)` : `${circ}`;
@@ -332,7 +338,7 @@ VAR _HTML = "<div class='container'>" &
       const svgMargin = isSemi ? "margin-top: 10px;" : "";
 
       dax += `
-    "<div class='v-item' style='--accent: " & IF(ISBLANK("${donut.accentColor}"), _CorPrimaria, "${donut.accentColor}") & "; background: " & IF(ISBLANK("${donut.cardBackgroundColor}"), "${cardBackgroundColor}", "${donut.cardBackgroundColor}") & "'>
+    "<div class='v-item' style='${gridStyle} --accent: " & IF(ISBLANK("${donut.accentColor}"), _CorPrimaria, "${donut.accentColor}") & "; background: " & IF(ISBLANK("${donut.cardBackgroundColor}"), "${cardBackgroundColor}", "${donut.cardBackgroundColor}") & "'>
         <div class='header' style='justify-content: ${flexAlign}'><div class='title'>" & _D${di}_Tit & "</div></div>
         <div class='chart-box' style='align-items: ${isSemi ? 'flex-end' : 'center'};'>
             <svg viewBox='0 0 100 100' style='width: 100%; height: ${svgHeight}; ${svgMargin} overflow: visible;'>" & ${chartContent} & "</svg>" & ${center} & "
