@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GlobalConfig, CardConfig, ViewportMode, DonutChartConfig, AppTab } from '../types';
-import { ZoomIn, ZoomOut, RotateCcw, BoxSelect, TrendingUp, TrendingDown } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, BoxSelect, TrendingUp, TrendingDown, GripHorizontal } from 'lucide-react';
 import { iconPaths } from '../utils/icons';
 
 interface PreviewProps {
@@ -10,20 +10,28 @@ interface PreviewProps {
   activeAppTab: AppTab;
   viewport: ViewportMode | 'custom';
   customDimensions?: { width: number, height: number };
+  setCustomDimensions?: (dim: { width: number, height: number }) => void; // NOVO: Setter para resize
   onCardClick?: (id: string) => void;
   selectedCardId?: string | null;
 }
 
-const Preview: React.FC<PreviewProps> = ({ global, cards, donuts, activeAppTab, viewport, customDimensions, onCardClick, selectedCardId }) => {
+const Preview: React.FC<PreviewProps> = ({ 
+  global, cards, donuts, activeAppTab, viewport, 
+  customDimensions, setCustomDimensions, 
+  onCardClick, selectedCardId 
+}) => {
   const [scale, setScale] = useState(0.85);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   
+  // Estado para Resize
+  const [isResizing, setIsResizing] = useState<'right' | 'bottom' | 'corner' | null>(null);
+  
   const containerRef = useRef<HTMLDivElement>(null);
   const lastMousePos = useRef({ x: 0, y: 0 });
+  const startDim = useRef({ w: 0, h: 0 });
 
-  // Atalhos de teclado para Pan (Espaço)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => { if (e.code === 'Space') setIsSpacePressed(true); };
     const handleKeyUp = (e: KeyboardEvent) => { if (e.code === 'Space') setIsSpacePressed(false); };
@@ -34,15 +42,65 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, donuts, activeAppTab, 
 
   const resetView = () => { setScale(0.85); setOffset({ x: 0, y: 0 }); };
 
+  // Handlers de Mouse Unificados (Pan e Resize)
+  const handleMouseDown = (e: React.MouseEvent, type: 'pan' | 'resize-right' | 'resize-bottom' | 'resize-corner') => {
+      lastMousePos.current = { x: e.clientX, y: e.clientY };
+      
+      if (type === 'pan') {
+          if (isSpacePressed || e.button === 1 || e.button === 0) { // Agora permite botão esquerdo se space não estiver apertado, mas clicando no fundo
+             setIsPanning(true);
+             e.preventDefault();
+          }
+      } else {
+          // Iniciar Resize
+          if (customDimensions) {
+              startDim.current = { w: customDimensions.width, h: customDimensions.height };
+              setIsResizing(type.replace('resize-', '') as any);
+              e.stopPropagation(); // Impede pan ao clicar no handle
+              e.preventDefault();
+          }
+      }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+      const dx = e.clientX - lastMousePos.current.x;
+      const dy = e.clientY - lastMousePos.current.y;
+      lastMousePos.current = { x: e.clientX, y: e.clientY };
+
+      if (isPanning) {
+          setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+      } else if (isResizing && setCustomDimensions) {
+          // Matemática do Resize ajustada pelo Scale
+          // Se o zoom é 0.5, mover o mouse 10px deve aumentar o box em 20px
+          const deltaW = (isResizing === 'right' || isResizing === 'corner') ? dx / scale : 0;
+          const deltaH = (isResizing === 'bottom' || isResizing === 'corner') ? dy / scale : 0;
+          
+          setCustomDimensions({
+              width: Math.max(100, Math.round(startDim.current.w + deltaW)),
+              height: Math.max(100, Math.round(startDim.current.h + deltaH))
+          });
+          startDim.current = { 
+              w: startDim.current.w + deltaW, 
+              h: startDim.current.h + deltaH 
+          };
+      }
+  };
+
+  const handleMouseUp = () => {
+      setIsPanning(false);
+      setIsResizing(null);
+  };
+
+  // --- LÓGICA DE RENDERIZAÇÃO (Mantida, mas com melhoria no CSS) ---
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '79, 70, 229';
   };
 
   const primaryRgb = hexToRgb(global.primaryColor);
-  const isCompact = global.cardMinHeight < 140; // Definição global do modo compacto
+  const isCompact = global.cardMinHeight < 140;
 
-  // Animações e Efeitos
+  // ... (Animações e Styles mantidos igual ao anterior, omitindo para brevidade, mas o CSS está injetado abaixo) ...
   let animationKeyframes = '';
   const dur = `${global.animationDuration}s`;
   if (global.animation === 'fadeInUp') {
@@ -55,10 +113,24 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, donuts, activeAppTab, 
 
   let hoverStyles = '';
   switch (global.hoverEffect) {
-    case 'lift': hoverStyles = `transform: translateY(-6px); box-shadow: 0 15px 30px rgba(0,0,0,0.15); border-color: var(--p-primary);`; break;
-    case 'scale': hoverStyles = `transform: scale(1.02); z-index: 10;`; break;
-    case 'glow': hoverStyles = `box-shadow: 0 0 25px rgba(${primaryRgb}, 0.5); border-color: var(--p-primary);`; break;
-    case 'border': hoverStyles = `border-color: var(--p-primary); border-width: 2px; padding: calc(var(--p-pad) - 1px);`; break;
+    case 'lift': 
+      // Adicionamos transition: transform ... !important para garantir a suavidade
+      hoverStyles = `
+        transform: translateY(-6px) !important; 
+        transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s ease !important;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.15); 
+        border-color: var(--p-primary);
+      `; 
+      break;
+    case 'scale': 
+      hoverStyles = `
+        transform: scale(1.02) !important; 
+        transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+        z-index: 10;
+      `; 
+      break;
+    case 'glow': hoverStyles = `box-shadow: 0 0 25px rgba(${primaryRgb}, 0.5) !important; border-color: var(--p-primary);`; break;
+    case 'border': hoverStyles = `border-color: var(--p-primary) !important; border-width: 2px; padding: calc(var(--p-pad) - 1px);`; break;
   }
 
   const animationRule = global.animation !== 'none' ? `${global.animation} ${dur} cubic-bezier(0.2, 0.8, 0.2, 1) forwards` : 'none';
@@ -67,69 +139,26 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, donuts, activeAppTab, 
     ${animationKeyframes}
     @keyframes loadBar { from { width: 0; } }
     @keyframes fillRing { to { stroke-dashoffset: var(--offset); } }
-
-    :root {
-      --p-primary: ${global.primaryColor};
-      --p-bg: ${global.cardBackgroundColor};
-      --p-text-title: ${global.textColorTitle};
-      --p-text-val: ${global.textColorValue};
-      --p-text-sub: ${global.textColorSub};
-      --p-radius: ${global.borderRadius}px;
-      --p-gap: ${global.gap}px;
-      --p-pad: ${global.padding}px;
-      --p-min-h: ${global.cardMinHeight}px;
-    }
-
+    :root { --p-primary: ${global.primaryColor}; --p-bg: ${global.cardBackgroundColor}; --p-text-title: ${global.textColorTitle}; --p-text-val: ${global.textColorValue}; --p-text-sub: ${global.textColorSub}; --p-radius: ${global.borderRadius}px; --p-gap: ${global.gap}px; --p-pad: ${global.padding}px; --p-min-h: ${global.cardMinHeight}px; --p-badge-size: ${global.fontSizeBadge || 10}px;}
     .p-container { display: grid; grid-template-columns: repeat(${global.columns}, 1fr); gap: var(--p-gap); padding: 10px; width: 100%; height: 100%; box-sizing: border-box; }
-    
-    /* === ESTILO UNIFICADO DO CARD === */
-    .p-card { 
-      background: var(--p-bg); 
-      border-radius: var(--p-radius); 
-      padding: var(--p-pad); 
-      min-height: var(--p-min-h); 
-      border: 1px solid rgba(0,0,0,0.08); 
-      display: flex; flex-direction: column; 
-      transition: all 0.25s; 
-      position: relative; overflow: hidden; 
-      opacity: ${global.animation !== 'none' ? 0 : 1};
-      animation: ${animationRule};
-    }
+    .p-card { background: var(--p-bg); border-radius: var(--p-radius); padding: var(--p-pad); min-height: var(--p-min-h); border: 1px solid rgba(0,0,0,0.08); display: flex; flex-direction: column; transition: all 0.25s; position: relative; overflow: hidden; opacity: ${global.animation !== 'none' ? 0 : 1}; animation: ${animationRule}; }
     .p-card:hover { ${hoverStyles} }
     .p-card.selected { border-color: var(--p-primary); box-shadow: 0 0 0 4px rgba(${primaryRgb}, 0.2); }
-    
-    /* Barra lateral padrão */
     .p-card::before { content: ''; position: absolute; left: 0; top: 15%; bottom: 15%; width: 4px; background: var(--p-primary); border-radius: 0 4px 4px 0; }
-    
-    /* === MODO COMPACTO (OVERRIDE) === */
-    .p-card.compact {
-        flex-direction: row !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        gap: 12px;
-        padding-right: 12px;
-    }
+    .p-card.compact { flex-direction: row !important; align-items: center !important; justify-content: space-between !important; gap: 12px; padding-right: 12px; }
     .p-card.compact::before { top: 15%; bottom: 15%; display: block; }
-    
-    /* ELEMENTOS INTERNOS */
-    .p-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; width: 100%; }
+    .p-header { display: flex; align-items: center; margin-bottom: 4px; width: 100%; gap: 8px; }
     .p-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 0; }
     .p-footer { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid rgba(0,0,0,0.03); }
-    
     .p-card.compact .p-footer { margin-top: 0; padding-top: 0; border-top: none; align-items: flex-end; justify-content: center; }
-
     .p-row { display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: var(--p-text-sub); }
-    .p-badge { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.04); display: flex; align-items: center; gap: 3px; }
-    
+    .p-badge { font-size: var(--p-badge-size); font-weight: 800; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.04); display: flex; align-items: center; gap: 3px; }
     .p-track { width: 100%; height: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; overflow: hidden; margin: 10px 0; }
     .p-fill { height: 100%; background: var(--p-primary); border-radius: 10px; width: 0; animation: loadBar 1s ease-out forwards; }
-    
     .ring-box { position: relative; width: 48px; height: 48px; }
     .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
     .ring-bg { fill: none; stroke: rgba(0,0,0,0.05); stroke-width: 5; }
     .ring-val { fill: none; stroke: var(--p-primary); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 126; stroke-dashoffset: 126; animation: fillRing 1.2s ease-out forwards; }
-
-    /* DONUT STYLES */
     .donut-ring { fill: transparent; stroke: #f3f4f6; transition: stroke-dasharray 0.5s ease; }
     .donut-segment { fill: transparent; transition: stroke-dasharray 0.5s ease; }
   `;
@@ -140,15 +169,16 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, donuts, activeAppTab, 
   return (
     <div 
       ref={containerRef}
-      className={`w-full h-full bg-[#0f0f11] overflow-hidden relative ${isPanning || isSpacePressed ? 'cursor-grabbing' : 'cursor-default'}`}
-      onMouseDown={(e) => { if (isSpacePressed || e.button === 1) { setIsPanning(true); lastMousePos.current = { x: e.clientX, y: e.clientY }; e.preventDefault(); } }}
-      onMouseMove={(e) => { if (isPanning) { setOffset(prev => ({ x: prev.x + (e.clientX - lastMousePos.current.x), y: prev.y + (e.clientY - lastMousePos.current.y) })); lastMousePos.current = { x: e.clientX, y: e.clientY }; } }}
-      onMouseUp={() => setIsPanning(false)}
+      className={`w-full h-full bg-[#0f0f11] overflow-hidden relative select-none ${isPanning ? 'cursor-grabbing' : 'cursor-default'}`}
+      onMouseDown={(e) => handleMouseDown(e, 'pan')}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
       onWheel={(e) => { if (e.ctrlKey || e.altKey) { e.preventDefault(); setScale(prev => Math.min(Math.max(prev * (e.deltaY > 0 ? 0.9 : 1.1), 0.05), 5)); } }}
     >
         <style>{dynamicStyles}</style>
         
-        {/* UI TOOLBARS */}
+        {/* HUD de Zoom/Tamanho */}
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
             <div className="bg-black/40 backdrop-blur-xl text-white/90 px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-4 border border-white/10">
                 <BoxSelect size={14} className="text-indigo-400" />
@@ -158,6 +188,7 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, donuts, activeAppTab, 
             </div>
         </div>
 
+        {/* Controles de Zoom */}
         <div className="absolute bottom-8 right-8 flex flex-col gap-3 z-50">
            <div className="flex flex-col bg-black/40 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10">
              <button onClick={() => setScale(prev => Math.min(prev + 0.1, 5))} className="p-3 text-white/60 hover:text-white"><ZoomIn size={20}/></button>
@@ -167,70 +198,128 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, donuts, activeAppTab, 
            </div>
         </div>
 
-        {/* WORLD */}
         <div 
-          className="absolute inset-0 flex items-center justify-center transition-transform duration-100"
-          style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, pointerEvents: isPanning ? 'none' : 'auto' }}
+          className="absolute inset-0 flex items-center justify-center origin-center"
+          style={{ 
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, 
+              // AQUI ESTÁ A CORREÇÃO DO LAG: Desliga transição durante pan/resize
+              transition: isPanning || isResizing ? 'none' : 'transform 0.2s cubic-bezier(0.1, 0.7, 0.1, 1)' 
+          }}
         >
           <div 
-            className="bg-[#161618] rounded-sm relative border border-white/10 shadow-2xl transition-all duration-300"
+            className="bg-[#161618] rounded-sm relative border border-white/10 shadow-2xl"
             style={{ width: simWidth, height: simHeight, minWidth: simWidth, minHeight: simHeight }}
           >
+            {/* ALÇAS DE REDIMENSIONAMENTO (HANDLES) */}
+            {viewport === 'custom' && (
+                <>
+                    {/* Direita */}
+                    <div 
+                        onMouseDown={(e) => handleMouseDown(e, 'resize-right')}
+                        className="absolute -right-3 top-0 bottom-6 w-6 cursor-ew-resize flex items-center justify-center opacity-0 hover:opacity-100 group transition-opacity z-50"
+                    >
+                        <div className="w-1.5 h-12 bg-indigo-500 rounded-full shadow-lg" />
+                    </div>
+                    {/* Baixo */}
+                    <div 
+                        onMouseDown={(e) => handleMouseDown(e, 'resize-bottom')}
+                        className="absolute -bottom-3 left-0 right-6 h-6 cursor-ns-resize flex items-center justify-center opacity-0 hover:opacity-100 group transition-opacity z-50"
+                    >
+                        <div className="h-1.5 w-12 bg-indigo-500 rounded-full shadow-lg" />
+                    </div>
+                    {/* Canto (Corner) */}
+                    <div 
+                        onMouseDown={(e) => handleMouseDown(e, 'resize-corner')}
+                        className="absolute -right-3 -bottom-3 w-8 h-8 cursor-nwse-resize flex items-center justify-center opacity-0 hover:opacity-100 z-50 text-indigo-500"
+                    >
+                        <GripHorizontal size={24} className="drop-shadow-lg" />
+                    </div>
+                    {/* Linhas Guias (Bordas ativas) */}
+                    <div className="absolute inset-0 border-2 border-indigo-500/0 hover:border-indigo-500/30 transition-colors pointer-events-none" />
+                </>
+            )}
+
             <div className="p-container">
               {activeAppTab === 'cards' ? cards.map((card, idx) => {
                 const baseFTitle = card.fontSizeTitle || global.fontSizeTitle;
                 const baseFValue = card.fontSizeValue || global.fontSizeValue;
                 const fSub = card.fontSizeSub || global.fontSizeSub;
-
-                // Ajuste fino de fonte para modo compacto
                 const fTitle = isCompact ? Math.min(baseFTitle, 10) : baseFTitle;
                 const fValue = isCompact ? Math.min(baseFValue, 26) : baseFValue;
+                
+                const iconColor = card.iconColor || card.accentColor || global.primaryColor;
+                const iconSize = card.iconSize || 40;
+                const iconBg = card.iconBackgroundColor || 'transparent';
+                const iconPadding = card.iconPadding || 8;
+                const iconRounded = card.iconRounded ? '50%' : '8px';
+                const iconPosition = card.iconPosition || 'top';
+                const align = card.textAlign || global.textAlign || 'left';
 
-                // --- MODO COMPACTO (HORIZONTAL) ---
+                const IconElement = (
+                  <div style={{
+                    width: `${iconSize}px`,
+                    height: `${iconSize}px`,
+                    padding: `${iconPadding}px`,
+                    backgroundColor: iconBg,
+                    borderRadius: iconRounded,
+                    color: iconColor,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                      <svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={iconPaths[card.icon] || iconPaths['circle']} /></svg>
+                  </div>
+                );
+
                 if (isCompact) {
                    return (
                     <div key={card.id} className={`p-card compact ${selectedCardId === card.id ? 'selected' : ''}`} 
                          style={{ animationDelay: `${idx * 0.1}s` } as any}
-                         onClick={() => onCardClick?.(card.id)}>
+                         onClick={(e) => { e.stopPropagation(); onCardClick?.(card.id); }}>
                       
-                      {/* Adicionei margem na esquerda para não colar na barra colorida */}
                       <div className="flex flex-col justify-center z-10" style={{ maxWidth: '60%', marginLeft: '8px' }}>
-                        
-                        {/* NOVO BLOCO COM ÍCONE + TÍTULO */}
                         <div className="flex items-center gap-2 mb-0.5">
-                           <div className="text-gray-400 opacity-80">
+                           <div style={{ color: iconColor, width: '14px', height: '14px', display: 'flex' }}>
                               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d={iconPaths[card.icon] || iconPaths['circle']} /></svg>
                            </div>
                            <span style={{ fontSize: `${fTitle}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle }} className="uppercase tracking-widest whitespace-nowrap overflow-hidden text-ellipsis">
                              {card.title}
                            </span>
                         </div>
-                        
                         <div style={{ fontSize: `${fValue}px`, fontWeight: global.fontWeightValue, color: global.textColorValue, lineHeight: 1, whiteSpace: 'nowrap' }}>
                           {card.value}
                         </div>
                       </div>
     
-                      {/* Direita: Comparativos */}
                       <div className="flex flex-col items-end justify-center gap-1 z-10 h-full">
-                         {card.comparisons.map((comp) => (
-                            <div key={comp.id} className="flex items-center gap-2" style={{ fontSize: `${fSub}px`, fontWeight: 600, color: global.textColorSub }}>
-                               <span className="hidden sm:inline">{comp.label}</span>
-                               {comp.trend !== 'none' && (
-                                 <span className="p-badge" style={{ color: comp.trend === 'up' ? global.positiveColor : global.negativeColor }}>
-                                   {comp.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>} {comp.value}
-                                 </span>
-                               )}
-                            </div>
-                         ))}
+                         {card.comparisons.map((comp) => {
+                            // CÁLCULO DA COR
+                            let badgeColor = global.neutralColor;
+                            
+                            if (comp.trend === 'up') {
+                                badgeColor = comp.invertColor ? global.negativeColor : global.positiveColor;
+                            } else if (comp.trend === 'down') {
+                                badgeColor = comp.invertColor ? global.positiveColor : global.negativeColor;
+                            }
+
+                            return (
+                                <div key={comp.id} className="flex items-center gap-2" style={{ fontSize: `${fSub}px`, fontWeight: 600, color: global.textColorSub }}>
+                                   <span className="hidden sm:inline">{comp.label}</span>
+                                   {comp.trend !== 'none' && (
+                                     <span className="p-badge" style={{ color: badgeColor }}>
+                                       {comp.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>} {comp.value}
+                                     </span>
+                                   )}
+                                </div>
+                            );
+                         })}
                       </div>
-    
-                      {/* Ícone Marca d'água (Fundo) */}
+                      
                       <div className="absolute -right-4 -bottom-6 opacity-10 pointer-events-none" style={{ color: global.textColorValue }}>
                           <svg viewBox="0 0 24 24" width="90" height="90" fill="currentColor"><path d={iconPaths[card.icon] || iconPaths['circle']} /></svg>
                       </div>
     
-                      {/* Barra de Progresso no Rodapé */}
                       {card.type === 'progress' && (
                          <div className="absolute bottom-0 left-0 h-1 transition-all duration-1000" style={{ width: `${card.progressValue}%`, backgroundColor: global.primaryColor }} />
                       )}
@@ -238,60 +327,89 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, donuts, activeAppTab, 
                    );
                 }
     
-                // --- MODO PADRÃO (VERTICAL) ---
+                // MODO VERTICAL (PADRÃO)
+                let headerContent;
+                let headerStyle: React.CSSProperties = {};
+
+                if (iconPosition === 'top') {
+                    headerStyle = { flexDirection: 'column', alignItems: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start', justifyContent: 'center' };
+                    headerContent = (
+                      <>
+                        {card.type === 'ring' ? renderRing(card, global) : IconElement}
+                        <span style={{ fontSize: `${fTitle}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle, marginTop: '4px' }} className="uppercase tracking-widest">{card.title}</span>
+                      </>
+                    );
+                } else if (iconPosition === 'right') {
+                    headerStyle = { justifyContent: 'space-between' };
+                    headerContent = (
+                      <>
+                        <span style={{ fontSize: `${fTitle}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle }} className="uppercase tracking-widest">{card.title}</span>
+                        {card.type === 'ring' ? renderRing(card, global) : IconElement}
+                      </>
+                    );
+                } else {
+                    headerStyle = { justifyContent: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start' };
+                    headerContent = (
+                      <>
+                        {card.type !== 'ring' && IconElement}
+                        <span style={{ fontSize: `${fTitle}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle }} className="uppercase tracking-widest">{card.title}</span>
+                      </>
+                    );
+                }
+
                 return (
                 <div key={card.id} className={`p-card ${selectedCardId === card.id ? 'selected' : ''}`} 
-                     style={{ animationDelay: `${idx * 0.1}s` } as any}
-                     onClick={() => onCardClick?.(card.id)}>
+                     style={{ animationDelay: `${idx * 0.1}s`, '--p-bg': card.cardBackgroundColor || global.cardBackgroundColor } as any}
+                     onClick={(e) => { e.stopPropagation(); onCardClick?.(card.id); }}>
                   
-                  <div className="p-header">
-                    <span style={{ fontSize: `${fTitle}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle }} className="uppercase tracking-widest">{card.title}</span>
-                    {card.type === 'ring' ? (
-                       <div className="ring-box">
-                          <svg viewBox="0 0 50 50" className="ring-svg">
-                            <circle className="ring-bg" cx="25" cy="25" r="20" />
-                            <circle className="ring-val" cx="25" cy="25" r="20" style={{"--offset": 126 - (126 * Math.min(1, Math.max(0, card.progressValue / 100)))} as any} />
-                          </svg>
-                          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold" style={{color: global.textColorValue}}>{card.progressValue}%</div>
-                       </div>
-                    ) : (
-                       <div className="text-gray-400 opacity-70 transition-transform hover:scale-110">
-                          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={iconPaths[card.icon] || iconPaths['circle']} /></svg>
-                       </div>
-                    )}
+                  <div className="p-header" style={headerStyle}>
+                     {headerContent}
                   </div>
     
                   <div className="p-body">
-                     <div style={{ fontSize: `${fValue}px`, fontWeight: global.fontWeightValue, color: global.textColorValue, letterSpacing: '-0.5px' }}>{card.value}</div>
-                     {card.type === 'progress' && <div className="p-track"><div className="p-fill" style={{ width: `${card.progressValue}%` }} /></div>}
+                     <div style={{ fontSize: `${fValue}px`, fontWeight: global.fontWeightValue, color: global.textColorValue, letterSpacing: '-0.5px', textAlign: align as any }}>{card.value}</div>
+                     {card.type === 'progress' && <div className="p-track" style={{ height: `${card.progressHeight || 6}px` }}><div className="p-fill" style={{ width: `${card.progressValue}%`, background: card.progressColor || card.accentColor || global.primaryColor }} /></div>}
                   </div>
     
                   <div className="p-footer">
-                    {card.comparisons.map((comp) => (
-                       <div key={comp.id} className="p-row" style={{ fontSize: `${fSub}px` }}>
-                          <span>{comp.label}</span>
-                          {comp.trend !== 'none' && (
-                            <span className="p-badge" style={{ color: comp.trend === 'up' ? global.positiveColor : global.negativeColor }}>
-                              {comp.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>} {comp.value}
-                            </span>
-                          )}
-                       </div>
-                    ))}
+                    {card.comparisons.map((comp) => {
+                       // 1. Calculamos a cor correta antes de desenhar
+                       let badgeColor = global.neutralColor;
+                       
+                       if (comp.trend === 'up') {
+                           // Se subiu: É ruim se invertido (Vermelho), Bom se normal (Verde)
+                           badgeColor = comp.invertColor ? global.negativeColor : global.positiveColor;
+                       } else if (comp.trend === 'down') {
+                           // Se desceu: É bom se invertido (Verde), Ruim se normal (Vermelho)
+                           badgeColor = comp.invertColor ? global.positiveColor : global.negativeColor;
+                       }
+
+                       // 2. Retornamos o HTML usando essa cor calculada
+                       return (
+                           <div key={comp.id} className="p-row" style={{ fontSize: `${fSub}px` }}>
+                              <span>{comp.label}</span>
+                              {comp.trend !== 'none' && (
+                                <span className="p-badge" style={{ color: badgeColor }}>
+                                  {comp.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>} {comp.value}
+                                </span>
+                              )}
+                           </div>
+                       );
+                    })}
                   </div>
                 </div>
               )}) : donuts.map((donut, idx) => {
-                 // --- RENDERIZAÇÃO DE DONUTS (Mantida igual) ---
-                const isSemi = donut.geometry === 'semicircle';
-                const radius = 40;
-                const circ = 2 * Math.PI * radius;
-                const isSelected = selectedCardId === donut.id;
-                const align = donut.textAlign || global.textAlign || 'left';
-                const flexAlign = align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center';
-                const rotation = isSemi ? -180 : -90;
-                const circumferenceDivisor = isSemi ? 2 : 1;
+                 const isSemi = donut.geometry === 'semicircle';
+                 const radius = 40;
+                 const circ = 2 * Math.PI * radius;
+                 const isSelected = selectedCardId === donut.id;
+                 const align = donut.textAlign || global.textAlign || 'left';
+                 const flexAlign = align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center';
+                 const rotation = isSemi ? -180 : -90;
+                 const circumferenceDivisor = isSemi ? 2 : 1;
 
                 return (
-                  <div key={donut.id} className={`p-card ${isSelected ? 'selected' : ''}`} style={{ background: donut.cardBackgroundColor || global.cardBackgroundColor, animationDelay: `${idx * 0.1}s` } as any} onClick={() => onCardClick?.(donut.id)}>
+                  <div key={donut.id} className={`p-card ${isSelected ? 'selected' : ''}`} style={{ background: donut.cardBackgroundColor || global.cardBackgroundColor, animationDelay: `${idx * 0.1}s` } as any} onClick={(e) => { e.stopPropagation(); onCardClick?.(donut.id); }}>
                     <div className="mb-4 flex" style={{ justifyContent: flexAlign }}>
                        <span style={{ fontSize: `${donut.fontSizeTitle || global.fontSizeTitle}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle }} className="uppercase tracking-widest">{donut.title}</span>
                     </div>
@@ -345,5 +463,15 @@ const Preview: React.FC<PreviewProps> = ({ global, cards, donuts, activeAppTab, 
     </div>
   );
 };
+
+const renderRing = (card: any, global: any) => (
+   <div className="ring-box">
+      <svg viewBox="0 0 50 50" className="ring-svg">
+        <circle className="ring-bg" cx="25" cy="25" r="20" />
+        <circle className="ring-val" cx="25" cy="25" r="20" style={{"--offset": 126 - (126 * Math.min(1, Math.max(0, card.progressValue / 100)))} as any} />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold" style={{color: global.textColorValue}}>{card.progressValue}%</div>
+   </div>
+);
 
 export default Preview;
