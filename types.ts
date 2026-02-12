@@ -1,3 +1,5 @@
+// types.ts
+
 export type CardType = 'simple' | 'progress' | 'ring';
 export type TrendDirection = 'up' | 'down' | 'neutral' | 'none';
 export type AnimationType = 'none' | 'fadeInUp' | 'popIn' | 'slideRight';
@@ -40,11 +42,9 @@ export interface CardConfig {
   suffix: string;
   type: CardType;
   
-  // Grid Dimensions (Novos campos)
   colSpan?: number;
   rowSpan?: number;
 
-  // Progress Bar Specifics
   progressMeasure?: string;
   progressTarget?: string;
   progressColor?: string;
@@ -55,7 +55,6 @@ export interface CardConfig {
   targetMeasurePlaceholder: string;
   value: string;
   
-  // Icon Configuration
   icon: string;
   iconPosition: IconPosition;
   iconSize: number;
@@ -86,18 +85,25 @@ export interface DonutSlice {
   value: string;
 }
 
+// types.ts
+
+// ... (outras interfaces mantidas)
+
 export interface DonutChartConfig {
   id: string;
   title: string;
   mode: 'completeness' | 'distribution';
   geometry: 'full' | 'semicircle';
   
-  // Grid Dimensions (Novos campos)
   colSpan?: number;
   rowSpan?: number;
 
   ringThickness: number;
   roundedCorners: boolean;
+  
+  // --- NOVO CAMPO: TAMANHO DO GRÁFICO ---
+  chartSize?: number; // Porcentagem (ex: 90 para 90%)
+
   showCenterText: boolean;
   centerTextLabel: string;
   centerTextValueMeasure: string;
@@ -107,9 +113,14 @@ export interface DonutChartConfig {
   isOpen?: boolean;
   cardBackgroundColor?: string;
   accentColor?: string;
-  fontSizeTitle?: number;
   textAlign?: TextAlign;
+
+  fontSizeTitle?: number;
+  fontSizeValue?: number;
+  fontSizeLabel?: number;
 }
+
+// ... (resto do arquivo mantido)
 
 export interface GlobalConfig {
   columns: number;
@@ -126,7 +137,6 @@ export interface GlobalConfig {
   borderRadius: number;
   cardMinHeight: number;
   
-  // Shadow config
   shadowIntensity: number;
   shadowBlur: number;
   shadowDistance: number;

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { CardConfig, GlobalConfig, CardType, HoverEffect, ComparisonConfig, DonutChartConfig, AppTab } from '../types';
+import { CardConfig, GlobalConfig, CardType, HoverEffect, ComparisonConfig, DonutChartConfig, AppTab, DonutSlice } from '../types';
 import { iconDefinitions, IconCategory } from '../utils/icons';
-import { Trash2, Plus, Type, Palette, Layout, ChevronDown, ChevronRight, MousePointer2, X, Binary, Sparkles, ALargeSmall, Droplets, CalendarDays, CalendarRange, PieChart, Layers, Wand2, AlignLeft, AlignCenter, AlignRight, Component, BarChart3, Search, Database, PanelTop, PanelLeft, PanelRight, Save, Sun, Grid3X3} from 'lucide-react';
+import { Trash2, Plus, Type, Palette, Layout, ChevronDown, ChevronRight, MousePointer2, X, Binary, Sparkles, ALargeSmall, Droplets, CalendarDays, CalendarRange, PieChart, Layers, Wand2, AlignLeft, AlignCenter, AlignRight, Component, BarChart3, Search, Database, PanelTop, PanelLeft, PanelRight, Save, Sun, Grid3X3, CircleDot} from 'lucide-react';
 
 interface EditorProps {
   globalConfig: GlobalConfig;
@@ -116,6 +116,32 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
 
   const updateDonut = (id: string, field: keyof DonutChartConfig, value: any) => {
     setDonuts(donuts.map(d => d.id === id ? { ...d, [field]: value } : d));
+  };
+
+  const addSlice = (donutId: string) => {
+    const donut = donuts.find(d => d.id === donutId);
+    if (!donut) return;
+    const newSlice: DonutSlice = {
+      id: Math.random().toString(36).substr(2, 9),
+      label: `Fatia ${donut.slices.length + 1}`,
+      measurePlaceholder: '10',
+      color: globalConfig.primaryColor,
+      value: '25'
+    };
+    updateDonut(donutId, 'slices', [...donut.slices, newSlice]);
+  };
+
+  const updateSlice = (donutId: string, sliceId: string, field: keyof DonutSlice, val: any) => {
+      const donut = donuts.find(d => d.id === donutId);
+      if (!donut) return;
+      const newSlices = donut.slices.map(s => s.id === sliceId ? { ...s, [field]: val } : s);
+      updateDonut(donutId, 'slices', newSlices);
+  };
+
+  const deleteSlice = (donutId: string, sliceId: string) => {
+       const donut = donuts.find(d => d.id === donutId);
+       if (!donut) return;
+       updateDonut(donutId, 'slices', donut.slices.filter(s => s.id !== sliceId));
   };
 
   const addComparison = (cardId: string, type: 'mom' | 'yoy' | 'custom' = 'custom') => {
@@ -518,12 +544,20 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                      <div className="p-5 border-t space-y-6 animate-fadeIn">
                        <Field label="Título"><input value={donut.title} onChange={(e) => updateDonut(donut.id, 'title', e.target.value)} className="input-field font-bold"/></Field>
                        
-                       {/* --- NOVO BLOCO: DIMENSÕES GRID (DONUTS) --- */}
                        <div className="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 space-y-4">
                          <div className="flex items-center gap-2"><Grid3X3 size={14} className="text-purple-600"/><span className="text-[10px] font-black text-purple-700 uppercase">Dimensões do Card (Grid)</span></div>
                          <div className="grid grid-cols-2 gap-4">
                              <Field label="Ocupar Colunas"><input type="number" min="1" max={globalConfig.columns} value={donut.colSpan || 1} onChange={(e) => updateDonut(donut.id, 'colSpan', +e.target.value)} className="input-field"/></Field>
                              <Field label="Ocupar Linhas"><input type="number" min="1" value={donut.rowSpan || 1} onChange={(e) => updateDonut(donut.id, 'rowSpan', +e.target.value)} className="input-field"/></Field>
+                         </div>
+                       </div>
+                       
+                       <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
+                         <div className="flex items-center gap-2"><Type size={14} className="text-gray-600"/><span className="text-[10px] font-black text-gray-700 uppercase">Tipografia (Tamanhos)</span></div>
+                         <div className="grid grid-cols-2 gap-4">
+                            <Field label="Tamanho Título"><input type="number" value={donut.fontSizeTitle || globalConfig.fontSizeTitle} onChange={(e) => updateDonut(donut.id, 'fontSizeTitle', +e.target.value)} className="input-field"/></Field>
+                            <Field label="Tamanho Valor Central"><input type="number" value={donut.fontSizeValue || 16} onChange={(e) => updateDonut(donut.id, 'fontSizeValue', +e.target.value)} className="input-field"/></Field>
+                            <Field label="Tamanho Rótulo Central"><input type="number" value={donut.fontSizeLabel || 9} onChange={(e) => updateDonut(donut.id, 'fontSizeLabel', +e.target.value)} className="input-field"/></Field>
                          </div>
                        </div>
 
@@ -560,7 +594,48 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                              />
                             </>
                           ) : (
-                            <div className="text-xs text-gray-500 p-2">Adicionar fatias (não implementado nesta UI simplificada)</div>
+                             <div className="space-y-4 animate-fadeIn">
+                                 <div className="flex justify-between items-center">
+                                     <label className="text-[10px] font-black text-gray-500 uppercase">Fatias (Distribuição)</label>
+                                     <button onClick={() => addSlice(donut.id)} className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">+ Adicionar</button>
+                                 </div>
+                                 <div className="space-y-3">
+                                     {donut.slices.map((slice, idx) => (
+                                         <div key={slice.id} className="p-3 bg-gray-50 rounded-xl border border-gray-100 relative group transition-all hover:border-indigo-200 hover:shadow-sm">
+                                             <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-5 h-5 rounded-md shadow-sm border border-gray-200 overflow-hidden relative">
+                                                        <input type="color" value={slice.color} onChange={(e) => updateSlice(donut.id, slice.id, 'color', e.target.value)} className="absolute -top-2 -left-2 w-10 h-10 cursor-pointer p-0 border-0" />
+                                                    </div>
+                                                    <input 
+                                                        value={slice.label} 
+                                                        onChange={(e) => updateSlice(donut.id, slice.id, 'label', e.target.value)} 
+                                                        className="bg-transparent text-[11px] font-bold text-gray-700 outline-none border-b border-transparent focus:border-indigo-300 placeholder-gray-400 w-24"
+                                                        placeholder="Nome"
+                                                    />
+                                                </div>
+                                                <button onClick={() => deleteSlice(donut.id, slice.id)} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={14}/></button>
+                                             </div>
+                                             <div className="grid grid-cols-2 gap-3">
+                                                <MeasureSelect 
+                                                    label="Medida (DAX)" 
+                                                    value={slice.measurePlaceholder} 
+                                                    onChange={(v) => updateSlice(donut.id, slice.id, 'measurePlaceholder', v)} 
+                                                    bindings={globalConfig.dataBindings || []} 
+                                                />
+                                                <Field label="Valor Preview (%)">
+                                                    <input type="number" value={slice.value} onChange={(e) => updateSlice(donut.id, slice.id, 'value', e.target.value)} className="input-field"/>
+                                                </Field>
+                                             </div>
+                                         </div>
+                                     ))}
+                                     {donut.slices.length === 0 && (
+                                         <div className="text-center py-4 border-2 border-dashed border-gray-100 rounded-xl text-xs text-gray-400">
+                                             Nenhuma fatia adicionada
+                                         </div>
+                                     )}
+                                 </div>
+                             </div>
                           )}
                        </div>
                        
@@ -568,6 +643,10 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                          <Field label="Espessura Anel"><input type="number" value={donut.ringThickness} onChange={(e) => updateDonut(donut.id, 'ringThickness', +e.target.value)} className="input-field"/></Field>
                          <Field label="Cor Principal"><ColorPickerSimple value={donut.accentColor || globalConfig.primaryColor} onChange={(v) => updateDonut(donut.id, 'accentColor', v)} /></Field>
                        </div>
+                       
+                       <Field label={`Tamanho do Gráfico: ${donut.chartSize || 90}%`}>
+                           <input type="range" min="20" max="100" value={donut.chartSize || 90} onChange={(e) => updateDonut(donut.id, 'chartSize', +e.target.value)} className="range-slider accent-indigo-600"/>
+                       </Field>
                        
                        <div className="p-3 border rounded-xl flex items-center justify-between">
                           <label className="text-[10px] font-black text-gray-500 uppercase">Texto Central</label>
@@ -583,6 +662,13 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                                 bindings={globalConfig.dataBindings || []} 
                              />
                           </div>
+                       )}
+
+                       {donut.mode !== 'distribution' && (
+                           <div className="p-3 border rounded-xl flex items-center justify-between bg-gray-50/50">
+                              <label className="text-[10px] font-black text-gray-500 uppercase">Cantos Arredondados</label>
+                              <button onClick={() => updateDonut(donut.id, 'roundedCorners', !donut.roundedCorners)} className={`w-10 h-5 rounded-full relative transition-all ${donut.roundedCorners ? 'bg-indigo-600' : 'bg-gray-300'}`}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${donut.roundedCorners ? 'left-6' : 'left-1'}`} /></button>
+                           </div>
                        )}
                      </div>
                    )}

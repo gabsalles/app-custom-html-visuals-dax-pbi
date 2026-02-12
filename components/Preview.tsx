@@ -72,11 +72,6 @@ const Preview: React.FC<PreviewProps> = ({
       if (isPanning) {
           setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
       } else if (isResizing && setCustomDimensions && customDimensions) {
-          // Lógica de Redimensionamento em 8 direções
-          // Como o container é flex center, redimensionar expande para os dois lados.
-          // Para "fixar" um lado, precisamos ajustar o offset (posição) simultaneamente.
-          // A regra mágica é: offset move dx/2 sempre.
-
           const scaledDx = dx / scale;
           const scaledDy = dy / scale;
 
@@ -85,16 +80,14 @@ const Preview: React.FC<PreviewProps> = ({
           let offX = 0;
           let offY = 0;
 
-          // Horizontal
           if (isResizing.includes('e')) { // Direita (East)
              newW += scaledDx;
              offX = scaledDx / 2;
           } else if (isResizing.includes('w')) { // Esquerda (West)
              newW -= scaledDx;
-             offX = scaledDx / 2; // Sim, positivo, pois o mouse moveu negativo
+             offX = scaledDx / 2; 
           }
 
-          // Vertical
           if (isResizing.includes('s')) { // Baixo (South)
              newH += scaledDy;
              offY = scaledDy / 2;
@@ -103,14 +96,12 @@ const Preview: React.FC<PreviewProps> = ({
              offY = scaledDy / 2;
           }
 
-          // Atualiza Dimensões (Limitando mínimo)
           const finalW = Math.max(100, Math.round(newW));
           const finalH = Math.max(100, Math.round(newH));
           
           setCustomDimensions({ width: finalW, height: finalH });
           startDim.current = { w: finalW, h: finalH };
           
-          // Atualiza Offset para compensar o centro
           setOffset(prev => ({ x: prev.x + offX, y: prev.y + offY }));
       }
   };
@@ -126,10 +117,8 @@ const Preview: React.FC<PreviewProps> = ({
   };
 
   const primaryRgb = hexToRgb(global.primaryColor);
-  const isCompact = global.cardMinHeight < 140;
 
   let animationKeyframes = '';
-  const dur = `${global.animationDuration}s`;
   if (global.animation === 'fadeInUp') {
     animationKeyframes = `@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`;
   } else if (global.animation === 'popIn') {
@@ -159,23 +148,49 @@ const Preview: React.FC<PreviewProps> = ({
     case 'border': hoverStyles = `border-color: var(--p-primary) !important; border-width: 2px; padding: calc(var(--p-pad) - 1px);`; break;
   }
 
-  const animationRule = global.animation !== 'none' ? `${global.animation} ${dur} cubic-bezier(0.2, 0.8, 0.2, 1) forwards` : 'none';
+  const animationRule = global.animation !== 'none' ? `${global.animation} ${global.animationDuration}s cubic-bezier(0.2, 0.8, 0.2, 1) forwards` : 'none';
 
   const dynamicStyles = `
     ${animationKeyframes}
     @keyframes loadBar { from { width: 0; } }
     @keyframes fillRing { to { stroke-dashoffset: var(--offset); } }
     :root { --p-primary: ${global.primaryColor}; --p-bg: ${global.cardBackgroundColor}; --p-text-title: ${global.textColorTitle}; --p-text-val: ${global.textColorValue}; --p-text-sub: ${global.textColorSub}; --p-radius: ${global.borderRadius}px; --p-gap: ${global.gap}px; --p-pad: ${global.padding}px; --p-min-h: ${global.cardMinHeight}px; --p-badge-size: ${global.fontSizeBadge || 10}px;}
-    .p-container { display: grid; grid-template-columns: repeat(${global.columns}, 1fr); gap: var(--p-gap); padding: 10px; width: 100%; height: 100%; box-sizing: border-box; }
-    .p-card { background: var(--p-bg); border-radius: var(--p-radius); padding: var(--p-pad); min-height: var(--p-min-h); border: 1px solid rgba(0,0,0,0.08); display: flex; flex-direction: column; transition: all 0.25s; position: relative; overflow: hidden; opacity: ${global.animation !== 'none' ? 0 : 1}; animation: ${animationRule}; }
+    
+    .p-container { 
+        display: grid; 
+        grid-template-columns: repeat(${global.columns}, 1fr); 
+        grid-auto-rows: 1fr; /* Responsividade Vertical - Linhas esticam */
+        gap: var(--p-gap); 
+        padding: 10px; 
+        width: 100%; height: 100%; box-sizing: border-box; 
+    }
+    
+    .p-card { 
+        background: var(--p-bg); 
+        border-radius: var(--p-radius); 
+        padding: var(--p-pad); 
+        min-height: var(--p-min-h); 
+        border: 1px solid rgba(0,0,0,0.08); 
+        display: flex; 
+        flex-direction: column; 
+        transition: all 0.25s; 
+        position: relative; 
+        overflow: hidden; 
+        opacity: ${global.animation !== 'none' ? 0 : 1}; 
+        animation: ${animationRule}; 
+    }
+    
     .p-card:hover { ${hoverStyles} }
     .p-card.selected { border-color: var(--p-primary); box-shadow: 0 0 0 4px rgba(${primaryRgb}, 0.2); }
     .p-card::before { content: ''; position: absolute; left: 0; top: 15%; bottom: 15%; width: 4px; background: var(--p-primary); border-radius: 0 4px 4px 0; }
     .p-card.compact { flex-direction: row !important; align-items: center !important; justify-content: space-between !important; gap: 12px; padding-right: 12px; }
     .p-card.compact::before { top: 15%; bottom: 15%; display: block; }
-    .p-header { display: flex; align-items: center; margin-bottom: 4px; width: 100%; gap: 8px; }
+    
+    /* Cabeçalho e Rodapé com Flex-Shrink 0 para não encolherem */
+    .p-header { display: flex; align-items: center; margin-bottom: 4px; width: 100%; gap: 8px; flex-shrink: 0; }
     .p-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 0; }
-    .p-footer { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid rgba(0,0,0,0.03); }
+    .p-footer { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid rgba(0,0,0,0.03); flex-shrink: 0; }
+    
     .p-card.compact .p-footer { margin-top: 0; padding-top: 0; border-top: none; align-items: flex-end; justify-content: center; }
     .p-row { display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: var(--p-text-sub); }
     .p-badge { font-size: var(--p-badge-size); font-weight: 800; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.04); display: flex; align-items: center; gap: 3px; }
@@ -191,7 +206,6 @@ const Preview: React.FC<PreviewProps> = ({
   const simWidth = viewport === 'custom' && customDimensions ? customDimensions.width : viewport === 'mobile' ? 375 : viewport === 'tablet' ? 768 : 1000;
   const simHeight = viewport === 'custom' && customDimensions ? customDimensions.height : 600;
 
-  // Renderizadores de Handles (Auxiliar)
   const Handle = ({ dir, className, children }: { dir: ResizeHandle, className: string, children?: React.ReactNode }) => (
     <div 
         onMouseDown={(e) => handleMouseDown(e, dir)}
@@ -244,25 +258,21 @@ const Preview: React.FC<PreviewProps> = ({
           >
             {viewport === 'custom' && (
                 <>
-                    {/* BORDAS (LADOS) */}
                     <Handle dir="n" className="top-0 left-0 right-0 h-4 -mt-2 cursor-ns-resize"><div className="w-12 h-1.5 bg-indigo-500 rounded-full" /></Handle>
                     <Handle dir="s" className="bottom-0 left-0 right-0 h-4 -mb-2 cursor-ns-resize"><div className="w-12 h-1.5 bg-indigo-500 rounded-full" /></Handle>
                     <Handle dir="e" className="right-0 top-0 bottom-0 w-4 -mr-2 cursor-ew-resize"><div className="h-12 w-1.5 bg-indigo-500 rounded-full" /></Handle>
                     <Handle dir="w" className="left-0 top-0 bottom-0 w-4 -ml-2 cursor-ew-resize"><div className="h-12 w-1.5 bg-indigo-500 rounded-full" /></Handle>
-
-                    {/* CANTOS */}
                     <Handle dir="nw" className="-top-3 -left-3 w-8 h-8 cursor-nwse-resize text-indigo-500"><GripHorizontal size={20} className="drop-shadow-lg rotate-90" /></Handle>
                     <Handle dir="ne" className="-top-3 -right-3 w-8 h-8 cursor-nesw-resize text-indigo-500"><GripHorizontal size={20} className="drop-shadow-lg rotate-90" /></Handle>
                     <Handle dir="sw" className="-bottom-3 -left-3 w-8 h-8 cursor-nesw-resize text-indigo-500"><GripHorizontal size={20} className="drop-shadow-lg" /></Handle>
                     <Handle dir="se" className="-bottom-3 -right-3 w-8 h-8 cursor-nwse-resize text-indigo-500"><GripHorizontal size={20} className="drop-shadow-lg" /></Handle>
-
-                    {/* LINHAS GUIAS (Hover) */}
                     <div className="absolute inset-0 border-2 border-indigo-500/0 hover:border-indigo-500/30 transition-colors pointer-events-none" />
                 </>
             )}
 
             <div className="p-container">
               {activeAppTab === 'cards' ? cards.map((card, idx) => {
+                const isCompact = global.cardMinHeight < 140;
                 const baseFTitle = card.fontSizeTitle || global.fontSizeTitle;
                 const baseFValue = card.fontSizeValue || global.fontSizeValue;
                 const fSub = card.fontSizeSub || global.fontSizeSub;
@@ -340,10 +350,6 @@ const Preview: React.FC<PreviewProps> = ({
                          })}
                       </div>
                       
-                      <div className="absolute -right-4 -bottom-6 opacity-10 pointer-events-none" style={{ color: global.textColorValue }}>
-                          <svg viewBox="0 0 24 24" width="90" height="90" fill="currentColor"><path d={iconPaths[card.icon] || iconPaths['circle']} /></svg>
-                      </div>
-    
                       {card.type === 'progress' && (
                          <div className="absolute bottom-0 left-0 h-1 transition-all duration-1000" style={{ width: `${card.progressValue}%`, backgroundColor: global.primaryColor }} />
                       )}
@@ -428,14 +434,33 @@ const Preview: React.FC<PreviewProps> = ({
                     gridColumn: `span ${donut.colSpan || 1}`,
                     gridRow: `span ${donut.rowSpan || 1}`
                  };
+                 
+                 const lineCap = (donut.mode === 'distribution') ? 'butt' : (donut.roundedCorners ? 'round' : 'butt');
+                 const titleSize = donut.fontSizeTitle || global.fontSizeTitle;
+                 const valueSize = donut.fontSizeValue || 16;
+                 const labelSize = donut.fontSizeLabel || 9;
+                 const sizePct = donut.chartSize || 90; // Pegando o tamanho configurado no editor
 
                 return (
                   <div key={donut.id} className={`p-card ${isSelected ? 'selected' : ''}`} style={{ background: donut.cardBackgroundColor || global.cardBackgroundColor, animationDelay: `${idx * 0.1}s`, ...gridStyle } as any} onClick={(e) => { e.stopPropagation(); onCardClick?.(donut.id); }}>
                     <div className="mb-4 flex" style={{ justifyContent: flexAlign }}>
-                       <span style={{ fontSize: `${donut.fontSizeTitle || global.fontSizeTitle}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle }} className="uppercase tracking-widest">{donut.title}</span>
+                       <span style={{ fontSize: `${titleSize}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle }} className="uppercase tracking-widest">{donut.title}</span>
                     </div>
-                    <div className="flex-1 relative flex justify-center p-2" style={{ alignItems: isSemi ? 'flex-end' : 'center' }}>
-                       <svg viewBox="0 0 100 100" className="w-full h-full" style={{ maxHeight: isSemi ? '60%' : '100%', overflow: 'visible' }}>
+                    
+                    {/* CONTAINER DO GRÁFICO - FLEXÍVEL E RESPONSIVO */}
+                    <div className="flex-1 relative flex justify-center items-center" style={{ minHeight: 0, alignItems: isSemi ? 'flex-end' : 'center' }}>
+                       
+                       <svg 
+                          viewBox="0 0 100 100" 
+                          preserveAspectRatio="xMidYMid meet"
+                          style={{ 
+                             width: `${sizePct}%`, 
+                             height: `${sizePct}%`, 
+                             maxWidth: '100%',
+                             maxHeight: isSemi ? '60%' : '100%', 
+                             overflow: 'visible' 
+                          }}
+                       >
                           <circle cx="50" cy="50" r={radius} className="donut-ring" strokeWidth={donut.ringThickness} strokeDasharray={isSemi ? `${circ/2} ${circ}` : '0 0'} transform={`rotate(${rotation} 50 50)`} />
                           {donut.mode === 'completeness' ? (
                              <circle 
@@ -445,7 +470,7 @@ const Preview: React.FC<PreviewProps> = ({
                                strokeWidth={donut.ringThickness} 
                                strokeDasharray={`${(75/100) * (circ/circumferenceDivisor)} ${circ}`} 
                                strokeDashoffset="0"
-                               strokeLinecap={donut.roundedCorners ? 'round' : 'butt'}
+                               strokeLinecap={lineCap}
                                transform={`rotate(${rotation} 50 50)`}
                              />
                           ) : (
@@ -460,7 +485,7 @@ const Preview: React.FC<PreviewProps> = ({
                                     strokeWidth={donut.ringThickness} 
                                     strokeDasharray={`${(val/100) * (circ/circumferenceDivisor)} ${circ}`} 
                                     strokeDashoffset={`${-(currentOffset/100) * (circ/circumferenceDivisor)}`}
-                                    strokeLinecap={donut.roundedCorners ? 'round' : 'butt'}
+                                    strokeLinecap={lineCap}
                                     transform={`rotate(${rotation} 50 50)`}
                                   />
                                 );
@@ -468,10 +493,11 @@ const Preview: React.FC<PreviewProps> = ({
                              }, [])
                           )}
                        </svg>
+
                        {donut.showCenterText && (
                           <div className="absolute flex flex-col items-center justify-center text-center pointer-events-none" style={{ top: isSemi ? '65%' : '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-                             <div className="text-[8px] font-black uppercase text-gray-400 leading-none">{donut.centerTextLabel}</div>
-                             <div className="text-sm font-black text-gray-700 leading-none mt-1">75%</div>
+                             <div style={{ fontSize: `${labelSize}px`, fontWeight: 800, color: global.textColorSub }} className="uppercase leading-none">{donut.centerTextLabel}</div>
+                             <div style={{ fontSize: `${valueSize}px`, fontWeight: 800, color: global.textColorValue }} className="leading-none mt-1">75%</div>
                           </div>
                        )}
                     </div>
