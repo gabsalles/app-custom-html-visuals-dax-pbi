@@ -120,7 +120,9 @@ VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
         dax += `VAR _C${ci}_Comp${cpi}_Lab = "${comp.label}"\n`;
         dax += `VAR _C${ci}_Comp${cpi}_Val_Raw = ${comp.measurePlaceholder || "0"}\n`;
         dax += `VAR _C${ci}_Comp${cpi}_Val = FORMAT(_C${ci}_Comp${cpi}_Val_Raw, "+0.0%;-0.0%;0%")\n`;
-        dax += `VAR _C${ci}_Comp${cpi}_Log = ${comp.logic}\n`;
+        
+        // Avalia dinamicamente se a própria medida é maior que 0
+        dax += `VAR _C${ci}_Comp${cpi}_Log = _C${ci}_Comp${cpi}_Val_Raw > 0\n`; 
       });
       dax += `\n`;
     });
@@ -221,6 +223,14 @@ VAR _HTML = "<div class='container'>" &
       const colSpan = card.colSpan || 1;
       const rowSpan = card.rowSpan || 1;
       
+      // SINCRONIZAÇÃO DE FONTES COM O PREVIEW.TSX
+      const baseFTitle = card.fontSizeTitle || fontSizeTitle;
+      const baseFValue = card.fontSizeValue || fontSizeValue;
+      const fSub = card.fontSizeSub || fontSizeSub;
+      
+      const fTitle = isCompact ? Math.min(baseFTitle, 10) : baseFTitle;
+      const fValue = isCompact ? Math.min(baseFValue, 26) : baseFValue;
+      
       const iconHTML = `
         <div class='icon-box' style='width:${card.iconSize || 40}px; height:${card.iconSize || 24}px; padding:${card.iconPadding || 8}px; background:${card.iconBackgroundColor || 'transparent'}; border-radius:${card.iconRounded ? '50%' : '8px'}; color:${iconColor}'>
             <svg viewBox='0 0 24 24' width='100%' height='100%' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='${iconPath}'/></svg>
@@ -236,7 +246,7 @@ VAR _HTML = "<div class='container'>" &
         const iconSvg = `<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round'><path d='" & IF(_C${ci}_Comp${cpi}_Log, "${trendUp}", "${trendDown}") & "'/></svg>`;
 
         compsHTML += `
-            "<div class='row' style='font-size: ${c.labelFontSize || fontSizeSub}px;'>
+            "<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'>
                 <span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span>
                 <span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>
                     ${iconSvg} " & _C${ci}_Comp${cpi}_Val & "
@@ -249,7 +259,9 @@ VAR _HTML = "<div class='container'>" &
       if (isCompact) {
           let visualHtml = '""';
           if (card.type === 'progress') {
-             visualHtml = `"<div class='progress-bar-bottom' style='width: \" & (_C${ci}_Prog_Pct * 100) & \"%;'></div>"`;
+             // Sincronizando a cor de fundo do progresso
+             const progColor = card.progressColor || card.accentColor ? (card.progressColor || card.accentColor) : 'var(--accent)';
+             visualHtml = `"<div class='progress-bar-bottom' style='width: \" & (_C${ci}_Prog_Pct * 100) & \"%; background: ${progColor};'></div>"`;
           }
 
           dax += `
@@ -257,9 +269,9 @@ VAR _HTML = "<div class='container'>" &
               <div class='compact-left'>
                   <div class='compact-header'>
                      <div class='compact-icon' style='color:${iconColor}'><svg viewBox='0 0 24 24' width='100%' height='100%' fill='none' stroke='currentColor' stroke-width='2'><path d='${iconPath}'/></svg></div>
-                     <div class='title'>\" & _C${ci}_Tit & \"</div>
+                     <div class='title' style='font-size: ${fTitle}px;'>\" & _C${ci}_Tit & \"</div>
                   </div>
-                  <div class='value'>\" & _C${ci}_Val & \"</div>
+                  <div class='value' style='font-size: ${fValue}px;'>\" & _C${ci}_Val & \"</div>
               </div>
               <div class='compact-right'>
                   <div class='footer'>\" & ${compsHTML} \"\" & \"</div>
@@ -275,24 +287,26 @@ VAR _HTML = "<div class='container'>" &
           
           if (iconPos === 'top') {
               let colAlign = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start';
-              headerHTML = `<div class='header' style='flex-direction: column; align-items: ${colAlign}; justify-content: center'>${iconHTML} <div class='title'>\" & _C${ci}_Tit & \"</div></div>`;
+              headerHTML = `<div class='header' style='flex-direction: column; align-items: ${colAlign}; justify-content: center'>${iconHTML} <div class='title' style='font-size: ${fTitle}px; margin-top: 4px;'>\" & _C${ci}_Tit & \"</div></div>`;
           } else if (iconPos === 'left') {
-              headerHTML = `<div class='header' style='justify-content: ${flexAlign}'>${iconHTML} <div class='title'>\" & _C${ci}_Tit & \"</div></div>`;
+              headerHTML = `<div class='header' style='justify-content: ${flexAlign}'>${iconHTML} <div class='title' style='font-size: ${fTitle}px;'>\" & _C${ci}_Tit & \"</div></div>`;
           } else { 
-              headerHTML = `<div class='header' style='justify-content: space-between'><div class='title'>\" & _C${ci}_Tit & \"</div> ${iconHTML}</div>`;
+              headerHTML = `<div class='header' style='justify-content: space-between'><div class='title' style='font-size: ${fTitle}px;'>\" & _C${ci}_Tit & \"</div> ${iconHTML}</div>`;
           }
 
           let progressHTML = "";
           if (card.type === 'progress') {
+             // Correção: Agora força a injeção da cor customizada do card no DAX
+             const progColor = card.progressColor || card.accentColor ? (card.progressColor || card.accentColor) : 'var(--accent)';
              progressHTML = `
                 <div class='progress-track' style='height: ${card.progressHeight || 8}px; background: ${card.progressBackgroundColor || '#f3f4f6'}; margin-top: auto;'>
-                   <div class='progress-fill' style='width: \" & (_C${ci}_Prog_Pct * 100) & \"%;'></div>
+                   <div class='progress-fill' style='width: \" & (_C${ci}_Prog_Pct * 100) & \"%; background: ${progColor};'></div>
                 </div>`;
           }
 
           const contentHTML = `
-            <div class='content-box'>
-                <div class='value' style='text-align: ${align}'>\" & _C${ci}_Val & \"</div>
+            <div class='content-box' style='display: flex; flex-direction: column; flex: 1;'>
+                <div class='value' style='text-align: ${align}; font-size: ${fValue}px;'>\" & _C${ci}_Val & \"</div>
                 ${progressHTML}
             </div>
           `;
@@ -309,7 +323,7 @@ VAR _HTML = "<div class='container'>" &
             </div>" & `;
       }
     });
-  } else {
+  } else { 
      // === LOGICA DO GRÁFICO (CHART) ===
      (items || []).forEach((donut, idx) => {
       const di = idx + 1;

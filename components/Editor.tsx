@@ -292,11 +292,14 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
 
           {activeTab === 'colors' && (
             <div className="space-y-6 animate-fadeIn">
-               <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
+              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
                   <div className="flex items-center gap-2"><Palette size={14} className="text-gray-600"/><span className="text-[10px] font-black text-gray-700 uppercase">Tema Principal</span></div>
                   <Field label="Cor Primária (Accent)"><ColorPickerSimple value={globalConfig.primaryColor} onChange={(v) => setGlobalConfig({...globalConfig, primaryColor: v})} /></Field>
                   <Field label="Fundo do Card"><ColorPickerSimple value={globalConfig.cardBackgroundColor} onChange={(v) => setGlobalConfig({...globalConfig, cardBackgroundColor: v})} /></Field>
-               </div>
+                  
+                  {/* ADICIONAR ESTA LINHA ABAIXO */}
+                  <Field label="Fundo do Canvas"><ColorPickerSimple value={globalConfig.canvasBackgroundColor || '#f3f4f6'} onChange={(v) => setGlobalConfig({...globalConfig, canvasBackgroundColor: v})} /></Field>
+              </div>
                {/* ... (Resto das cores igual) ... */}
             </div>
           )}

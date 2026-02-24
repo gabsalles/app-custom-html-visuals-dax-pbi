@@ -10,6 +10,7 @@ import { Code, Eye, Copy, Check, Monitor, Smartphone, Tablet, Settings2, Downloa
 const INITIAL_GLOBAL: GlobalConfig = {
   columns: 3, gap: 20, padding: 24,
   primaryColor: '#4f46e5', cardBackgroundColor: '#ffffff',
+  canvasBackgroundColor: '#f3f4f6', // <-- ADICIONAR ESTA LINHA (um cinza claro padrão)
   textColorTitle: '#86868B', textColorValue: '#1D1D1F', textColorSub: '#6B7280',
   positiveColor: '#059669', negativeColor: '#DC2626', neutralColor: '#4B5563',
   animation: 'fadeInUp', animationDuration: 0.6, hoverEffect: 'lift',
@@ -109,21 +110,42 @@ const App: React.FC = () => {
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
         const project = JSON.parse(content);
-        if (project.globalConfig) setGlobalConfig(project.globalConfig);
-        if (project.cards) setCards(project.cards);
-        if (project.donuts) setDonuts(project.donuts);
+        
+        // Validação básica para garantir que é um JSON válido do nosso projeto
+        if (!project || typeof project !== 'object' || (!project.globalConfig && !project.cards && !project.donuts)) {
+          throw new Error("Formato de projeto inválido ou vazio.");
+        }
+
+        // Faz o merge do Global Config (protege contra propriedades novas que não existiam no JSON salvo)
+        if (project.globalConfig) {
+          setGlobalConfig(prev => ({ ...prev, ...project.globalConfig }));
+        }
+        
+        // Garante que só seta os estados se realmente forem arrays, evitando crashes de ".map is not a function"
+        if (project.cards && Array.isArray(project.cards)) {
+          setCards(project.cards);
+        }
+        
+        if (project.donuts && Array.isArray(project.donuts)) {
+          setDonuts(project.donuts);
+        }
+        
         alert('Projeto carregado com sucesso!');
       } catch (err) {
-        alert('Erro ao carregar arquivo. Formato inválido.');
+        console.error("Erro ao importar projeto:", err);
+        alert('Erro ao carregar arquivo. O arquivo pode estar corrompido ou ser de um formato incompatível.');
+      } finally {
+        // Limpa o input dentro do finally para garantir que sempre permita re-upload do mesmo arquivo
+        if (fileInputRef.current) fileInputRef.current.value = '';
       }
     };
     reader.readAsText(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleReset = () => {
