@@ -253,8 +253,11 @@ const Preview: React.FC<PreviewProps> = ({
           }}
         >
           <div 
-            className="bg-[#161618] rounded-sm relative border border-white/10 shadow-2xl"
-            style={{ width: simWidth, height: simHeight, minWidth: simWidth, minHeight: simHeight }}
+            className="rounded-sm relative border border-white/10 shadow-2xl transition-colors"
+            style={{ 
+              backgroundColor: global.canvasBackgroundColor || '#f3f4f6', // <-- APLICA A COR AQUI
+              width: simWidth, height: simHeight, minWidth: simWidth, minHeight: simHeight 
+            }}
           >
             {viewport === 'custom' && (
                 <>

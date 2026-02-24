@@ -128,6 +128,7 @@ export interface GlobalConfig {
   padding: number;
   primaryColor: string;
   cardBackgroundColor: string;
+  canvasBackgroundColor: string; // <-- ADICIONAR ESTA LINHA
   textColorTitle: string;
   textColorValue: string;
   textColorSub: string;
