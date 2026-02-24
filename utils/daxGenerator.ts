@@ -391,5 +391,15 @@ VAR _HTML = "<div class='container'>" &
   dax += `"" & "</div>"
 RETURN _CSS & _HTML`;
 
+// --- NOVA FEATURE: INJEÇÃO DE ESTADO INVISÍVEL ---
+  try {
+      const stateToSave = { global, items, tab };
+      // Converte o objeto para string segura (suporta acentos) e codifica em Base64
+      const encodedState = btoa(encodeURIComponent(JSON.stringify(stateToSave)));
+      dax += `\n\n/* [DO NOT EDIT] DAXILIZER_STATE_BEGIN\n${encodedState}\nDAXILIZER_STATE_END */`;
+  } catch (e) {
+      console.error("Erro ao codificar estado no DAX", e);
+  }
+
   return dax;
 };

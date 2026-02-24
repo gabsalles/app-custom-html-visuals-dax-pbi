@@ -4,7 +4,10 @@ import Preview from './components/Preview';
 import DaxHighlighter from './components/DaxHighlighter';
 import { generateDAX } from './utils/daxGenerator';
 import { GlobalConfig, CardConfig, DonutChartConfig, ViewportMode, AppTab } from './types';
-import { Code, Eye, Copy, Check, Monitor, Smartphone, Tablet, Settings2, Download, Upload, FileJson, Trash2, RotateCcw } from 'lucide-react';
+import { parseDaxToState } from './utils/daxParser';
+import { Code, Eye, Copy, Check, Monitor, Smartphone, Tablet, Settings2, Download, Upload, Trash2, RotateCcw, FileCode2, X } from 'lucide-react';
+
+
 
 // --- CONFIGURAÇÕES INICIAIS (DEFAULTS) ---
 const INITIAL_GLOBAL: GlobalConfig = {
@@ -72,6 +75,10 @@ const App: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // NOVOS ESTADOS PARA O MODAL DE DAX
+  const [isDaxModalOpen, setIsDaxModalOpen] = useState(false);
+  const [daxImportText, setDaxImportText] = useState('');
 
   const daxCode = useMemo(() => {
     const items = activeAppTab === 'cards' ? cards : donuts;
@@ -86,6 +93,31 @@ const App: React.FC = () => {
       setDonuts(prev => prev.map(d => ({ ...d, isOpen: d.id === id })));
     }
   }, [activeAppTab]);
+
+  const handleDaxImportSubmit = () => {
+      if (!daxImportText.trim()) return;
+      
+      const result = parseDaxToState(daxImportText, globalConfig);
+      
+      if (result.success && result.items) {
+          setActiveAppTab(result.tab as AppTab);
+          setGlobalConfig(prev => ({ ...prev, ...(result.global as GlobalConfig) }));
+          
+          if (result.tab === 'cards') setCards(result.items as CardConfig[]);
+          else setDonuts(result.items as DonutChartConfig[]);
+          
+          setIsDaxModalOpen(false);
+          setDaxImportText('');
+          
+          if (result.type === 'perfect') {
+              alert('✨ Visual restaurado com 100% de precisão!');
+          } else {
+              alert('⚠️ DAX Antigo detectado. Medidas e Títulos foram recuperados, mas você precisará reconfigurar o layout (fontes, ícones, tamanhos).');
+          }
+      } else {
+          alert('Erro: Não foi possível identificar o código DAX. Verifique se copiou o código inteiro.');
+      }
+  };
 
   // --- ACTIONS: EXPORT / IMPORT / RESET ---
   const handleExport = () => {
@@ -212,6 +244,11 @@ const App: React.FC = () => {
                 <button onClick={handleReset} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Resetar Tudo"><RotateCcw size={18} /></button>
                 <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Importar JSON"><Upload size={18} /></button>
                 <button onClick={handleExport} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Exportar JSON"><Download size={18} /></button>
+                
+                {/* NOVO BOTÃO DE REVERSE ENGINEERING */}
+                <button onClick={() => setIsDaxModalOpen(true)} className="p-2 text-indigo-500 bg-indigo-50 hover:bg-indigo-100 hover:text-indigo-700 rounded-lg transition-all flex items-center gap-2 px-3 ml-1" title="Restaurar a partir de Código DAX">
+                    <FileCode2 size={18} /> <span className="text-xs font-bold">Ler DAX</span>
+                </button>
               </div>
 
               {viewMode === 'code' && (
@@ -245,6 +282,30 @@ const App: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* MODAL DE IMPORTAÇÃO DE DAX */}
+      {isDaxModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-white">Restaurar Visual a partir de Código DAX</h3>
+              <button onClick={() => setIsDaxModalOpen(false)} className="text-gray-400 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            <textarea 
+              value={daxImportText} 
+              onChange={(e) => setDaxImportText(e.target.value)} 
+              placeholder="Cole aqui o código DAX do visual que deseja restaurar..." 
+              className="w-full h-64 bg-gray-900 text-gray-200 p-4 rounded-lg border border-gray-700 focus:border-indigo-500 focus:outline-none resize-none"
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <button onClick={() => setIsDaxModalOpen(false)} className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors">Cancelar</button>
+              <button onClick={handleDaxImportSubmit} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">Restaurar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
