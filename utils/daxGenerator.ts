@@ -82,10 +82,9 @@ export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'c
       .progress-bar-bottom { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--accent); transition: width 1s ease; }
     ` : `
       .v-item { flex-direction: column; }
-      /* Adicionada classe .header que faltava */
-      .header { display: flex; align-items: center; margin-bottom: 6px; width: 100%; gap: 8px; }
+      .header { display: flex; align-items: center; margin-bottom: 6px; width: 100%; gap: 8px; flex-shrink: 0; }
       .content-wrapper { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 0; }
-      .footer { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+      .footer { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
     `;
 
   let dax = `Visual_Gerado = 
@@ -95,6 +94,7 @@ VAR _CorNeg      = "${negativeColor}"
 VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
 `;
 
+  // === GERAÇÃO DE VARIÁVEIS DAX ===
   if (tab === 'cards') {
     (items || []).forEach((card, cIdx) => {
       const ci = cIdx + 1;
@@ -144,6 +144,7 @@ VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
      });
   }
 
+  // === GERAÇÃO DO CSS ===
   dax += `
 VAR _CSS = "
 <style>
@@ -153,6 +154,7 @@ VAR _CSS = "
     .container { 
         display: grid; 
         grid-template-columns: repeat(${columns}, 1fr); 
+        grid-auto-rows: 1fr; /* IMPORTANTE: Garante que as linhas estiquem para ocupar espaço */
         gap: ${gap}px; 
         padding: ${padding}px;
         width: 100vw; height: 100vh; box-sizing: border-box;
@@ -176,7 +178,7 @@ VAR _CSS = "
     }
     ${hoverCSS} ${animationCSS}
     
-    .title { text-transform: uppercase; font-size: ${fontSizeTitle}px; font-weight: ${fontWeightTitle}; color: ${textColorTitle}; letter-spacing: 0.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .title { text-transform: uppercase; font-size: ${fontSizeTitle}px; font-weight: ${fontWeightTitle}; color: ${textColorTitle}; letter-spacing: 0.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
     .value { font-size: ${fontSizeValue}px; font-weight: ${fontWeightValue}; color: ${textColorValue}; white-space: nowrap; }
     
     .row { display: flex; justify-content: ${isCompact ? 'flex-end' : 'space-between'}; align-items: center; font-weight: 600; color: ${textColorSub}; gap: 6px; }
@@ -189,20 +191,35 @@ VAR _CSS = "
     .icon-box { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .progress-track { width: 100%; background: #f3f4f6; border-radius: 100px; overflow: hidden; }
     .progress-fill { height: 100%; background: var(--accent); border-radius: 100px; transition: width 1s ease; }
-    .chart-box { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; padding: 5px; }
-    .center-text { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    
+    /* FIX DE RESPONSIVIDADE DO GRÁFICO */
+    .chart-box { 
+        flex: 1; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        position: relative; 
+        padding: 5px;
+        min-height: 0; /* Permite encolher abaixo do mínimo */
+        min-width: 0;  /* Permite encolher abaixo do mínimo */
+        overflow: hidden;
+    }
+    .center-text { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
     ${cssCompacto}
 </style>"
 
 VAR _HTML = "<div class='container'>" & 
 `;
 
+  // === GERAÇÃO DO HTML (Cards ou Charts) ===
   if (tab === 'cards') {
     (items || []).forEach((card, idx) => {
       const ci = idx + 1;
       const delay = (idx * 0.1).toFixed(1);
       const iconPath = iconPaths[card.icon || 'chart'];
       const iconColor = card.iconColor || card.accentColor || primaryColor;
+      const colSpan = card.colSpan || 1;
+      const rowSpan = card.rowSpan || 1;
       
       const iconHTML = `
         <div class='icon-box' style='width:${card.iconSize || 40}px; height:${card.iconSize || 24}px; padding:${card.iconPadding || 8}px; background:${card.iconBackgroundColor || 'transparent'}; border-radius:${card.iconRounded ? '50%' : '8px'}; color:${iconColor}'>
@@ -227,6 +244,8 @@ VAR _HTML = "<div class='container'>" &
             </div>" & `;
       });
 
+      const gridStyle = `grid-column: span ${colSpan}; grid-row: span ${rowSpan};`;
+
       if (isCompact) {
           let visualHtml = '""';
           if (card.type === 'progress') {
@@ -234,7 +253,7 @@ VAR _HTML = "<div class='container'>" &
           }
 
           dax += `
-          "<div class='v-item animate' style='animation-delay: ${delay}s; --accent: " & IF(ISBLANK("${card.accentColor}"), _CorPrimaria, "${card.accentColor}") & "; background: " & IF(ISBLANK("${card.cardBackgroundColor}"), "${cardBackgroundColor}", "${card.cardBackgroundColor}") & "'>
+          "<div class='v-item animate' style='${gridStyle} animation-delay: ${delay}s; --accent: " & IF(ISBLANK("${card.accentColor}"), _CorPrimaria, "${card.accentColor}") & "; background: " & IF(ISBLANK("${card.cardBackgroundColor}"), "${cardBackgroundColor}", "${card.cardBackgroundColor}") & "'>
               <div class='compact-left'>
                   <div class='compact-header'>
                      <div class='compact-icon' style='color:${iconColor}'><svg viewBox='0 0 24 24' width='100%' height='100%' fill='none' stroke='currentColor' stroke-width='2'><path d='${iconPath}'/></svg></div>
@@ -249,21 +268,17 @@ VAR _HTML = "<div class='container'>" &
           </div>" & `;
       
       } else {
-          // --- CORREÇÃO DA LÓGICA DE POSIÇÃO ---
           const align = card.textAlign || textAlign;
           const flexAlign = getFlexAlign(align);
           const iconPos = card.iconPosition || 'top';
           let headerHTML = "";
           
           if (iconPos === 'top') {
-              // Topo: Flex Column e alinhado conforme o texto
               let colAlign = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start';
               headerHTML = `<div class='header' style='flex-direction: column; align-items: ${colAlign}; justify-content: center'>${iconHTML} <div class='title'>\" & _C${ci}_Tit & \"</div></div>`;
           } else if (iconPos === 'left') {
-              // Esquerda: Flex Row
               headerHTML = `<div class='header' style='justify-content: ${flexAlign}'>${iconHTML} <div class='title'>\" & _C${ci}_Tit & \"</div></div>`;
           } else { 
-              // Direita: Space Between
               headerHTML = `<div class='header' style='justify-content: space-between'><div class='title'>\" & _C${ci}_Tit & \"</div> ${iconHTML}</div>`;
           }
 
@@ -283,7 +298,7 @@ VAR _HTML = "<div class='container'>" &
           `;
 
           dax += `
-            "<div class='v-item animate' style='animation-delay: ${delay}s; --accent: " & IF(ISBLANK("${card.accentColor}"), _CorPrimaria, "${card.accentColor}") & "; background: " & IF(ISBLANK("${card.cardBackgroundColor}"), "${cardBackgroundColor}", "${card.cardBackgroundColor}") & "'>
+            "<div class='v-item animate' style='${gridStyle} animation-delay: ${delay}s; --accent: " & IF(ISBLANK("${card.accentColor}"), _CorPrimaria, "${card.accentColor}") & "; background: " & IF(ISBLANK("${card.cardBackgroundColor}"), "${cardBackgroundColor}", "${card.cardBackgroundColor}") & "'>
                 <div class='content-wrapper'>
                     ${headerHTML}
                     ${contentHTML}
@@ -295,6 +310,7 @@ VAR _HTML = "<div class='container'>" &
       }
     });
   } else {
+     // === LOGICA DO GRÁFICO (CHART) ===
      (items || []).forEach((donut, idx) => {
       const di = idx + 1;
       const flexAlign = getFlexAlign(donut.textAlign || textAlign);
@@ -302,9 +318,13 @@ VAR _HTML = "<div class='container'>" &
       const radius = 40;
       const circ = 2 * Math.PI * radius;
       const sw = donut.ringThickness || 12;
-      const lcap = donut.roundedCorners ? "round" : "butt";
-      const rotation = isSemi ? "rotate(-180 50 50)" : "rotate(-90 50 50)";
+      const lcap = (donut.mode === 'distribution') ? "butt" : (donut.roundedCorners ? "round" : "butt");
       
+      const rotation = isSemi ? "rotate(-180 50 50)" : "rotate(-90 50 50)";
+      const colSpan = donut.colSpan || 1;
+      const rowSpan = donut.rowSpan || 1;
+      const gridStyle = `grid-column: span ${colSpan}; grid-row: span ${rowSpan};`;
+
       let chartContent = "";
       if (donut.mode === 'completeness') {
         const conversion = isSemi ? `(${circ}/2)` : `${circ}`;
@@ -326,16 +346,24 @@ VAR _HTML = "<div class='container'>" &
             currentOffset += ` + ${pct}`;
         });
       }
+      
       const centerTop = isSemi ? "65%" : "50%";
-      const center = donut.showCenterText ? `"<div class='center-text' style='top: ${centerTop}; left: 50%; transform: translate(-50%, -50%);'><div style='font-size: 9px; font-weight: 800; color: ${textColorSub}; text-transform: uppercase; letter-spacing: 0.05em;'>${donut.centerTextLabel}</div><div style='font-size: 16px; font-weight: 800; color: ${textColorValue}; margin-top: 2px;'>" & _D${di}_CenterVal & "</div></div>"` : '""';
-      const svgHeight = isSemi ? "60%" : "100%";
+      const fLabel = donut.fontSizeLabel || 9;
+      const fVal = donut.fontSizeValue || 16;
+      const dTitleSize = donut.fontSizeTitle || fontSizeTitle;
+
+      // Controle de Tamanho (Chart Size)
+      const sizePct = donut.chartSize || 90;
+
+      const center = donut.showCenterText ? `"<div class='center-text' style='top: ${centerTop}; left: 50%; transform: translate(-50%, -50%);'><div style='font-size: ${fLabel}px; font-weight: 800; color: ${textColorSub}; text-transform: uppercase; letter-spacing: 0.05em;'>${donut.centerTextLabel}</div><div style='font-size: ${fVal}px; font-weight: 800; color: ${textColorValue}; margin-top: 2px;'>" & _D${di}_CenterVal & "</div></div>"` : '""';
+      const svgMaxH = isSemi ? "60%" : "100%";
       const svgMargin = isSemi ? "margin-top: 10px;" : "";
 
       dax += `
-    "<div class='v-item' style='--accent: " & IF(ISBLANK("${donut.accentColor}"), _CorPrimaria, "${donut.accentColor}") & "; background: " & IF(ISBLANK("${donut.cardBackgroundColor}"), "${cardBackgroundColor}", "${donut.cardBackgroundColor}") & "'>
-        <div class='header' style='justify-content: ${flexAlign}'><div class='title'>" & _D${di}_Tit & "</div></div>
+    "<div class='v-item' style='${gridStyle} --accent: " & IF(ISBLANK("${donut.accentColor}"), _CorPrimaria, "${donut.accentColor}") & "; background: " & IF(ISBLANK("${donut.cardBackgroundColor}"), "${cardBackgroundColor}", "${donut.cardBackgroundColor}") & "'>
+        <div class='header' style='justify-content: ${flexAlign}'><div class='title' style='font-size: ${dTitleSize}px'>" & _D${di}_Tit & "</div></div>
         <div class='chart-box' style='align-items: ${isSemi ? 'flex-end' : 'center'};'>
-            <svg viewBox='0 0 100 100' style='width: 100%; height: ${svgHeight}; ${svgMargin} overflow: visible;'>" & ${chartContent} & "</svg>" & ${center} & "
+            <svg viewBox='0 0 100 100' preserveAspectRatio='xMidYMid meet' style='width: ${sizePct}%; height: ${sizePct}%; max-width: 100%; max-height: ${svgMaxH}; ${svgMargin} overflow: visible;'>" & ${chartContent} & "</svg>" & ${center} & "
         </div>
     </div>" & `;
     });

@@ -1,3 +1,4 @@
+// types.ts
 
 export type CardType = 'simple' | 'progress' | 'ring';
 export type TrendDirection = 'up' | 'down' | 'neutral' | 'none';
@@ -19,16 +20,16 @@ export interface ComparisonConfig {
   measurePlaceholder: string; 
   invertColor?: boolean;
   // Advanced Customization
-  labelColor?: string; // New
-  labelFontSize?: number; // New
-  icon?: string; // New: Icon specific for comparison
-  showIcon?: boolean; // New
+  labelColor?: string;
+  labelFontSize?: number;
+  icon?: string;
+  showIcon?: boolean;
 }
 
 export interface DataBinding {
   id: string;
-  label: string; // Ex: "Faturamento Total"
-  value: string; // Ex: "[Total Vendas]"
+  label: string;
+  value: string;
 }
 
 export interface CardConfig {
@@ -39,20 +40,21 @@ export interface CardConfig {
   decimalPlaces: number;
   prefix: string;
   suffix: string;
-  type: CardType; // 'simple' | 'progress' | 'ring'
+  type: CardType;
   
-  // Progress Bar Specifics
-  progressMeasure?: string; // Measure for the progress calculation
-  progressTarget?: string; // Target for progress
+  colSpan?: number;
+  rowSpan?: number;
+
+  progressMeasure?: string;
+  progressTarget?: string;
   progressColor?: string;
   progressBackgroundColor?: string;
   progressHeight?: number;
-  progressValue: number; // For preview
+  progressValue: number;
 
   targetMeasurePlaceholder: string;
   value: string;
   
-  // Icon Configuration
   icon: string;
   iconPosition: IconPosition;
   iconSize: number;
@@ -80,16 +82,28 @@ export interface DonutSlice {
   label: string;
   measurePlaceholder: string;
   color: string;
-  value: string; // Preview value
+  value: string;
 }
+
+// types.ts
+
+// ... (outras interfaces mantidas)
 
 export interface DonutChartConfig {
   id: string;
   title: string;
   mode: 'completeness' | 'distribution';
   geometry: 'full' | 'semicircle';
+  
+  colSpan?: number;
+  rowSpan?: number;
+
   ringThickness: number;
   roundedCorners: boolean;
+  
+  // --- NOVO CAMPO: TAMANHO DO GRÁFICO ---
+  chartSize?: number; // Porcentagem (ex: 90 para 90%)
+
   showCenterText: boolean;
   centerTextLabel: string;
   centerTextValueMeasure: string;
@@ -99,9 +113,14 @@ export interface DonutChartConfig {
   isOpen?: boolean;
   cardBackgroundColor?: string;
   accentColor?: string;
-  fontSizeTitle?: number;
   textAlign?: TextAlign;
+
+  fontSizeTitle?: number;
+  fontSizeValue?: number;
+  fontSizeLabel?: number;
 }
+
+// ... (resto do arquivo mantido)
 
 export interface GlobalConfig {
   columns: number;
@@ -118,7 +137,6 @@ export interface GlobalConfig {
   borderRadius: number;
   cardMinHeight: number;
   
-  // Shadow config
   shadowIntensity: number;
   shadowBlur: number;
   shadowDistance: number;
@@ -135,5 +153,4 @@ export interface GlobalConfig {
   animationDuration: number;
   hoverEffect: HoverEffect;
   dataBindings: DataBinding[];
-
 }
