@@ -21,8 +21,6 @@ export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'c
       case 'integer': return "#,##0";
       case 'decimal': return `#,##0${zeros}`;
       case 'currency': return `"R$ " #,##0${zeros}`; 
-      case 'currency_short': return `"R$ " #,0.0,, "M"`;
-      case 'short': return `#,0.0,, "M"`;
       case 'percent': return `0${zeros}%`;
       default: return "";
     }
@@ -105,7 +103,18 @@ VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
       
       if (card.formatType === 'none') {
           dax += `VAR _C${ci}_Val = "${card.prefix || ''}" & _C${ci}_Val_Raw & "${card.suffix || ''}"\n`;
+      } else if (card.formatType === 'short' || card.formatType === 'currency_short') {
+          // Lógica Dinâmica: K, M, B
+          const zeros = card.decimalPlaces > 0 ? "." + "0".repeat(card.decimalPlaces) : "";
+          const shortFmt = `#,0${zeros}`;
+          const baseFmt = `#,##0${zeros}`;
+          const prefix = card.formatType === 'currency_short' ? "R$ " : (card.prefix || "");
+          
+          dax += `VAR _C${ci}_Abs = ABS(_C${ci}_Val_Raw)\n`;
+          dax += `VAR _C${ci}_Dyn = SWITCH(TRUE(), _C${ci}_Abs >= 1000000000, FORMAT(DIVIDE(_C${ci}_Val_Raw, 1000000000), "${shortFmt}") & " B", _C${ci}_Abs >= 1000000, FORMAT(DIVIDE(_C${ci}_Val_Raw, 1000000), "${shortFmt}") & " M", _C${ci}_Abs >= 1000, FORMAT(DIVIDE(_C${ci}_Val_Raw, 1000), "${shortFmt}") & " K", FORMAT(_C${ci}_Val_Raw, "${baseFmt}"))\n`;
+          dax += `VAR _C${ci}_Val = "${prefix}" & _C${ci}_Dyn & "${card.suffix || ''}"\n`;
       } else {
+          const formatStr = getFormatString(card.formatType, card.decimalPlaces);
           dax += `VAR _C${ci}_Val = "${card.prefix || ''}" & FORMAT(_C${ci}_Val_Raw, "${formatStr}") & "${card.suffix || ''}"\n`;
       }
       
