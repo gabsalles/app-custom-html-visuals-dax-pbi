@@ -184,8 +184,7 @@ VAR _CSS = "
     .value { font-size: ${fontSizeValue}px; font-weight: ${fontWeightValue}; color: ${textColorValue}; white-space: nowrap; }
     
     .row { display: flex; justify-content: ${isCompact ? 'flex-end' : 'space-between'}; align-items: center; font-weight: 600; color: ${textColorSub}; gap: 6px; }
-    .row-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; ${isCompact ? 'display: none;' : ''} }
-    
+    .row-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }    
     .badge { 
       font-size: ${fontSizeBadge || 10}px; padding: 3px 8px; border-radius: 6px; font-weight: 800; display: flex; align-items: center; gap: 4px; letter-spacing: -0.02em;
     }
@@ -256,6 +255,10 @@ VAR _HTML = "<div class='container'>" &
 
       const gridStyle = `grid-column: span ${colSpan}; grid-row: span ${rowSpan};`;
 
+      // NOVO: Resolve a cor exata no JS em vez de usar DAX IF(ISBLANK)
+      const actualCardBg = card.cardBackgroundColor || cardBackgroundColor;
+      const actualAccent = card.accentColor || primaryColor;
+
       if (isCompact) {
           let visualHtml = '""';
           if (card.type === 'progress') {
@@ -265,7 +268,7 @@ VAR _HTML = "<div class='container'>" &
           }
 
           dax += `
-          "<div class='v-item animate' style='${gridStyle} animation-delay: ${delay}s; --accent: " & IF(ISBLANK("${card.accentColor}"), _CorPrimaria, "${card.accentColor}") & "; background: " & IF(ISBLANK("${card.cardBackgroundColor}"), "${cardBackgroundColor}", "${card.cardBackgroundColor}") & "'>
+          "<div class='v-item animate' style='${gridStyle} animation-delay: ${delay}s; --accent: ${actualAccent}; background: ${actualCardBg};'>
               <div class='compact-left'>
                   <div class='compact-header'>
                      <div class='compact-icon' style='color:${iconColor}'><svg viewBox='0 0 24 24' width='100%' height='100%' fill='none' stroke='currentColor' stroke-width='2'><path d='${iconPath}'/></svg></div>
@@ -312,7 +315,7 @@ VAR _HTML = "<div class='container'>" &
           `;
 
           dax += `
-            "<div class='v-item animate' style='${gridStyle} animation-delay: ${delay}s; --accent: " & IF(ISBLANK("${card.accentColor}"), _CorPrimaria, "${card.accentColor}") & "; background: " & IF(ISBLANK("${card.cardBackgroundColor}"), "${cardBackgroundColor}", "${card.cardBackgroundColor}") & "'>
+            "<div class='v-item animate' style='${gridStyle} animation-delay: ${delay}s; --accent: ${actualAccent}; background: ${actualCardBg};'>
                 <div class='content-wrapper'>
                     ${headerHTML}
                     ${contentHTML}
@@ -373,8 +376,11 @@ VAR _HTML = "<div class='container'>" &
       const svgMaxH = isSemi ? "60%" : "100%";
       const svgMargin = isSemi ? "margin-top: 10px;" : "";
 
+      const actualDonutBg = donut.cardBackgroundColor || cardBackgroundColor;
+      const actualDonutAccent = donut.accentColor || primaryColor;
+
       dax += `
-    "<div class='v-item' style='${gridStyle} --accent: " & IF(ISBLANK("${donut.accentColor}"), _CorPrimaria, "${donut.accentColor}") & "; background: " & IF(ISBLANK("${donut.cardBackgroundColor}"), "${cardBackgroundColor}", "${donut.cardBackgroundColor}") & "'>
+    "<div class='v-item' style='${gridStyle} --accent: ${actualDonutAccent}; background: ${actualDonutBg};'>
         <div class='header' style='justify-content: ${flexAlign}'><div class='title' style='font-size: ${dTitleSize}px'>" & _D${di}_Tit & "</div></div>
         <div class='chart-box' style='align-items: ${isSemi ? 'flex-end' : 'center'};'>
             <svg viewBox='0 0 100 100' preserveAspectRatio='xMidYMid meet' style='width: ${sizePct}%; height: ${sizePct}%; max-width: 100%; max-height: ${svgMaxH}; ${svgMargin} overflow: visible;'>" & ${chartContent} & "</svg>" & ${center} & "
