@@ -212,120 +212,110 @@ VAR _CSS = "
 VAR _HTML = "<div class='container'>" & 
 `;
 
-  // === GERAÇÃO DO HTML (Cards ou Charts) ===
-  if (tab === 'cards') {
-    (items || []).forEach((card, idx) => {
-      const ci = idx + 1;
-      const delay = (idx * 0.1).toFixed(1);
-      const iconPath = iconPaths[card.icon || 'chart'];
-      const iconColor = card.iconColor || card.accentColor || primaryColor;
-      const colSpan = card.colSpan || 1;
-      const rowSpan = card.rowSpan || 1;
-      
-      // SINCRONIZAÇÃO DE FONTES COM O PREVIEW.TSX
-      const baseFTitle = card.fontSizeTitle || fontSizeTitle;
-      const baseFValue = card.fontSizeValue || fontSizeValue;
-      const fSub = card.fontSizeSub || fontSizeSub;
-      
-      const fTitle = isCompact ? Math.min(baseFTitle, 10) : baseFTitle;
-      const fValue = isCompact ? Math.min(baseFValue, 26) : baseFValue;
-      
-      const iconHTML = `
-        <div class='icon-box' style='width:${card.iconSize || 40}px; height:${card.iconSize || 24}px; padding:${card.iconPadding || 8}px; background:${card.iconBackgroundColor || 'transparent'}; border-radius:${card.iconRounded ? '50%' : '8px'}; color:${iconColor}'>
-            <svg viewBox='0 0 24 24' width='100%' height='100%' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='${iconPath}'/></svg>
-        </div>`;
+// === GERAÇÃO DO HTML (Cards ou Charts) ===
+    if (tab === 'cards') {
+      (items || []).forEach((card, idx) => {
+        const ci = idx + 1;
+        const delay = (idx * 0.1).toFixed(1);
+        const iconPath = iconPaths[card.icon || 'chart'];
+        const iconColor = card.iconColor || card.accentColor || primaryColor;
+        const colSpan = card.colSpan || 1;
+        const rowSpan = card.rowSpan || 1;
+        
+        // SINCRONIZAÇÃO DE FONTES COM O PREVIEW.TSX
+        const baseFTitle = card.fontSizeTitle || fontSizeTitle;
+        const baseFValue = card.fontSizeValue || fontSizeValue;
+        const fSub = card.fontSizeSub || fontSizeSub;
+        
+        const fTitle = isCompact ? Math.min(baseFTitle, 10) : baseFTitle;
+        const fValue = isCompact ? Math.min(baseFValue, 26) : baseFValue;
+        
+        const iconHTML = `
+          <div class='icon-box' style='width:${card.iconSize || 40}px; height:${card.iconSize || 40}px; padding:${card.iconPadding || 8}px; background:${card.iconBackgroundColor || 'transparent'}; border-radius:${card.iconRounded ? '50%' : '8px'}; color:${iconColor}'>
+              <svg viewBox='0 0 24 24' width='100%' height='100%' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='${iconPath}'/></svg>
+          </div>`;
 
-      let compsHTML = "";
-      (card.comparisons || []).forEach((c, cpIdx) => {
-        const cpi = cpIdx + 1;
-        const trendUp = iconPaths['trendingUp'];
-        const trendDown = iconPaths['trendingDown'];
-        const trueColor = c.invertColor ? "_CorNeg" : "_CorPos";
-        const falseColor = c.invertColor ? "_CorPos" : "_CorNeg"; 
-        const iconSvg = `<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round'><path d='" & IF(_C${ci}_Comp${cpi}_Log, "${trendUp}", "${trendDown}") & "'/></svg>`;
+        // NOVO: Construtor de array limpo para os comparativos
+        let compsDAX = "";
+        if (card.comparisons && card.comparisons.length > 0) {
+            const compsList = card.comparisons.map((c, cpIdx) => {
+                const cpi = cpIdx + 1;
+                const trueColor = c.invertColor ? "_CorNeg" : "_CorPos";
+                const falseColor = c.invertColor ? "_CorPos" : "_CorNeg"; 
+                const trendUp = iconPaths['trendingUp'];
+                const trendDown = iconPaths['trendingDown'];
+                const iconSvg = `<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round'><path d='" & IF(_C${ci}_Comp${cpi}_Log, "${trendUp}", "${trendDown}") & "'/></svg>`;
 
-        compsHTML += `
-            "<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'>
-                <span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span>
-                <span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>
-                    ${iconSvg} " & _C${ci}_Comp${cpi}_Val & "
-                </span>
-            </div>" & `;
-      });
+                return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+            });
+            compsDAX = `" & ${compsList.join(" & ")} & "`;
+        }
 
-      const gridStyle = `grid-column: span ${colSpan}; grid-row: span ${rowSpan};`;
+        // Resolve a cor exata no JS em vez de usar DAX IF(ISBLANK)
+        const actualCardBg = card.cardBackgroundColor || cardBackgroundColor;
+        const actualAccent = card.accentColor || primaryColor;
+        
+        const gridStyle = `grid-column: span ${colSpan}; grid-row: span ${rowSpan};`;
 
-      // NOVO: Resolve a cor exata no JS em vez de usar DAX IF(ISBLANK)
-      const actualCardBg = card.cardBackgroundColor || cardBackgroundColor;
-      const actualAccent = card.accentColor || primaryColor;
+        if (isCompact) {
+            let visualHtml = "";
+            if (card.type === 'progress') {
+              const progColor = card.progressColor || card.accentColor ? (card.progressColor || card.accentColor) : 'var(--accent)';
+              visualHtml = `" & "<div class='progress-bar-bottom' style='width: " & (_C${ci}_Prog_Pct * 100) & "%; background: ${progColor};'></div>" & "`;
+            }
 
-      if (isCompact) {
-          let visualHtml = '""';
-          if (card.type === 'progress') {
-             // Sincronizando a cor de fundo do progresso
-             const progColor = card.progressColor || card.accentColor ? (card.progressColor || card.accentColor) : 'var(--accent)';
-             visualHtml = `"<div class='progress-bar-bottom' style='width: \" & (_C${ci}_Prog_Pct * 100) & \"%; background: ${progColor};'></div>"`;
-          }
-
-          dax += `
-          "<div class='v-item animate' style='${gridStyle} animation-delay: ${delay}s; --accent: ${actualAccent}; background: ${actualCardBg};'>
-              <div class='compact-left'>
-                  <div class='compact-header'>
-                     <div class='compact-icon' style='color:${iconColor}'><svg viewBox='0 0 24 24' width='100%' height='100%' fill='none' stroke='currentColor' stroke-width='2'><path d='${iconPath}'/></svg></div>
-                     <div class='title' style='font-size: ${fTitle}px;'>\" & _C${ci}_Tit & \"</div>
-                  </div>
-                  <div class='value' style='font-size: ${fValue}px;'>\" & _C${ci}_Val & \"</div>
-              </div>
-              <div class='compact-right'>
-                  <div class='footer'>\" & ${compsHTML} \"\" & \"</div>
-              </div>
-              ${visualHtml}
-          </div>" & `;
-      
-      } else {
-          const align = card.textAlign || textAlign;
-          const flexAlign = getFlexAlign(align);
-          const iconPos = card.iconPosition || 'top';
-          let headerHTML = "";
-          
-          if (iconPos === 'top') {
-              let colAlign = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start';
-              headerHTML = `<div class='header' style='flex-direction: column; align-items: ${colAlign}; justify-content: center'>${iconHTML} <div class='title' style='font-size: ${fTitle}px; margin-top: 4px;'>\" & _C${ci}_Tit & \"</div></div>`;
-          } else if (iconPos === 'left') {
-              headerHTML = `<div class='header' style='justify-content: ${flexAlign}'>${iconHTML} <div class='title' style='font-size: ${fTitle}px;'>\" & _C${ci}_Tit & \"</div></div>`;
-          } else { 
-              headerHTML = `<div class='header' style='justify-content: space-between'><div class='title' style='font-size: ${fTitle}px;'>\" & _C${ci}_Tit & \"</div> ${iconHTML}</div>`;
-          }
-
-          let progressHTML = "";
-          if (card.type === 'progress') {
-             // Correção: Agora força a injeção da cor customizada do card no DAX
-             const progColor = card.progressColor || card.accentColor ? (card.progressColor || card.accentColor) : 'var(--accent)';
-             progressHTML = `
-                <div class='progress-track' style='height: ${card.progressHeight || 8}px; background: ${card.progressBackgroundColor || '#f3f4f6'}; margin-top: auto;'>
-                   <div class='progress-fill' style='width: \" & (_C${ci}_Prog_Pct * 100) & \"%; background: ${progColor};'></div>
-                </div>`;
-          }
-
-          const contentHTML = `
-            <div class='content-box' style='display: flex; flex-direction: column; flex: 1;'>
-                <div class='value' style='text-align: ${align}; font-size: ${fValue}px;'>\" & _C${ci}_Val & \"</div>
-                ${progressHTML}
-            </div>
-          `;
-
-          dax += `
+            dax += `
             "<div class='v-item animate' style='${gridStyle} animation-delay: ${delay}s; --accent: ${actualAccent}; background: ${actualCardBg};'>
-                <div class='content-wrapper'>
-                    ${headerHTML}
-                    ${contentHTML}
+                <div class='compact-left'>
+                    <div class='compact-header'>
+                      <div class='compact-icon' style='color:${iconColor}'><svg viewBox='0 0 24 24' width='100%' height='100%' fill='none' stroke='currentColor' stroke-width='2'><path d='${iconPath}'/></svg></div>
+                      <div class='title' style='font-size: ${fTitle}px;'>" & _C${ci}_Tit & "</div>
+                    </div>
+                    <div class='value' style='font-size: ${fValue}px;'>" & _C${ci}_Val & "</div>
                 </div>
-                <div class='footer'>
-                    \" & ${compsHTML} \"\" & \"
+                <div class='compact-right'>
+                    <div class='footer'>${compsDAX}</div>
                 </div>
+                ${visualHtml}
             </div>" & `;
-      }
-    });
+        
+        } else {
+            const align = card.textAlign || textAlign;
+            const flexAlign = getFlexAlign(align);
+            const iconPos = card.iconPosition || 'top';
+            let headerHTML = "";
+            
+            if (iconPos === 'top') {
+                let colAlign = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start';
+                headerHTML = `<div class='header' style='flex-direction: column; align-items: ${colAlign}; justify-content: center'>${iconHTML} <div class='title' style='font-size: ${fTitle}px; margin-top: 4px;'>" & _C${ci}_Tit & "</div></div>`;
+            } else if (iconPos === 'left') {
+                headerHTML = `<div class='header' style='justify-content: ${flexAlign}'>${iconHTML} <div class='title' style='font-size: ${fTitle}px;'>" & _C${ci}_Tit & "</div></div>`;
+            } else { 
+                headerHTML = `<div class='header' style='justify-content: space-between'><div class='title' style='font-size: ${fTitle}px;'>" & _C${ci}_Tit & "</div> ${iconHTML}</div>`;
+            }
+
+            let progressHTML = "";
+            if (card.type === 'progress') {
+              const progColor = card.progressColor || card.accentColor ? (card.progressColor || card.accentColor) : 'var(--accent)';
+              progressHTML = `" & "<div class='progress-track' style='height: ${card.progressHeight || 8}px; background: ${card.progressBackgroundColor || '#f3f4f6'}; margin-top: auto;'><div class='progress-fill' style='width: " & (_C${ci}_Prog_Pct * 100) & "%; background: ${progColor};'></div></div>" & "`;
+            }
+
+            const contentHTML = `
+              <div class='content-box' style='display: flex; flex-direction: column; flex: 1;'>
+                  <div class='value' style='text-align: ${align}; font-size: ${fValue}px;'>" & _C${ci}_Val & "</div>${progressHTML}
+              </div>
+            `;
+
+            dax += `
+              "<div class='v-item animate' style='${gridStyle} animation-delay: ${delay}s; --accent: ${actualAccent}; background: ${actualCardBg};'>
+                  <div class='content-wrapper'>
+                      ${headerHTML}
+                      ${contentHTML}
+                  </div>
+                  <div class='footer'>${compsDAX}</div>
+              </div>" & `;
+        }
+      });
   } else { 
      // === LOGICA DO GRÁFICO (CHART) ===
      (items || []).forEach((donut, idx) => {

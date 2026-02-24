@@ -315,8 +315,13 @@ const Preview: React.FC<PreviewProps> = ({
                 if (isCompact) {
                    return (
                     <div key={card.id} className={`p-card compact ${selectedCardId === card.id ? 'selected' : ''}`} 
-                         style={{ animationDelay: `${idx * 0.1}s`, ...gridStyle } as any}
-                         onClick={(e) => { e.stopPropagation(); onCardClick?.(card.id); }}>
+                        style={{ 
+                            animationDelay: `${idx * 0.1}s`, 
+                            '--p-bg': card.cardBackgroundColor || global.cardBackgroundColor,
+                            '--p-primary': card.accentColor || global.primaryColor,
+                            ...gridStyle 
+                        } as any}
+                        onClick={(e) => { e.stopPropagation(); onCardClick?.(card.id); }}>
                       
                       <div className="flex flex-col justify-center z-10" style={{ maxWidth: '60%', marginLeft: '8px' }}>
                         <div className="flex items-center gap-2 mb-0.5">
@@ -391,8 +396,13 @@ const Preview: React.FC<PreviewProps> = ({
 
                 return (
                 <div key={card.id} className={`p-card ${selectedCardId === card.id ? 'selected' : ''}`} 
-                     style={{ animationDelay: `${idx * 0.1}s`, '--p-bg': card.cardBackgroundColor || global.cardBackgroundColor, ...gridStyle } as any}
-                     onClick={(e) => { e.stopPropagation(); onCardClick?.(card.id); }}>
+                  style={{ 
+                      animationDelay: `${idx * 0.1}s`, 
+                      '--p-bg': card.cardBackgroundColor || global.cardBackgroundColor, 
+                      '--p-primary': card.accentColor || global.primaryColor,
+                      ...gridStyle 
+                  } as any}
+                  onClick={(e) => { e.stopPropagation(); onCardClick?.(card.id); }}>
                   
                   <div className="p-header" style={headerStyle}>
                      {headerContent}
@@ -445,7 +455,14 @@ const Preview: React.FC<PreviewProps> = ({
                  const sizePct = donut.chartSize || 90; // Pegando o tamanho configurado no editor
 
                 return (
-                  <div key={donut.id} className={`p-card ${isSelected ? 'selected' : ''}`} style={{ background: donut.cardBackgroundColor || global.cardBackgroundColor, animationDelay: `${idx * 0.1}s`, ...gridStyle } as any} onClick={(e) => { e.stopPropagation(); onCardClick?.(donut.id); }}>
+                  <div key={donut.id} className={`p-card ${isSelected ? 'selected' : ''}`} 
+                    style={{ 
+                        '--p-bg': donut.cardBackgroundColor || global.cardBackgroundColor,
+                        '--p-primary': donut.accentColor || global.primaryColor,
+                        animationDelay: `${idx * 0.1}s`, 
+                        ...gridStyle 
+                    } as any} 
+                    onClick={(e) => { e.stopPropagation(); onCardClick?.(donut.id); }}>
                     <div className="mb-4 flex" style={{ justifyContent: flexAlign }}>
                        <span style={{ fontSize: `${titleSize}px`, fontWeight: global.fontWeightTitle, color: global.textColorTitle }} className="uppercase tracking-widest">{donut.title}</span>
                     </div>
