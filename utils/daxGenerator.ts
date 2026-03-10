@@ -4,6 +4,7 @@ import { iconPaths } from './icons';
 export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'cards'): string => {
   const { 
     columns, gap, padding, 
+    marginType, marginAll, marginTop, marginRight, marginBottom, marginLeft, // <- Adicione isso
     primaryColor, cardBackgroundColor,
     textColorTitle, textColorValue, textColorSub,
     positiveColor, negativeColor,
@@ -169,7 +170,7 @@ VAR _CSS = "
         grid-template-columns: repeat(${columns}, 1fr); 
         grid-auto-rows: 1fr; /* IMPORTANTE: Garante que as linhas estiquem para ocupar espaço */
         gap: ${gap}px; 
-        padding: ${padding}px;
+        padding: ${(marginType || 'all') === 'specific' ? `${marginTop ?? 10}px ${marginRight ?? 10}px ${marginBottom ?? 10}px ${marginLeft ?? 10}px` : `${marginAll ?? 10}px`};
         width: 100vw; height: 100vh; box-sizing: border-box;
     }
     

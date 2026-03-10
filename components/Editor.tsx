@@ -251,6 +251,37 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                     <Field label="Colunas"><input type="number" value={globalConfig.columns} onChange={(e) => setGlobalConfig({...globalConfig, columns: +e.target.value})} className="input-field"/></Field>
                     <Field label="Espaçamento"><input type="number" value={globalConfig.gap} onChange={(e) => setGlobalConfig({...globalConfig, gap: +e.target.value})} className="input-field"/></Field>
                 </div>
+                {/* NOVO BLOCO: CONTROLE DE MARGEM EXTERNA */}
+                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            <Layout size={14} className="text-gray-600"/>
+                            <span className="text-[10px] font-black text-gray-700 uppercase">Margem Externa</span>
+                        </div>
+                        <select 
+                            value={globalConfig.marginType || 'all'} 
+                            onChange={(e) => setGlobalConfig({...globalConfig, marginType: e.target.value as 'all' | 'specific'})} 
+                            className="input-field py-1 px-2 text-[10px] w-auto h-auto min-h-0"
+                        >
+                            <option value="all">Todos os Lados</option>
+                            <option value="specific">Específico</option>
+                        </select>
+                    </div>
+                    
+                    {(globalConfig.marginType || 'all') === 'all' ? (
+                        <Field label="Tamanho (px)">
+                            <input type="number" value={globalConfig.marginAll ?? 10} onChange={(e) => setGlobalConfig({...globalConfig, marginAll: +e.target.value})} className="input-field"/>
+                        </Field>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Topo (px)"><input type="number" value={globalConfig.marginTop ?? 10} onChange={(e) => setGlobalConfig({...globalConfig, marginTop: +e.target.value})} className="input-field"/></Field>
+                            <Field label="Direita (px)"><input type="number" value={globalConfig.marginRight ?? 10} onChange={(e) => setGlobalConfig({...globalConfig, marginRight: +e.target.value})} className="input-field"/></Field>
+                            <Field label="Baixo (px)"><input type="number" value={globalConfig.marginBottom ?? 10} onChange={(e) => setGlobalConfig({...globalConfig, marginBottom: +e.target.value})} className="input-field"/></Field>
+                            <Field label="Esquerda (px)"><input type="number" value={globalConfig.marginLeft ?? 10} onChange={(e) => setGlobalConfig({...globalConfig, marginLeft: +e.target.value})} className="input-field"/></Field>
+                        </div>
+                    )}
+                </div>
+                {/* ---------------------------------------- */}
                 <Field label="Alinhamento Global do Texto">
                    <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200">
                       {['left', 'center', 'right'].map((align: any) => (

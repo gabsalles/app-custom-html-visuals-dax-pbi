@@ -12,6 +12,8 @@ import { Code, Eye, Copy, Check, Monitor, Smartphone, Tablet, Settings2, Downloa
 // --- CONFIGURAÇÕES INICIAIS (DEFAULTS) ---
 const INITIAL_GLOBAL: GlobalConfig = {
   columns: 3, gap: 20, padding: 24,
+  // Valores padrão da margem externa
+  marginType: 'all', marginAll: 10, marginTop: 10, marginRight: 10, marginBottom: 10, marginLeft: 10,
   primaryColor: '#4f46e5', cardBackgroundColor: '#ffffff',
   canvasBackgroundColor: '#f3f4f6', // <-- ADICIONAR ESTA LINHA (um cinza claro padrão)
   textColorTitle: '#86868B', textColorValue: '#1D1D1F', textColorSub: '#6B7280',

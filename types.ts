@@ -126,6 +126,16 @@ export interface GlobalConfig {
   columns: number;
   gap: number;
   padding: number;
+
+  // --- NOVOS CAMPOS PARA MARGEM EXTERNA ---
+  marginType: 'all' | 'specific';
+  marginAll: number;
+  marginTop: number;
+  marginRight: number;
+  marginBottom: number;
+  marginLeft: number;
+  // ---------------------------------------
+
   primaryColor: string;
   cardBackgroundColor: string;
   canvasBackgroundColor: string; // <-- ADICIONAR ESTA LINHA

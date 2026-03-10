@@ -159,9 +159,9 @@ const Preview: React.FC<PreviewProps> = ({
     .p-container { 
         display: grid; 
         grid-template-columns: repeat(${global.columns}, 1fr); 
-        grid-auto-rows: 1fr; /* Responsividade Vertical - Linhas esticam */
+        grid-auto-rows: 1fr;
         gap: var(--p-gap); 
-        padding: 10px; 
+        padding: ${(global.marginType || 'all') === 'specific' ? `${global.marginTop ?? 10}px ${global.marginRight ?? 10}px ${global.marginBottom ?? 10}px ${global.marginLeft ?? 10}px` : `${global.marginAll ?? 10}px`}; 
         width: 100%; height: 100%; box-sizing: border-box; 
     }
     
