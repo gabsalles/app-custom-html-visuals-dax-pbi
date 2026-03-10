@@ -730,42 +730,6 @@ const Editor: React.FC<EditorProps> = ({
                   )}
                 </div>
               </div>
-
-              {/* Credits */}
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <SectionHeader icon={BookmarkCheck} title="Créditos do Visual" />
-                <div className="space-y-3">
-                  <Field label="Seu Nome / Autoria">
-                    <CustomInput
-                      value={(globalConfig as any).creditsName || ''}
-                      onChange={(e: any) => setGlobalConfig({ ...globalConfig, creditsName: e.target.value } as any)}
-                      placeholder="Ex: Gabriel Souza"
-                    />
-                  </Field>
-                  <Field label="LinkedIn (URL ou @usuário)">
-                    <CustomInput
-                      value={(globalConfig as any).creditsLinkedin || ''}
-                      onChange={(e: any) => setGlobalConfig({ ...globalConfig, creditsLinkedin: e.target.value } as any)}
-                      placeholder="Ex: linkedin.com/in/gabriel"
-                    />
-                  </Field>
-                  <Field label="Versão do App">
-                    <CustomInput
-                      value={(globalConfig as any).creditsVersion || ''}
-                      onChange={(e: any) => setGlobalConfig({ ...globalConfig, creditsVersion: e.target.value } as any)}
-                      placeholder="Ex: v1.0.0"
-                    />
-                  </Field>
-                  {((globalConfig as any).creditsName || (globalConfig as any).creditsVersion) && (
-                    <div className="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 text-[9px] text-slate-500 font-mono leading-relaxed">
-                      <span className="font-black text-slate-400 uppercase tracking-widest block mb-1">Preview no DAX</span>
-                      {(globalConfig as any).creditsName && <div>/* Autor: {(globalConfig as any).creditsName} */</div>}
-                      {(globalConfig as any).creditsLinkedin && <div>/* LinkedIn: {(globalConfig as any).creditsLinkedin} */</div>}
-                      {(globalConfig as any).creditsVersion && <div>/* Versão: {(globalConfig as any).creditsVersion} */</div>}
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
           )}
 
@@ -997,7 +961,29 @@ const Editor: React.FC<EditorProps> = ({
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       `}</style>
-    </div>
+      {/* Local sugerido: Logo antes do fechamento da última div do componente Editor */}
+      <div className="p-4 bg-white/50 border-t border-slate-200/60 backdrop-blur-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Desenvolvido por</span>
+            <a 
+              href="https://linkedin.com/in/gabsales" // Ajuste para seu link real
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-[10px] font-bold text-slate-600 hover:text-indigo-600 transition-colors flex items-center gap-1"
+            >
+              Gabriel Sales
+              <div className="w-1 h-1 bg-indigo-400 rounded-full animate-pulse" />
+            </a>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-1.5 py-0.5 rounded-md bg-slate-200/50 text-slate-500 text-[8px] font-mono font-bold">
+              v1.2.0
+            </span>
+          </div>
+        </div>
+      </div>
+    </div> // Fechamento da div principal do Editor
   );
 };
 
