@@ -127,13 +127,23 @@ const Preview: React.FC<PreviewProps> = ({
     animationKeyframes = `@keyframes slideRight { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }`;
   }
 
+  // --- CÁLCULO DINÂMICO DE SOMBRAS ---
+  const shadowAlpha = (global.shadowIntensity || 0) / 100;
+  const shadowDist = global.shadowDistance || 0;
+  const shadowBlur = global.shadowBlur || 0;
+  
+  // Sombra base (para o estado normal)
+  const baseShadow = `0 ${shadowDist}px ${shadowBlur}px rgba(0,0,0,${shadowAlpha})`;
+  // Sombra expandida (para o efeito Hover Lift)
+  const liftShadow = `0 ${shadowDist + 10}px ${shadowBlur + 10}px rgba(0,0,0,${shadowAlpha + 0.1})`;
+
   let hoverStyles = '';
   switch (global.hoverEffect) {
     case 'lift': 
       hoverStyles = `
         transform: translateY(-6px) !important; 
         transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s ease !important;
-        box-shadow: 0 15px 30px rgba(0,0,0,0.15); 
+        box-shadow: ${liftShadow} !important; 
         border-color: var(--p-primary);
       `; 
       break;
@@ -154,14 +164,26 @@ const Preview: React.FC<PreviewProps> = ({
     ${animationKeyframes}
     @keyframes loadBar { from { width: 0; } }
     @keyframes fillRing { to { stroke-dashoffset: var(--offset); } }
-    :root { --p-primary: ${global.primaryColor}; --p-bg: ${global.cardBackgroundColor}; --p-text-title: ${global.textColorTitle}; --p-text-val: ${global.textColorValue}; --p-text-sub: ${global.textColorSub}; --p-radius: ${global.borderRadius}px; --p-gap: ${global.gap}px; --p-pad: ${global.padding}px; --p-min-h: ${global.cardMinHeight}px; --p-badge-size: ${global.fontSizeBadge || 10}px;}
+    :root { 
+      --p-primary: ${global.primaryColor}; 
+      --p-bg: ${global.cardBackgroundColor}; 
+      --p-text-title: ${global.textColorTitle}; 
+      --p-text-val: ${global.textColorValue}; 
+      --p-text-sub: ${global.textColorSub}; 
+      --p-radius: ${global.borderRadius}px; 
+      --p-gap: ${global.gap}px; 
+      --p-pad: ${global.padding}px; 
+      --p-min-h: ${global.cardMinHeight}px; 
+      --p-badge-size: ${global.fontSizeBadge || 10}px;
+      --p-shadow: ${baseShadow}; /* ← SOMBRA BASE APLICADA AQUI */
+    }
     
     .p-container { 
         display: grid; 
         grid-template-columns: repeat(${global.columns}, 1fr); 
         grid-auto-rows: 1fr;
         gap: var(--p-gap); 
-        padding: ${(global.marginType || 'all') === 'specific' ? `${global.marginTop ?? 10}px ${global.marginRight ?? 10}px ${global.marginBottom ?? 10}px ${global.marginLeft ?? 10}px` : `${global.marginAll ?? 10}px`}; 
+        padding: 10px; 
         width: 100%; height: 100%; box-sizing: border-box; 
     }
     
@@ -171,6 +193,7 @@ const Preview: React.FC<PreviewProps> = ({
         padding: var(--p-pad); 
         min-height: var(--p-min-h); 
         border: 1px solid rgba(0,0,0,0.08); 
+        box-shadow: var(--p-shadow); /* ← INJETA A SOMBRA NO CARD */
         display: flex; 
         flex-direction: column; 
         transition: all 0.25s; 

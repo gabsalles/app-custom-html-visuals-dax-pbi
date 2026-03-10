@@ -203,6 +203,9 @@ const App: React.FC = () => {
           setDonuts={setDonuts}
           activeAppTab={activeAppTab}
           setActiveAppTab={setActiveAppTab}
+          // ADICIONE ESTAS DUAS LINHAS:
+          selectedCardId={selectedCardId}
+          setSelectedCardId={setSelectedCardId}
         />
       </div>
 
