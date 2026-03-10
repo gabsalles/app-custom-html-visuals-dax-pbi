@@ -181,7 +181,7 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
               <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                  <SectionHeader icon={Grid3X3} title="Dimensões no Grid" />
                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="Colunas (Largura)"><CustomInput type="number" min="1" max={globalConfig.columns} value={card.colSpan || 1} onChange={(e: any) => updateCard(card.id, 'colSpan', +e.target.value)}/></Field>
+                    <Field label="Colunas (Largura)"><CustomInput type="number" min="1" max={globalConfig.columnsDesktop || 3} value={card.colSpan || 1} onChange={(e: any) => updateCard(card.id, 'colSpan', +e.target.value)}/></Field>
                     <Field label="Linhas (Altura)"><CustomInput type="number" min="1" value={card.rowSpan || 1} onChange={(e: any) => updateCard(card.id, 'rowSpan', +e.target.value)}/></Field>
                  </div>
               </div>
@@ -315,7 +315,7 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                   <SectionHeader icon={Grid3X3} title="Dimensões no Grid" />
                   <div className="grid grid-cols-2 gap-4">
-                     <Field label="Colunas (Largura)"><CustomInput type="number" min="1" max={globalConfig.columns} value={donut.colSpan || 1} onChange={(e: any) => updateDonut(donut.id, 'colSpan', +e.target.value)}/></Field>
+                     <Field label="Colunas (Largura)"><CustomInput type="number" min="1" max={globalConfig.columnsDesktop || 3} value={donut.colSpan || 1} onChange={(e: any) => updateDonut(donut.id, 'colSpan', +e.target.value)}/></Field>
                      <Field label="Linhas (Altura)"><CustomInput type="number" min="1" value={donut.rowSpan || 1} onChange={(e: any) => updateDonut(donut.id, 'rowSpan', +e.target.value)}/></Field>
                   </div>
                </div>
@@ -441,13 +441,25 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
             )}
 
             {activeTab === 'layout' && (
-               <div className="space-y-5 animate-fadeIn">
-                  <div className="grid grid-cols-2 gap-4">
-                     <Field label="Colunas Grid"><CustomInput type="number" value={globalConfig.columns} onChange={(e: any) => setGlobalConfig({...globalConfig, columns: +e.target.value})}/></Field>
-                     <Field label="Espaçamento (Gap)"><CustomInput type="number" value={globalConfig.gap} onChange={(e: any) => setGlobalConfig({...globalConfig, gap: +e.target.value})}/></Field>
+            <div className="space-y-5 animate-fadeIn">
+               {/* NOVO BLOCO RESPONSIVO */}
+               <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-4">
+                  <SectionHeader icon={Grid3X3} title="Colunas Responsivas (Grid)" />
+                  <div className="grid grid-cols-3 gap-3">
+                     <Field label="Desktop (>800px)"><CustomInput type="number" min="1" value={globalConfig.columnsDesktop || 3} onChange={(e: any) => setGlobalConfig({...globalConfig, columnsDesktop: +e.target.value})}/></Field>
+                     <Field label="Tablet (<800px)"><CustomInput type="number" min="1" value={globalConfig.columnsTablet || 2} onChange={(e: any) => setGlobalConfig({...globalConfig, columnsTablet: +e.target.value})}/></Field>
+                     <Field label="Mobile (<500px)"><CustomInput type="number" min="1" value={globalConfig.columnsMobile || 1} onChange={(e: any) => setGlobalConfig({...globalConfig, columnsMobile: +e.target.value})}/></Field>
                   </div>
-                  
-                  <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+                  <p className="text-[9px] text-slate-400 leading-relaxed mt-2 italic">O visual se adaptará magicamente ao redimensionar a caixa no Power BI.</p>
+               </div>
+
+               <div className="grid grid-cols-2 gap-4">
+                  <Field label="Espaçamento (Gap px)"><CustomInput type="number" value={globalConfig.gap} onChange={(e: any) => setGlobalConfig({...globalConfig, gap: +e.target.value})}/></Field>
+                  <Field label="Arredondamento"><CustomInput type="number" value={globalConfig.borderRadius} onChange={(e: any) => setGlobalConfig({...globalConfig, borderRadius: +e.target.value})}/></Field>
+               </div>
+               
+               {/* O resto da aba de Layout continua aqui com o bg-white de Margem... */}
+               <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
                      <div className="flex justify-between items-center mb-3">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Margem do Canvas</label>
                         <CustomSelect value={globalConfig.marginType || 'all'} onChange={(e: any) => setGlobalConfig({...globalConfig, marginType: e.target.value as 'all' | 'specific'})}>

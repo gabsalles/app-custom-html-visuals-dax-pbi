@@ -178,15 +178,32 @@ const Preview: React.FC<PreviewProps> = ({
       --p-shadow: ${baseShadow}; /* ← SOMBRA BASE APLICADA AQUI */
     }
     
-    .p-container { 
-        display: grid; 
-        grid-template-columns: repeat(${global.columns}, 1fr); 
-        grid-auto-rows: 1fr;
-        gap: var(--p-gap); 
-        padding: 10px; 
+    /* NOVO: O wrapper define o contêiner responsivo */
+    .p-wrapper { 
+        container-type: inline-size; 
         width: 100%; height: 100%; box-sizing: border-box; 
     }
     
+    /* O Grid padrão carrega a versão de DESKTOP */
+    .p-container { 
+        display: grid; 
+        grid-template-columns: repeat(${global.columnsDesktop || 3}, 1fr); 
+        grid-auto-rows: 1fr;
+        gap: var(--p-gap); 
+        padding: ${(global.marginType || 'all') === 'specific' ? `${global.marginTop ?? 10}px ${global.marginRight ?? 10}px ${global.marginBottom ?? 10}px ${global.marginLeft ?? 10}px` : `${global.marginAll ?? 10}px`}; 
+        width: 100%; height: 100%; box-sizing: border-box; 
+    }
+    
+    /* REGRAS RESPONSIVAS AUTOMÁTICAS */
+    @container (max-width: 800px) {
+        .p-container { grid-template-columns: repeat(${global.columnsTablet || 2}, 1fr); }
+    }
+    @container (max-width: 500px) {
+        .p-container { grid-template-columns: repeat(${global.columnsMobile || 1}, 1fr); }
+        /* Se cair pra mobile, força qualquer card a ocupar apenas 1 linha/coluna para não quebrar a tela */
+        .p-card { grid-column: span 1 !important; grid-row: span 1 !important; }
+    }
+
     .p-card { 
         background: var(--p-bg); 
         border-radius: var(--p-radius); 
@@ -296,7 +313,9 @@ const Preview: React.FC<PreviewProps> = ({
                 </>
             )}
 
-            <div className="p-container">
+          {/* Adicione a div wrapper em volta do container */}
+            <div className="p-wrapper">
+              <div className="p-container">
               {activeAppTab === 'cards' ? cards.map((card, idx) => {
                 const isCompact = global.cardMinHeight < 140;
                 const baseFTitle = card.fontSizeTitle || global.fontSizeTitle;
@@ -547,7 +566,8 @@ const Preview: React.FC<PreviewProps> = ({
                   </div>
                 )
               })}
-            </div>
+              </div>
+            </div> 
           </div>
         </div>
     </div>

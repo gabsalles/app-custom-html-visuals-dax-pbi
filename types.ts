@@ -123,7 +123,9 @@ export interface DonutChartConfig {
 // ... (resto do arquivo mantido)
 
 export interface GlobalConfig {
-  columns: number;
+  columnsDesktop: number;
+  columnsTablet: number;
+  columnsMobile: number;
   gap: number;
   padding: number;
 

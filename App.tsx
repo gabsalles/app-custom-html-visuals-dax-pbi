@@ -11,7 +11,8 @@ import { Code, Eye, Copy, Check, Monitor, Smartphone, Tablet, Settings2, Downloa
 
 // --- CONFIGURAÇÕES INICIAIS (DEFAULTS) ---
 const INITIAL_GLOBAL: GlobalConfig = {
-  columns: 3, gap: 20, padding: 24,
+  columnsDesktop: 3, columnsTablet: 2, columnsMobile: 1, // <- NOVO FORMATO
+  gap: 20, padding: 24,
   // Valores padrão da margem externa
   marginType: 'all', marginAll: 10, marginTop: 10, marginRight: 10, marginBottom: 10, marginLeft: 10,
   primaryColor: '#4f46e5', cardBackgroundColor: '#ffffff',
@@ -52,7 +53,18 @@ const App: React.FC = () => {
   
   const [globalConfig, setGlobalConfig] = useState<GlobalConfig>(() => {
     const saved = localStorage.getItem('pbi-global');
-    return saved ? JSON.parse(saved) : INITIAL_GLOBAL;
+    if (saved) {
+        const parsed = JSON.parse(saved);
+        // Migração automática se vier do modelo antigo
+        if (parsed.columns !== undefined) {
+            parsed.columnsDesktop = parsed.columns;
+            parsed.columnsTablet = Math.max(1, parsed.columns - 1);
+            parsed.columnsMobile = 1;
+            delete parsed.columns;
+        }
+        return { ...INITIAL_GLOBAL, ...parsed };
+    }
+    return INITIAL_GLOBAL;
   });
 
   const [cards, setCards] = useState<CardConfig[]>(() => {
@@ -158,7 +170,14 @@ const App: React.FC = () => {
 
         // Faz o merge do Global Config (protege contra propriedades novas que não existiam no JSON salvo)
         if (project.globalConfig) {
-          setGlobalConfig(prev => ({ ...prev, ...project.globalConfig }));
+          let gc = project.globalConfig;
+          if (gc.columns !== undefined) {
+             gc.columnsDesktop = gc.columns;
+             gc.columnsTablet = Math.max(1, gc.columns - 1);
+             gc.columnsMobile = 1;
+             delete gc.columns;
+          }
+          setGlobalConfig(prev => ({ ...prev, ...gc }));
         }
         
         // Garante que só seta os estados se realmente forem arrays, evitando crashes de ".map is not a function"
