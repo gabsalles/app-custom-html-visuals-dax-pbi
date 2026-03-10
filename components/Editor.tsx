@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { CardConfig, GlobalConfig, CardType, HoverEffect, ComparisonConfig, DonutChartConfig, AppTab, DonutSlice } from '../types';
 import { iconDefinitions, IconCategory } from '../utils/icons';
-import { Trash2, Plus, Type, Palette, Layout, ChevronDown, ChevronRight, MousePointer2, X, Binary, Sparkles, ALargeSmall, Droplets, CalendarDays, CalendarRange, PieChart, Layers, Wand2, AlignLeft, AlignCenter, AlignRight, Component, BarChart3, Search, Database, PanelTop, PanelLeft, PanelRight, Save, Sun, Grid3X3, CircleDot} from 'lucide-react';
+import { Trash2, Plus, Type, Palette, Layout, ChevronDown, ChevronRight, MousePointer2, X, Binary, Sparkles, ALargeSmall, Droplets, CalendarDays, CalendarRange, PieChart, Layers, Wand2, AlignLeft, AlignCenter, AlignRight, Component, BarChart3, Search, Database, PanelTop, PanelLeft, PanelRight, Save, Sun, Grid3X3, CircleDot, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface EditorProps {
   globalConfig: GlobalConfig;
@@ -142,6 +142,24 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
        const donut = donuts.find(d => d.id === donutId);
        if (!donut) return;
        updateDonut(donutId, 'slices', donut.slices.filter(s => s.id !== sliceId));
+  };
+
+  const moveItem = (index: number, direction: 1 | -1, type: 'cards' | 'charts') => {
+    if (type === 'cards') {
+      const newItems = [...cards];
+      if (index + direction < 0 || index + direction >= newItems.length) return;
+      const temp = newItems[index];
+      newItems[index] = newItems[index + direction];
+      newItems[index + direction] = temp;
+      setCards(newItems);
+    } else {
+      const newItems = [...donuts];
+      if (index + direction < 0 || index + direction >= newItems.length) return;
+      const temp = newItems[index];
+      newItems[index] = newItems[index + direction];
+      newItems[index + direction] = temp;
+      setDonuts(newItems);
+    }
   };
 
   const addComparison = (cardId: string, type: 'mom' | 'yoy' | 'custom' = 'custom') => {
@@ -370,11 +388,24 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
 
           <div className="space-y-3">
             {activeAppTab === 'cards' ? (
-              cards.map(card => (
+              // 1. ADICIONAMOS O "idx" AQUI EMBAIXO:
+              cards.map((card, idx) => (
                 <div key={card.id} className={`bg-white border rounded-2xl overflow-hidden shadow-sm transition-all ${card.isOpen ? 'ring-2 ring-indigo-500/20 border-indigo-200' : 'hover:border-indigo-200'}`}>
-                  <div className="flex justify-between items-center p-4 cursor-pointer bg-gray-50/50" onClick={() => updateCard(card.id, 'isOpen', !card.isOpen)}>
-                     <div className="flex items-center gap-3">{card.isOpen ? <ChevronDown size={16} className="text-indigo-600 font-bold"/> : <ChevronRight size={16} className="text-gray-400"/>}<span className="text-[11px] font-black text-gray-800 uppercase tracking-tight">{card.title}</span></div>
-                     <button onClick={(e) => { e.stopPropagation(); setCards(cards.filter(c => c.id !== card.id)); }} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={16}/></button>
+                  
+                  {/* 2. ESTA DIV ABAIXO FOI ATUALIZADA (Trocamos o p-4 por p-3 e os botões da direita) */}
+                  <div className="flex justify-between items-center p-3 cursor-pointer bg-gray-50/50" onClick={() => updateCard(card.id, 'isOpen', !card.isOpen)}>
+                    <div className="flex items-center gap-3 pl-1">
+                        {card.isOpen ? <ChevronDown size={16} className="text-indigo-600 font-bold"/> : <ChevronRight size={16} className="text-gray-400"/>}
+                        <span className="text-[11px] font-black text-gray-800 uppercase tracking-tight">{card.title}</span>
+                    </div>
+                    
+                    {/* AQUI ESTÃO AS NOVAS SETINHAS JUNTO COM A LIXEIRA */}
+                    <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                        <button disabled={idx === 0} onClick={() => moveItem(idx, -1, 'cards')} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 transition-all" title="Mover para Cima"><ArrowUp size={14}/></button>
+                        <button disabled={idx === cards.length - 1} onClick={() => moveItem(idx, 1, 'cards')} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 transition-all" title="Mover para Baixo"><ArrowDown size={14}/></button>
+                        <div className="w-px h-4 bg-gray-200 mx-1" />
+                        <button onClick={() => setCards(cards.filter(c => c.id !== card.id))} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all" title="Excluir"><Trash2 size={14}/></button>
+                    </div>
                   </div>
                   {card.isOpen && (
                     <div className="p-5 border-t space-y-6 animate-fadeIn">
@@ -568,12 +599,25 @@ const Editor: React.FC<EditorProps> = ({ globalConfig, setGlobalConfig, cards, s
               ))
             ) : (
               // LÓGICA DE DONUTS
-              donuts.map(donut => (
+              // 1. ADICIONAMOS O "idx" AQUI EMBAIXO:
+              donuts.map((donut, idx) => (
                 <div key={donut.id} className={`bg-white border rounded-2xl overflow-hidden shadow-sm transition-all ${donut.isOpen ? 'ring-2 ring-indigo-500/20 border-indigo-200' : 'hover:border-indigo-200'}`}>
-                   <div className="flex justify-between items-center p-4 cursor-pointer bg-gray-50/50" onClick={() => updateDonut(donut.id, 'isOpen', !donut.isOpen)}>
-                     <div className="flex items-center gap-3">{donut.isOpen ? <ChevronDown size={16} className="text-indigo-600 font-bold"/> : <ChevronRight size={16} className="text-gray-400"/>}<span className="text-[11px] font-black text-gray-800 uppercase tracking-tight">{donut.title}</span></div>
-                     <button onClick={(e) => { e.stopPropagation(); setDonuts(donuts.filter(d => d.id !== donut.id)); }} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={16}/></button>
-                   </div>
+                  
+                  {/* 2. ESTA DIV ABAIXO FOI ATUALIZADA (Trocamos o p-4 por p-3 e os botões da direita) */}
+                  <div className="flex justify-between items-center p-3 cursor-pointer bg-gray-50/50" onClick={() => updateDonut(donut.id, 'isOpen', !donut.isOpen)}>
+                    <div className="flex items-center gap-3 pl-1">
+                        {donut.isOpen ? <ChevronDown size={16} className="text-indigo-600 font-bold"/> : <ChevronRight size={16} className="text-gray-400"/>}
+                        <span className="text-[11px] font-black text-gray-800 uppercase tracking-tight">{donut.title}</span>
+                    </div>
+                    
+                    {/* AQUI ESTÃO AS NOVAS SETINHAS JUNTO COM A LIXEIRA (agora usando 'charts') */}
+                    <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                        <button disabled={idx === 0} onClick={() => moveItem(idx, -1, 'charts')} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 transition-all" title="Mover para Cima"><ArrowUp size={14}/></button>
+                        <button disabled={idx === donuts.length - 1} onClick={() => moveItem(idx, 1, 'charts')} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 transition-all" title="Mover para Baixo"><ArrowDown size={14}/></button>
+                        <div className="w-px h-4 bg-gray-200 mx-1" />
+                        <button onClick={() => setDonuts(donuts.filter(d => d.id !== donut.id))} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all" title="Excluir"><Trash2 size={14}/></button>
+                    </div>
+                  </div>
                    {donut.isOpen && (
                      <div className="p-5 border-t space-y-6 animate-fadeIn">
                        <Field label="Título"><input value={donut.title} onChange={(e) => updateDonut(donut.id, 'title', e.target.value)} className="input-field font-bold"/></Field>
