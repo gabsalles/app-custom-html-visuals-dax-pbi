@@ -20,7 +20,7 @@ export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'c
     switch (type) {
       case 'integer': return "#,##0";
       case 'decimal': return `#,##0${zeros}`;
-      case 'currency': return `"R$ " #,##0${zeros}`; 
+      case 'currency': return `#,##0${zeros}`; // ← Alterado aqui (removido o "R$ ") 
       case 'percent': return `0${zeros}%`;
       default: return "";
     }
@@ -115,7 +115,9 @@ VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
           dax += `VAR _C${ci}_Val = "${prefix}" & _C${ci}_Dyn & "${card.suffix || ''}"\n`;
       } else {
           const formatStr = getFormatString(card.formatType, card.decimalPlaces);
-          dax += `VAR _C${ci}_Val = "${card.prefix || ''}" & FORMAT(_C${ci}_Val_Raw, "${formatStr}") & "${card.suffix || ''}"\n`;
+          // Adiciona o prefixo dinamicamente fora da função FORMAT do DAX para evitar erro de sintaxe
+          const explicitPrefix = card.formatType === 'currency' ? "R$ " : (card.prefix || "");
+          dax += `VAR _C${ci}_Val = "${explicitPrefix}" & FORMAT(_C${ci}_Val_Raw, "${formatStr}") & "${card.suffix || ''}"\n`;
       }
       
       if (card.type === 'progress') {
