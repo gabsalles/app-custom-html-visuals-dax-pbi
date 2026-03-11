@@ -467,9 +467,21 @@ const Editor: React.FC<EditorProps> = ({
               {iconSelectorOpen && (
                 <div className="p-3 bg-slate-800 rounded-2xl shadow-xl space-y-3 animate-fadeIn relative z-20">
                   <input type="text" placeholder="Pesquisar ícones..." value={iconSearch} onChange={(e) => setIconSearch(e.target.value)} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-xl text-xs text-white placeholder-slate-400 outline-none focus:border-indigo-400" />
+                  {/* components/Editor.tsx */}
+
+                  {/* Mude isto: */}
+                  {/* {['all', 'finance', 'people', 'legal', 'tech'].map(cat => ( ... */}
+
+                  {/* Para isto: */}
                   <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar-dark">
-                    {['all', 'finance', 'people', 'legal', 'tech'].map(cat => (
-                      <button key={cat} onClick={() => setActiveIconCategory(cat as any)} className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${activeIconCategory === cat ? 'bg-indigo-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>{cat}</button>
+                    {['all', 'finance', 'people', 'ops', 'tech', 'marketing', 'health', 'media', 'general'].map(cat => (
+                      <button 
+                        key={cat} 
+                        onClick={() => setActiveIconCategory(cat as any)} 
+                        className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${activeIconCategory === cat ? 'bg-indigo-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                      >
+                        {cat}
+                      </button>
                     ))}
                   </div>
                   <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto custom-scrollbar-dark p-1">
@@ -645,6 +657,24 @@ const Editor: React.FC<EditorProps> = ({
   return (
     <div className="flex flex-col h-full bg-slate-50 border-r border-slate-200 shadow-xl z-20">
 
+      {/* Cabeçalho Elegante DAXILIZER.com */}
+      <div className="px-6 pt-8 pb-3 bg-white flex flex-col items-center justify-center border-b border-slate-50 shrink-0 relative overflow-hidden">
+        {/* Detalhe de luz sutil no fundo */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-indigo-50 rounded-full blur-3xl opacity-50 -mt-16" />
+        
+        <h1 className="relative z-10 text-2xl font-black tracking-[0.35em] text-slate-900 flex items-center leading-none">
+          DAXILIZER
+          <span className="text-indigo-500 font-medium tracking-[0.1em]">.COM</span>
+        </h1>
+        
+        <div className="relative z-10 flex items-center gap-3 mt-4">
+          <div className="h-px w-8 bg-slate-200" />
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.5em] whitespace-nowrap">
+            Power BI Visual Builder
+          </span>
+          <div className="h-px w-8 bg-slate-200" />
+        </div>
+    </div>
       {/* Header area: Theme presets + tab toggle */}
       <div className="p-4 bg-white border-b border-slate-200 space-y-3 shrink-0">
 
@@ -875,92 +905,7 @@ const Editor: React.FC<EditorProps> = ({
       </div>
 
       {/* ── Hierarchy panel ── */}
-      <div className="flex-1 min-h-[250px] flex flex-col bg-slate-100/50">
-        <div className="flex justify-between items-center p-3 border-b border-slate-200 bg-white/50 backdrop-blur shrink-0">
-          <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <Layers size={14} className="text-indigo-500" /> Hierarquia
-            <span className="text-[8px] text-slate-300 font-normal normal-case tracking-normal">(arraste para reordenar)</span>
-          </h3>
-          <div className="flex items-center gap-1">
-            {/* Card Preset Library button */}
-            {activeAppTab === 'cards' && (
-              <button
-                onClick={() => setShowPresetLibrary(p => !p)}
-                title="Biblioteca de Presets"
-                className={`p-1.5 rounded-lg transition-colors ${showPresetLibrary ? 'text-amber-600 bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}
-              ><BookMarked size={15} /></button>
-            )}
-            <button
-              onClick={() => activeAppTab === 'cards'
-                ? setCards([...cards, { id: Math.random().toString(36).substr(2, 9), title: 'Novo Card', measurePlaceholder: '[Vendas]', formatType: 'currency', decimalPlaces: 0, prefix: '', suffix: '', type: 'simple', targetMeasurePlaceholder: '1', value: 'R$ 0', progressValue: 0, icon: 'chart', iconPosition: 'top', iconSize: 40, iconPadding: 8, iconRounded: false, isOpen: true, comparisons: [], colSpan: 1, rowSpan: 1 }])
-                : setDonuts([...donuts, { id: Math.random().toString(36).substr(2, 9), title: 'Nova Rosca', mode: 'completeness', geometry: 'full', ringThickness: 12, roundedCorners: true, showCenterText: true, centerTextLabel: 'KPI', centerTextValueMeasure: '[Valor]', completenessMeasure: '[Vendas]', completenessTarget: '[Meta]', slices: [], isOpen: true, colSpan: 1, rowSpan: 1 }])}
-              className="p-1 bg-white text-indigo-600 border border-slate-200 rounded-lg hover:border-indigo-300 shadow-sm transition-colors"
-            ><Plus size={16} /></button>
-          </div>
-        </div>
-
-        {/* Preset library panel */}
-        {showPresetLibrary && (
-          <div className="bg-amber-50 border-b border-amber-200 p-3 animate-fadeIn">
-            <p className="text-[9px] font-black text-amber-700 uppercase tracking-widest mb-2 flex items-center gap-1"><BookmarkCheck size={12} /> Presets Salvos</p>
-            {cardPresets.length === 0 ? (
-              <p className="text-[10px] text-amber-600/70 italic">Nenhum preset salvo ainda. Abra um card e clique em 🔖 para salvar.</p>
-            ) : (
-              <div className="space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar">
-                {cardPresets.map(preset => (
-                  <div key={preset.id} className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-amber-200 group">
-                    <span className="flex-1 text-[11px] font-bold text-slate-700 truncate">{preset.title}</span>
-                    <button onClick={() => applyCardPreset(preset)} className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded hover:bg-indigo-100 transition-colors">Usar</button>
-                    <button onClick={() => deleteCardPreset(preset.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-0.5"><Trash2 size={12} /></button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Draggable list */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
-          {(activeAppTab === 'cards' ? cards : donuts).map((item) => (
-            <div
-              key={item.id}
-              draggable
-              onDragStart={() => setDragId(item.id)}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(item.id); }}
-              onDrop={() => handleDrop(item.id)}
-              onDragEnd={() => { setDragId(null); setDragOver(null); }}
-              onClick={() => setSelectedCardId(item.id)}
-              className={`flex items-center justify-between p-2.5 bg-white border rounded-xl cursor-pointer transition-all group
-                ${dragOver === item.id && dragId !== item.id ? 'border-indigo-400 bg-indigo-50 shadow-md' : 'border-slate-200 hover:border-indigo-300 hover:shadow-sm'}
-                ${dragId === item.id ? 'opacity-40 scale-95' : ''}
-              `}
-            >
-              {/* Drag handle */}
-              <div className="text-slate-200 hover:text-slate-400 cursor-grab active:cursor-grabbing mr-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                <GripVertical size={14} />
-              </div>
-
-              <div className="flex items-center gap-2.5 overflow-hidden flex-1">
-                <div className="w-6 h-6 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 flex-shrink-0">
-                  {activeAppTab === 'cards' ? <Layout size={12} /> : <PieChart size={12} />}
-                </div>
-                <span className="text-xs font-bold text-slate-700 truncate">{item.title}</span>
-              </div>
-
-              <button
-                onClick={(e) => { e.stopPropagation(); activeAppTab === 'cards' ? setCards(cards.filter(c => c.id !== item.id)) : setDonuts(donuts.filter(d => d.id !== item.id)); }}
-                className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
-              ><Trash2 size={13} /></button>
-            </div>
-          ))}
-          {(activeAppTab === 'cards' ? cards : donuts).length === 0 && (
-            <div className="text-center py-8 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-              Nenhum item. Clique em + para adicionar.
-            </div>
-          )}
-        </div>
-      </div>
-
+  
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -979,20 +924,25 @@ const Editor: React.FC<EditorProps> = ({
       {/* Local sugerido: Logo antes do fechamento da última div do componente Editor */}
       <div className="p-4 bg-white/50 border-t border-slate-200/60 backdrop-blur-sm">
         <div className="flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Desenvolvido por</span>
+          <div className="flex flex-col gap-0">
+            {/* leading-none remove o espaço extra que desalinha o topo */}
+            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+              Desenvolvido por
+            </span>
             <a 
-              href="https://linkedin.com/in/gabsales" // Ajuste para seu link real
+              href="https://linkedin.com/in/gabsales" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-[10px] font-bold text-slate-600 hover:text-indigo-600 transition-colors flex items-center gap-1"
+              className="text-[16px] font-bold text-slate-600 hover:text-indigo-600 transition-colors flex items-center gap-1.5 leading-none"
             >
               Gabriel Sales
-              <div className="w-1 h-1 bg-indigo-400 rounded-full animate-pulse" />
+              {/* mt-0.5 centraliza o ponto visualmente com o corpo das letras */}
+              <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse mt-0.5" />
             </a>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="px-1.5 py-0.5 rounded-md bg-slate-200/50 text-slate-500 text-[8px] font-mono font-bold">
+          
+          <div className="flex items-center">
+            <span className="px-2 py-1 rounded-md bg-slate-200/50 text-slate-500 text-[11px] font-mono font-bold leading-none">
               v1.2.0
             </span>
           </div>

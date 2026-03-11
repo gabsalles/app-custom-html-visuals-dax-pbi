@@ -8,7 +8,9 @@ import { parseDaxToState } from './utils/daxParser';
 import {
   Code, Eye, Copy, Check, Settings2, Download, Upload,
   Trash2, RotateCcw, FileCode2, X, Undo2, Redo2,
-  Monitor, FlipVertical, RectangleHorizontal, LayoutGrid, SquareDashedBottom
+  Monitor, FlipVertical, RectangleHorizontal, LayoutGrid, SquareDashedBottom,
+  // Adicione estes ícones abaixo:
+  Layers, Plus, GripVertical, Layout, PieChart
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
@@ -328,7 +330,7 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-gray-100 font-sans text-gray-900">
 
-      {/* ── Editor panel (resizable + collapsible) ── */}
+      {/* ── COLUNA ESQUERDA: Propriedades (Editor) ── */}
       <div
         className="z-20 shadow-2xl relative flex flex-col flex-shrink-0 transition-all duration-300"
         style={{ width: sidebarOpen ? editorWidth : 0, overflow: 'hidden', minWidth: sidebarOpen ? 280 : 0 }}
@@ -349,148 +351,52 @@ const App: React.FC = () => {
         />
       </div>
 
-      {/* ── Collapse/expand toggle ── */}
+      {/* Botão de recolher e handle de resize (Esquerda) */}
       <div className="relative z-30 flex-shrink-0">
-        <button
-          onClick={() => setSidebarOpen(o => !o)}
-          className="absolute top-1/2 -translate-y-1/2 -right-3.5 w-7 h-12 bg-white border border-slate-200 rounded-r-xl shadow-md flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-300 transition-all z-40 text-xs font-black"
-          title={sidebarOpen ? 'Recolher painel' : 'Expandir painel'}
-        >
+        <button onClick={() => setSidebarOpen(o => !o)} className="absolute top-1/2 -translate-y-1/2 -right-3.5 w-7 h-12 bg-white border border-slate-200 rounded-r-xl shadow-md flex items-center justify-center text-slate-400 hover:text-indigo-600 z-40 text-xs font-black">
           {sidebarOpen ? '‹' : '›'}
         </button>
       </div>
-
-      {/* ── Resize handle (only when open) ── */}
       {sidebarOpen && (
-        <div
-          className="w-1.5 flex-shrink-0 cursor-col-resize z-30 group relative"
-          style={{ background: 'transparent' }}
-          onMouseDown={(e) => {
-            isResizingEditorRef.current = true;
-            resizeStartX.current = e.clientX;
-            resizeStartW.current = editorWidth;
-            document.body.style.cursor = 'col-resize';
-            document.body.style.userSelect = 'none';
-            e.preventDefault();
-          }}
-        >
+        <div className="w-1.5 flex-shrink-0 cursor-col-resize z-30 group relative" onMouseDown={(e) => { isResizingEditorRef.current = true; resizeStartX.current = e.clientX; resizeStartW.current = editorWidth; e.preventDefault(); }}>
           <div className="absolute inset-y-0 left-0 w-1.5 bg-indigo-400/0 group-hover:bg-indigo-400/60 transition-colors rounded-full" />
         </div>
       )}
 
-      {/* ── Right panel ── */}
-      <div className="flex-1 flex flex-col relative overflow-hidden">
-
-        {/* ── Toolbar ── */}
+      {/* ── COLUNA CENTRAL: Toolbar + Canvas ── */}
+      <div className="flex-1 flex flex-col relative overflow-hidden bg-[#0f0f11]">
+        {/* Toolbar */}
         <div className="h-14 bg-white/90 backdrop-blur-md border-b flex items-center justify-between px-4 shadow-sm z-10 gap-3">
-
-          {/* Left: View toggle */}
-          <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200 flex-shrink-0">
-            <button
-              onClick={() => setViewMode('preview')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${viewMode === 'preview' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'}`}
-            ><Eye size={13} /> Visual</button>
-            <button
-              onClick={() => setViewMode('code')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${viewMode === 'code' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'}`}
-            ><Code size={13} /> DAX</button>
+          <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200">
+            <button onClick={() => setViewMode('preview')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${viewMode === 'preview' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500'}`}><Eye size={13} /> Visual</button>
+            <button onClick={() => setViewMode('code')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${viewMode === 'code' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500'}`}><Code size={13} /> DAX</button>
           </div>
 
-          {/* Center: PBI Canvas presets */}
           {viewMode === 'preview' && (
             <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl border border-gray-200 overflow-x-auto">
-              {PBI_PRESETS.map(preset => {
-                const Icon = preset.icon;
-                return (
-                  <button
-                    key={preset.id}
-                    onClick={() => {
-                      setActivePreset(preset.id as PresetId);
-                      if (preset.id !== 'custom') setCustomDimensions({ width: preset.w, height: preset.h });
-                    }}
-                    title={`${preset.label} ${preset.id !== 'custom' ? `(${preset.w}×${preset.h})` : ''}`}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wide whitespace-nowrap transition-all ${activePreset === preset.id ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}
-                  >
-                    <Icon size={13} /> {preset.label}
-                  </button>
-                );
-              })}
-              {/* Custom size inputs */}
-              {activePreset === 'custom' && (
-                <div className="flex items-center gap-1.5 pl-2 border-l border-gray-300 ml-1 text-[10px] font-mono">
-                  <span className="text-gray-400">W</span>
-                  <input
-                    type="number"
-                    value={customDimensions.width}
-                    onChange={(e) => setCustomDimensions(d => ({ ...d, width: +e.target.value }))}
-                    className="w-14 text-center font-bold outline-none border-b border-transparent focus:border-indigo-400 bg-transparent"
-                  />
-                  <span className="text-gray-300">×</span>
-                  <span className="text-gray-400">H</span>
-                  <input
-                    type="number"
-                    value={customDimensions.height}
-                    onChange={(e) => setCustomDimensions(d => ({ ...d, height: +e.target.value }))}
-                    className="w-14 text-center font-bold outline-none border-b border-transparent focus:border-indigo-400 bg-transparent"
-                  />
-                </div>
-              )}
+              {PBI_PRESETS.map(preset => (
+                <button key={preset.id} onClick={() => { setActivePreset(preset.id); if (preset.id !== 'custom') setCustomDimensions({ width: preset.w, height: preset.h }); }} className={`px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all ${activePreset === preset.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400'}`}><preset.icon size={13} /> {preset.label}</button>
+              ))}
             </div>
           )}
 
-          {/* Right: Actions */}
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            {/* Undo / Redo */}
-            <div className="flex items-center gap-0.5 pr-2 border-r border-gray-200">
-              <button
-                onClick={undo}
-                disabled={!canUndo}
-                title="Desfazer (Ctrl+Z)"
-                className={`p-2 rounded-lg transition-all ${canUndo ? 'text-gray-500 hover:text-indigo-600 hover:bg-indigo-50' : 'text-gray-300 cursor-not-allowed'}`}
-              ><Undo2 size={16} /></button>
-              <button
-                onClick={redo}
-                disabled={!canRedo}
-                title="Refazer (Ctrl+Y)"
-                className={`p-2 rounded-lg transition-all ${canRedo ? 'text-gray-500 hover:text-indigo-600 hover:bg-indigo-50' : 'text-gray-300 cursor-not-allowed'}`}
-              ><Redo2 size={16} /></button>
-            </div>
-
-            <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
-            <button onClick={handleReset}                         className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Resetar"><RotateCcw size={16} /></button>
-            <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Importar JSON"><Upload size={16} /></button>
-            <button onClick={handleExport}                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Exportar JSON"><Download size={16} /></button>
-
-            <button
-              onClick={() => setIsDaxModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-[10px] font-bold transition-all ml-1"
-              title="Restaurar a partir de código DAX"
-            ><FileCode2 size={15} /> Ler DAX</button>
-
-            {viewMode === 'code' && (
-              <button
-                onClick={() => { navigator.clipboard.writeText(daxCode); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all active:scale-95 shadow-lg ${copied ? 'bg-green-500 shadow-green-200' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'}`}
-              >{copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'Copiado!' : 'Copiar DAX'}</button>
-            )}
+          <div className="flex items-center gap-1.5">
+            <button onClick={undo} disabled={!canUndo} className="p-2 text-gray-400 hover:text-indigo-600"><Undo2 size={16} /></button>
+            <button onClick={redo} disabled={!canRedo} className="p-2 text-gray-400 hover:text-indigo-600"><Redo2 size={16} /></button>
+            <button onClick={handleReset} className="p-2 text-gray-400 hover:text-red-500"><RotateCcw size={16} /></button>
+            <button onClick={handleExport} className="p-2 text-gray-400 hover:text-indigo-600"><Download size={16} /></button>
+            <button onClick={() => setIsDaxModalOpen(true)} className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold"><FileCode2 size={15} /> Ler DAX</button>
           </div>
         </div>
 
-        {/* ── Canvas area ── */}
+        {/* Canvas */}
         <div className="flex-1 overflow-hidden relative">
           {viewMode === 'preview' ? (
             <Preview
-              global={globalConfig}
-              cards={cards}
-              donuts={donuts}
-              activeAppTab={activeAppTab}
-              viewport="custom"
-              customDimensions={{ width: simWidth, height: simHeight }}
+              global={globalConfig} cards={cards} donuts={donuts} activeAppTab={activeAppTab}
+              viewport="custom" customDimensions={{ width: simWidth, height: simHeight }}
               setCustomDimensions={(dim) => { setActivePreset('custom'); setCustomDimensions(dim); }}
-              onCardClick={handleCardClick}
-              selectedCardId={selectedCardId}
-              testValues={testValues}
-              onReorder={handleReorder}
+              onCardClick={handleCardClick} selectedCardId={selectedCardId} testValues={testValues} onReorder={handleReorder}
             />
           ) : (
             <div className="w-full h-full bg-[#1e1e1e] overflow-hidden">
@@ -500,23 +406,76 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* ── DAX Import modal ── */}
+      {/* ── COLUNA DIREITA: Camadas (Estilo Figma) ── */}
+      <div className="w-72 bg-white border-l border-slate-200 flex flex-col z-20 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.05)]">
+        <div className="p-5 border-b border-slate-100">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] flex items-center gap-2">
+              <Layers size={14} className="text-indigo-500" /> Camadas
+            </h3>
+            <button 
+              onClick={() => {
+                const id = Math.random().toString(36).substr(2, 9);
+                if (activeAppTab === 'cards') {
+                  setCards([...cards, { id, title: 'Novo Card', measurePlaceholder: '[Vendas]', formatType: 'currency', decimalPlaces: 0, prefix: '', suffix: '', type: 'simple', targetMeasurePlaceholder: '1', value: 'R$ 0', progressValue: 0, icon: 'chart', iconPosition: 'top', iconSize: 40, iconPadding: 8, iconRounded: false, comparisons: [], colSpan: 1, rowSpan: 1 }]);
+                } else {
+                  setDonuts([...donuts, { id, title: 'Nova Rosca', mode: 'completeness', geometry: 'full', ringThickness: 12, roundedCorners: true, showCenterText: true, centerTextLabel: 'KPI', centerTextValueMeasure: '[Valor]', completenessMeasure: '[Vendas]', completenessTarget: '[Meta]', slices: [], colSpan: 1, rowSpan: 1 }]);
+                }
+                setSelectedCardId(id);
+              }}
+              className="p-1.5 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors border border-indigo-100"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+          <p className="text-[9px] text-slate-400 font-medium italic">Gerencie os itens do seu visual</p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+          {(activeAppTab === 'cards' ? cards : donuts).map((item) => (
+            <div 
+              key={item.id}
+              onClick={() => setSelectedCardId(item.id)}
+              className={`group flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${selectedCardId === item.id ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-100 hover:border-indigo-100'}`}
+            >
+              <GripVertical size={14} className="text-slate-200 group-hover:text-indigo-300" />
+              <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-indigo-500 shadow-sm">
+                {activeAppTab === 'cards' ? <Layout size={14}/> : <PieChart size={14}/>}
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-[11px] font-bold text-slate-700 truncate leading-none">{item.title}</p>
+                <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-tighter">{(item as any).type || (item as any).mode}</p>
+              </div>
+              <button 
+                onClick={(e) => { e.stopPropagation(); if (activeAppTab === 'cards') setCards(cards.filter(c => c.id !== item.id)); else setDonuts(donuts.filter(d => d.id !== item.id)); }}
+                className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-red-500 transition-all"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="p-4 bg-slate-50 border-t border-slate-100">
+          <div className="flex items-center justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest">
+              <span>Elementos</span>
+              <span className="text-indigo-600">{(activeAppTab === 'cards' ? cards : donuts).length}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Modais (Importação DAX) */}
       {isDaxModalOpen && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl p-6">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 animate-fadeIn">
+          <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl p-6 border border-white/10">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-white">Restaurar Visual a partir de Código DAX</h3>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2"><FileCode2 className="text-indigo-400" /> Restaurar via DAX</h3>
               <button onClick={() => setIsDaxModalOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
             </div>
-            <textarea
-              value={daxImportText}
-              onChange={(e) => setDaxImportText(e.target.value)}
-              placeholder="Cole aqui o código DAX do visual que deseja restaurar..."
-              className="w-full h-64 bg-gray-900 text-gray-200 p-4 rounded-lg border border-gray-700 focus:border-indigo-500 focus:outline-none resize-none"
-            />
+            <textarea value={daxImportText} onChange={(e) => setDaxImportText(e.target.value)} placeholder="Cole o código aqui..." className="w-full h-64 bg-gray-900 text-indigo-300 p-4 rounded-xl border border-gray-700 focus:border-indigo-500 focus:outline-none resize-none font-mono text-xs" />
             <div className="flex justify-end gap-3 mt-4">
-              <button onClick={() => setIsDaxModalOpen(false)} className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600">Cancelar</button>
-              <button onClick={handleDaxImportSubmit} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Restaurar</button>
+              <button onClick={() => setIsDaxModalOpen(false)} className="px-4 py-2 text-gray-400 hover:text-white font-bold text-xs uppercase">Cancelar</button>
+              <button onClick={handleDaxImportSubmit} className="px-6 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold text-xs uppercase shadow-lg shadow-indigo-900/40">Restaurar</button>
             </div>
           </div>
         </div>
