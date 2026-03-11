@@ -9,7 +9,6 @@ import {
   Code, Eye, Copy, Check, Settings2, Download, Upload,
   Trash2, RotateCcw, FileCode2, X, Undo2, Redo2,
   Monitor, FlipVertical, RectangleHorizontal, LayoutGrid, SquareDashedBottom,
-  // Adicione estes ícones abaixo:
   Layers, Plus, GripVertical, Layout, PieChart
 } from 'lucide-react';
 
@@ -112,7 +111,6 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : INITIAL_DONUTS;
   });
 
-  // ── Test values for live preview (keyed by cardId, or `cardId_compId`) ──
   const [testValues, setTestValues] = useState<Record<string, number>>({});
 
   // ── Auto-save ──────────────────────────────────────────────
@@ -125,9 +123,9 @@ const App: React.FC = () => {
   const historyIdxRef   = useRef(-1);
   const isUndoRedoRef   = useRef(false);
   const debounceRef     = useRef<ReturnType<typeof setTimeout>>();
-  const [historySize, setHistorySize]  = useState(0); // only for UI reactivity
+  const [historySize, setHistorySize]  = useState(0); 
   const [historyIdx,  setHistoryIdx]   = useState(-1);
-
+  
   useEffect(() => {
     if (isUndoRedoRef.current) return;
     clearTimeout(debounceRef.current);
@@ -136,7 +134,6 @@ const App: React.FC = () => {
         isUndoRedoRef.current = false;
         return;
       }
-      // Truncate forward
       historyRef.current  = historyRef.current.slice(0, historyIdxRef.current + 1);
       historyRef.current.push({
         gc: JSON.parse(JSON.stringify(globalConfig)),
@@ -184,20 +181,35 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handler);
   }, [undo, redo]);
 
-  // ── Resizable panel ────────────────────────────────────────
-  const [editorWidth,     setEditorWidth]     = useState(420);
-  const [sidebarOpen,     setSidebarOpen]     = useState(true);
-  const isResizingEditorRef = useRef(false);
-  const resizeStartX        = useRef(0);
-  const resizeStartW        = useRef(0);
+  // ── Resizable panels (Left and Right) ────────────────────────
+  const [leftWidth, setLeftWidth] = useState(260);
+  const [leftOpen, setLeftOpen]   = useState(true);
+  const isResizingLeftRef         = useRef(false);
+  const resizeStartXLeft          = useRef(0);
+  const resizeStartWLeft          = useRef(0);
+
+  const [rightWidth, setRightWidth] = useState(380);
+  const [rightOpen, setRightOpen]   = useState(true);
+  const isResizingRightRef          = useRef(false);
+  const resizeStartXRight           = useRef(0);
+  const resizeStartWRight           = useRef(0);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
-      if (!isResizingEditorRef.current) return;
-      const delta = e.clientX - resizeStartX.current;
-      setEditorWidth(Math.max(280, Math.min(680, resizeStartW.current + delta)));
+      if (isResizingLeftRef.current) {
+        const delta = e.clientX - resizeStartXLeft.current;
+        setLeftWidth(Math.max(220, Math.min(450, resizeStartWLeft.current + delta)));
+      } else if (isResizingRightRef.current) {
+        const delta = resizeStartXRight.current - e.clientX; // Invertido pois cresce p/ esquerda
+        setRightWidth(Math.max(300, Math.min(600, resizeStartWRight.current + delta)));
+      }
     };
-    const onUp = () => { isResizingEditorRef.current = false; document.body.style.cursor = ''; document.body.style.userSelect = ''; };
+    const onUp = () => { 
+      isResizingLeftRef.current = false; 
+      isResizingRightRef.current = false;
+      document.body.style.cursor = ''; 
+      document.body.style.userSelect = ''; 
+    };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
@@ -205,14 +217,14 @@ const App: React.FC = () => {
 
   // ── UI state ───────────────────────────────────────────────
   const [viewMode,         setViewMode]         = useState<'preview' | 'code'>('preview');
-  const [activePreset,     setActivePreset]      = useState<PresetId>('card-wide');
-  const [customDimensions, setCustomDimensions]  = useState({ width: 800, height: 400 });
-  const [copied,           setCopied]            = useState(false);
-  const [selectedCardId,   setSelectedCardId]    = useState<string | null>(null);
+  const [activePreset,     setActivePreset]     = useState<PresetId>('card-wide');
+  const [customDimensions, setCustomDimensions] = useState({ width: 800, height: 400 });
+  const [copied,           setCopied]           = useState(false);
+  const [selectedCardId,   setSelectedCardId]   = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [isDaxModalOpen,   setIsDaxModalOpen]    = useState(false);
-  const [daxImportText,    setDaxImportText]      = useState('');
+  const [isDaxModalOpen,   setIsDaxModalOpen]   = useState(false);
+  const [daxImportText,    setDaxImportText]    = useState('');
 
   // ── Derived ────────────────────────────────────────────────
   const currentPreset  = PBI_PRESETS.find(p => p.id === activePreset)!;
@@ -330,35 +342,78 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-gray-100 font-sans text-gray-900">
 
-      {/* ── COLUNA ESQUERDA: Propriedades (Editor) ── */}
+      {/* ── COLUNA ESQUERDA: Camadas (Hierarquia) ── */}
       <div
-        className="z-20 shadow-2xl relative flex flex-col flex-shrink-0 transition-all duration-300"
-        style={{ width: sidebarOpen ? editorWidth : 0, overflow: 'hidden', minWidth: sidebarOpen ? 280 : 0 }}
+        className="z-20 shadow-xl relative flex flex-col flex-shrink-0 transition-all duration-300 border-r border-slate-200 bg-white"
+        style={{ width: leftOpen ? leftWidth : 0, overflow: 'hidden', minWidth: leftOpen ? 220 : 0 }}
       >
-        <Editor
-          globalConfig={globalConfig}
-          setGlobalConfig={setGlobalConfig}
-          cards={cards}
-          setCards={setCards}
-          donuts={donuts}
-          setDonuts={setDonuts}
-          activeAppTab={activeAppTab}
-          setActiveAppTab={setActiveAppTab}
-          selectedCardId={selectedCardId}
-          setSelectedCardId={setSelectedCardId}
-          testValues={testValues}
-          setTestValues={setTestValues}
-        />
+        <div className="flex-1 flex flex-col min-w-[220px] w-full overflow-hidden">
+          {/* Conteúdo exato da aba de Camadas / Hierarquia que você já tinha */}
+          <div className="p-5 border-b border-slate-100 shrink-0">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] flex items-center gap-2">
+                <Layers size={14} className="text-indigo-500" /> Camadas
+              </h3>
+              <button 
+                onClick={() => {
+                  const id = Math.random().toString(36).substr(2, 9);
+                  if (activeAppTab === 'cards') {
+                    setCards([...cards, { id, title: 'Novo Card', measurePlaceholder: '[Vendas]', formatType: 'currency', decimalPlaces: 0, prefix: '', suffix: '', type: 'simple', targetMeasurePlaceholder: '1', value: 'R$ 0', progressValue: 0, icon: 'chart', iconPosition: 'top', iconSize: 40, iconPadding: 8, iconRounded: false, comparisons: [], colSpan: 1, rowSpan: 1 }]);
+                  } else {
+                    setDonuts([...donuts, { id, title: 'Nova Rosca', mode: 'completeness', geometry: 'full', ringThickness: 12, roundedCorners: true, showCenterText: true, centerTextLabel: 'KPI', centerTextValueMeasure: '[Valor]', completenessMeasure: '[Vendas]', completenessTarget: '[Meta]', slices: [], colSpan: 1, rowSpan: 1 }]);
+                  }
+                  setSelectedCardId(id);
+                }}
+                className="p-1.5 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors border border-indigo-100"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+            <p className="text-[9px] text-slate-400 font-medium italic">Gerencie os itens do seu visual</p>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+            {(activeAppTab === 'cards' ? cards : donuts).map((item) => (
+              <div 
+                key={item.id}
+                onClick={() => setSelectedCardId(item.id)}
+                className={`group flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${selectedCardId === item.id ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-100 hover:border-indigo-100'}`}
+              >
+                <GripVertical size={14} className="text-slate-200 group-hover:text-indigo-300" />
+                <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-indigo-500 shadow-sm">
+                  {activeAppTab === 'cards' ? <Layout size={14}/> : <PieChart size={14}/>}
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-[11px] font-bold text-slate-700 truncate leading-none">{item.title}</p>
+                  <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-tighter">{(item as any).type || (item as any).mode}</p>
+                </div>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); if (activeAppTab === 'cards') setCards(cards.filter(c => c.id !== item.id)); else setDonuts(donuts.filter(d => d.id !== item.id)); }}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-red-500 transition-all"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-4 bg-slate-50 border-t border-slate-100 shrink-0">
+            <div className="flex items-center justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                <span>Elementos</span>
+                <span className="text-indigo-600">{(activeAppTab === 'cards' ? cards : donuts).length}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Botão de recolher e handle de resize (Esquerda) */}
       <div className="relative z-30 flex-shrink-0">
-        <button onClick={() => setSidebarOpen(o => !o)} className="absolute top-1/2 -translate-y-1/2 -right-3.5 w-7 h-12 bg-white border border-slate-200 rounded-r-xl shadow-md flex items-center justify-center text-slate-400 hover:text-indigo-600 z-40 text-xs font-black">
-          {sidebarOpen ? '‹' : '›'}
+        <button onClick={() => setLeftOpen(o => !o)} className="absolute top-1/2 -translate-y-1/2 -right-3.5 w-7 h-12 bg-white border border-slate-200 rounded-r-xl shadow-md flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-300 transition-all z-40 text-xs font-black" title={leftOpen ? 'Recolher painel' : 'Expandir painel'}>
+          {leftOpen ? '‹' : '›'}
         </button>
       </div>
-      {sidebarOpen && (
-        <div className="w-1.5 flex-shrink-0 cursor-col-resize z-30 group relative" onMouseDown={(e) => { isResizingEditorRef.current = true; resizeStartX.current = e.clientX; resizeStartW.current = editorWidth; e.preventDefault(); }}>
+      {leftOpen && (
+        <div className="w-1.5 flex-shrink-0 cursor-col-resize z-30 group relative" onMouseDown={(e) => { isResizingLeftRef.current = true; resizeStartXLeft.current = e.clientX; resizeStartWLeft.current = leftWidth; e.preventDefault(); }}>
           <div className="absolute inset-y-0 left-0 w-1.5 bg-indigo-400/0 group-hover:bg-indigo-400/60 transition-colors rounded-full" />
         </div>
       )}
@@ -377,6 +432,26 @@ const App: React.FC = () => {
               {PBI_PRESETS.map(preset => (
                 <button key={preset.id} onClick={() => { setActivePreset(preset.id); if (preset.id !== 'custom') setCustomDimensions({ width: preset.w, height: preset.h }); }} className={`px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all ${activePreset === preset.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400'}`}><preset.icon size={13} /> {preset.label}</button>
               ))}
+              {/* Custom size inputs */}
+              {activePreset === 'custom' && (
+                <div className="flex items-center gap-1.5 pl-2 border-l border-gray-300 ml-1 text-[10px] font-mono">
+                  <span className="text-gray-400">W</span>
+                  <input
+                    type="number"
+                    value={customDimensions.width}
+                    onChange={(e) => setCustomDimensions(d => ({ ...d, width: +e.target.value }))}
+                    className="w-14 text-center font-bold outline-none border-b border-transparent focus:border-indigo-400 bg-transparent text-white"
+                  />
+                  <span className="text-gray-300">×</span>
+                  <span className="text-gray-400">H</span>
+                  <input
+                    type="number"
+                    value={customDimensions.height}
+                    onChange={(e) => setCustomDimensions(d => ({ ...d, height: +e.target.value }))}
+                    className="w-14 text-center font-bold outline-none border-b border-transparent focus:border-indigo-400 bg-transparent text-white"
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -406,61 +481,38 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* ── COLUNA DIREITA: Camadas (Estilo Figma) ── */}
-      <div className="w-72 bg-white border-l border-slate-200 flex flex-col z-20 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.05)]">
-        <div className="p-5 border-b border-slate-100">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] flex items-center gap-2">
-              <Layers size={14} className="text-indigo-500" /> Camadas
-            </h3>
-            <button 
-              onClick={() => {
-                const id = Math.random().toString(36).substr(2, 9);
-                if (activeAppTab === 'cards') {
-                  setCards([...cards, { id, title: 'Novo Card', measurePlaceholder: '[Vendas]', formatType: 'currency', decimalPlaces: 0, prefix: '', suffix: '', type: 'simple', targetMeasurePlaceholder: '1', value: 'R$ 0', progressValue: 0, icon: 'chart', iconPosition: 'top', iconSize: 40, iconPadding: 8, iconRounded: false, comparisons: [], colSpan: 1, rowSpan: 1 }]);
-                } else {
-                  setDonuts([...donuts, { id, title: 'Nova Rosca', mode: 'completeness', geometry: 'full', ringThickness: 12, roundedCorners: true, showCenterText: true, centerTextLabel: 'KPI', centerTextValueMeasure: '[Valor]', completenessMeasure: '[Vendas]', completenessTarget: '[Meta]', slices: [], colSpan: 1, rowSpan: 1 }]);
-                }
-                setSelectedCardId(id);
-              }}
-              className="p-1.5 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors border border-indigo-100"
-            >
-              <Plus size={16} />
-            </button>
-          </div>
-          <p className="text-[9px] text-slate-400 font-medium italic">Gerencie os itens do seu visual</p>
+      {/* ── COLUNA DIREITA: Editor (Propriedades) ── */}
+      {rightOpen && (
+        <div className="w-1.5 flex-shrink-0 cursor-col-resize z-30 group relative" onMouseDown={(e) => { isResizingRightRef.current = true; resizeStartXRight.current = e.clientX; resizeStartWRight.current = rightWidth; e.preventDefault(); }}>
+          <div className="absolute inset-y-0 right-0 w-1.5 bg-indigo-400/0 group-hover:bg-indigo-400/60 transition-colors rounded-full" />
         </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-          {(activeAppTab === 'cards' ? cards : donuts).map((item) => (
-            <div 
-              key={item.id}
-              onClick={() => setSelectedCardId(item.id)}
-              className={`group flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${selectedCardId === item.id ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-100 hover:border-indigo-100'}`}
-            >
-              <GripVertical size={14} className="text-slate-200 group-hover:text-indigo-300" />
-              <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-indigo-500 shadow-sm">
-                {activeAppTab === 'cards' ? <Layout size={14}/> : <PieChart size={14}/>}
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <p className="text-[11px] font-bold text-slate-700 truncate leading-none">{item.title}</p>
-                <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-tighter">{(item as any).type || (item as any).mode}</p>
-              </div>
-              <button 
-                onClick={(e) => { e.stopPropagation(); if (activeAppTab === 'cards') setCards(cards.filter(c => c.id !== item.id)); else setDonuts(donuts.filter(d => d.id !== item.id)); }}
-                className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-red-500 transition-all"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ))}
-        </div>
-
-        <div className="p-4 bg-slate-50 border-t border-slate-100">
-          <div className="flex items-center justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest">
-              <span>Elementos</span>
-              <span className="text-indigo-600">{(activeAppTab === 'cards' ? cards : donuts).length}</span>
-          </div>
+      )}
+      {/* Botão de recolher (Direita) */}
+      <div className="relative z-30 flex-shrink-0">
+        <button onClick={() => setRightOpen(o => !o)} className="absolute top-1/2 -translate-y-1/2 -left-3.5 w-7 h-12 bg-white border border-slate-200 rounded-l-xl shadow-md flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-300 transition-all z-40 text-xs font-black" title={rightOpen ? 'Recolher painel' : 'Expandir painel'}>
+          {rightOpen ? '›' : '‹'}
+        </button>
+      </div>
+      
+      <div
+        className="z-20 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] relative flex flex-col flex-shrink-0 transition-all duration-300 border-l border-slate-200 bg-white"
+        style={{ width: rightOpen ? rightWidth : 0, overflow: 'hidden', minWidth: rightOpen ? 300 : 0 }}
+      >
+        <div className="flex-1 flex flex-col min-w-[300px] w-full overflow-hidden">
+          <Editor
+            globalConfig={globalConfig}
+            setGlobalConfig={setGlobalConfig}
+            cards={cards}
+            setCards={setCards}
+            donuts={donuts}
+            setDonuts={setDonuts}
+            activeAppTab={activeAppTab}
+            setActiveAppTab={setActiveAppTab}
+            selectedCardId={selectedCardId}
+            setSelectedCardId={setSelectedCardId}
+            testValues={testValues}
+            setTestValues={setTestValues}
+          />
         </div>
       </div>
 
