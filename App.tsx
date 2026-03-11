@@ -9,7 +9,8 @@ import {
   Code, Eye, Copy, Check, Settings2, Download, Upload,
   Trash2, RotateCcw, FileCode2, X, Undo2, Redo2,
   Monitor, FlipVertical, RectangleHorizontal, LayoutGrid, SquareDashedBottom,
-  Layers, Plus, GripVertical, Layout, PieChart
+  Layers, Plus, GripVertical, Layout, PieChart,
+  HelpCircle, Sparkles, Database, Play // <- Adicione estes ícones
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
@@ -216,6 +217,13 @@ const App: React.FC = () => {
   }, []);
 
   // ── UI state ───────────────────────────────────────────────
+  const [isHelpOpen, setIsHelpOpen] = useState(() => {
+  return localStorage.getItem('daxilizer-help-seen') !== 'true';
+  });
+  const handleCloseHelp = () => {
+  setIsHelpOpen(false);
+  localStorage.setItem('daxilizer-help-seen', 'true');
+  };
   const [viewMode,         setViewMode]         = useState<'preview' | 'code'>('preview');
   const [activePreset,     setActivePreset]     = useState<PresetId>('card-wide');
   const [customDimensions, setCustomDimensions] = useState({ width: 800, height: 400 });
@@ -458,6 +466,11 @@ const App: React.FC = () => {
           )}
 
           <div className="flex items-center gap-1.5">
+            {/* 👇 Adicione o botão de Ajuda aqui 👇 */}
+            <button onClick={() => setIsHelpOpen(true)} className="p-2 text-gray-400 hover:text-indigo-600 transition-colors" title="Como usar">
+              <HelpCircle size={16} />
+            </button>
+            <div className="w-px h-4 bg-slate-200 mx-1" /> {/* Linha divisória charmosa */}
             <button onClick={undo} disabled={!canUndo} className="p-2 text-gray-400 hover:text-indigo-600"><Undo2 size={16} /></button>
             <button onClick={redo} disabled={!canRedo} className="p-2 text-gray-400 hover:text-indigo-600"><Redo2 size={16} /></button>
             <button onClick={handleReset} className="p-2 text-gray-400 hover:text-red-500"><RotateCcw size={16} /></button>
@@ -530,6 +543,77 @@ const App: React.FC = () => {
             <div className="flex justify-end gap-3 mt-4">
               <button onClick={() => setIsDaxModalOpen(false)} className="px-4 py-2 text-gray-400 hover:text-white font-bold text-xs uppercase">Cancelar</button>
               <button onClick={handleDaxImportSubmit} className="px-6 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold text-xs uppercase shadow-lg shadow-indigo-900/40">Restaurar</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── Modal de Ajuda (Estilo Apple / Steve Jobs) ── */}
+      {isHelpOpen && (
+        <div className="fixed inset-0 bg-[#0f0f11]/80 backdrop-blur-md flex items-center justify-center z-50 animate-fadeIn p-4" onClick={handleCloseHelp}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden cursor-default border border-slate-100 transform transition-all" onClick={e => e.stopPropagation()}>
+            <div className="p-8 md:p-12 relative overflow-hidden">
+              
+              {/* Efeito de luz de fundo */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-60 -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+
+              <div className="flex justify-between items-start mb-10 relative z-10">
+                <div>
+                  <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-3">Simplicidade é a sofisticação máxima.</h2>
+                  <p className="text-slate-500 text-base md:text-lg font-medium leading-relaxed max-w-xl">
+                    O Power BI é incrivelmente poderoso, mas seus visuais nativos não são. Nós criamos o DAXILIZER para resolver isso. Não adicionando complexidade, mas removendo-a completamente.
+                  </p>
+                </div>
+                <button onClick={handleCloseHelp} className="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 hover:text-slate-800 transition-colors shrink-0">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10 relative z-10">
+                
+                {/* Passo 1 */}
+                <div className="flex gap-5 items-start">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-800 flex-shrink-0 shadow-sm"><Layout size={24} /></div>
+                  <div>
+                    <h3 className="text-[13px] font-black uppercase tracking-widest text-slate-900 mb-2">1. O Design</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed font-medium">Use a barra lateral direita para esculpir seu visual. Sombras, arredondamentos e tipografia. Tudo o que você vê no centro é exatamente o que você terá.</p>
+                  </div>
+                </div>
+
+                {/* Passo 2 */}
+                <div className="flex gap-5 items-start">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0 shadow-sm"><Database size={24} /></div>
+                  <div>
+                    <h3 className="text-[13px] font-black uppercase tracking-widest text-indigo-600 mb-2">2. A Conexão</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed font-medium">Vá na aba 'Dados' e cadastre o nome das medidas que você já tem no Power BI (ex: <code className="bg-slate-100 px-1 rounded text-slate-700">[Total]</code>). Nós faremos a ponte mágica entre o design e seus números reais.</p>
+                  </div>
+                </div>
+
+                {/* Passo 3 */}
+                <div className="flex gap-5 items-start">
+                  <div className="w-12 h-12 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600 flex-shrink-0 shadow-sm"><Sparkles size={24} /></div>
+                  <div>
+                    <h3 className="text-[13px] font-black uppercase tracking-widest text-violet-600 mb-2">3. A Mágica</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed font-medium">Clique em <strong className="text-slate-700">DAX</strong> no topo. Em milissegundos, condensamos todo o seu layout em uma única e brilhante fórmula DAX que embute HTML e CSS.</p>
+                  </div>
+                </div>
+
+                {/* Passo 4 */}
+                <div className="flex gap-5 items-start">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0 shadow-sm"><Play size={24} className="ml-0.5" /></div>
+                  <div>
+                    <h3 className="text-[13px] font-black uppercase tracking-widest text-emerald-600 mb-2">4. O Palco</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed font-medium">Baixe o visual grátis <strong className="text-slate-700">HTML Content</strong> na loja da Microsoft no Power BI. Crie uma nova medida, cole nosso código, e coloque essa medida no visual. Fim.</p>
+                  </div>
+                </div>
+
+              </div>
+
+              <div className="mt-12 pt-8 border-t border-slate-100 flex justify-center relative z-10">
+                <button onClick={handleCloseHelp} className="px-8 py-3 bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest rounded-full hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-500/30 transition-all hover:-translate-y-0.5">
+                  Começar a criar
+                </button>
+              </div>
+
             </div>
           </div>
         </div>
