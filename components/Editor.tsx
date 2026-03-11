@@ -652,8 +652,17 @@ const Editor: React.FC<EditorProps> = ({
         <div className="relative">
           <button
             onClick={() => setShowThemePresets(p => !p)}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-[9px] font-black uppercase tracking-[0.2em] shadow-lg shadow-indigo-900/20 hover:shadow-xl hover:scale-[1.01] transition-all"
-          ><Wand2 size={14} /> Temas Prontos</button>
+            className="relative overflow-hidden w-full flex items-center justify-center gap-2.5 py-3 rounded-2xl bg-white text-indigo-600 text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_10px_25px_-5px_rgba(79,70,229,0.1)] hover:shadow-[0_15px_30px_-5px_rgba(79,70,229,0.2)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 group border border-indigo-100"
+          >
+            {/* Reflexo de Luz Refinado */}
+            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-indigo-50/50 to-transparent -translate-x-full group-hover:animate-shimmer" />
+            
+            {/* Glow interno sutil ao passar o mouse */}
+            <div className="absolute inset-0 bg-indigo-50/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+            <Wand2 size={14} className="relative z-10 text-indigo-500 group-hover:rotate-12 transition-transform duration-500" />
+            <span className="relative z-10">Temas Prontos</span>
+          </button>
 
           {showThemePresets && (
             <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white rounded-2xl border border-slate-100 shadow-2xl overflow-hidden animate-fadeIn" style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
@@ -959,6 +968,12 @@ const Editor: React.FC<EditorProps> = ({
         .custom-scrollbar-dark::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar-dark::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shimmer {
+          100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+          animation: shimmer 2.5s infinite;
+        }
         .animate-fadeIn { animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       `}</style>
       {/* Local sugerido: Logo antes do fechamento da última div do componente Editor */}

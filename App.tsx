@@ -37,7 +37,7 @@ const INITIAL_GLOBAL: GlobalConfig = {
   textColorTitle: '#86868B', textColorValue: '#1D1D1F', textColorSub: '#6B7280',
   positiveColor: '#059669', negativeColor: '#DC2626', neutralColor: '#4B5563',
   animation: 'fadeInUp', animationDuration: 0.6, hoverEffect: 'lift',
-  borderRadius: 20, cardMinHeight: 160,
+  borderRadius: 10, cardMinHeight: 110,
   fontSizeTitle: 10, fontSizeValue: 32, fontSizeSub: 11, fontSizeBadge: 10,
   fontWeightTitle: 800, fontWeightValue: 800,
   shadowIntensity: 0, shadowBlur: 0, shadowDistance: 0, textAlign: 'left',
