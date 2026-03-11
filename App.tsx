@@ -567,7 +567,7 @@ const App: React.FC = () => {
       {isHelpOpen && (
         <div className="fixed inset-0 bg-[#0f0f11]/80 backdrop-blur-md flex items-center justify-center z-50 animate-fadeIn p-4" onClick={handleCloseHelp}>
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden cursor-default border border-slate-100 transform transition-all" onClick={e => e.stopPropagation()}>
-            <div className="p-6 md:p-12 relative overflow-y-auto custom-scrollbar flex-1">
+            <div className="p-6 md:p-12 relative overflow-y-auto overflow-x-hidden custom-scrollbar flex-1">
               
               {/* Efeito de luz de fundo */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-60 -translate-y-1/2 translate-x-1/3 pointer-events-none" />
