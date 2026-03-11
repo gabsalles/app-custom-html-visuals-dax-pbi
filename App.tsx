@@ -440,7 +440,8 @@ const App: React.FC = () => {
                     type="number"
                     value={customDimensions.width}
                     onChange={(e) => setCustomDimensions(d => ({ ...d, width: +e.target.value }))}
-                    className="w-14 text-center font-bold outline-none border-b border-transparent focus:border-indigo-400 bg-transparent text-white"
+                    // 👇 Removido o text-white e adicionado text-slate-700
+                    className="w-14 text-center font-bold outline-none border-b border-transparent focus:border-indigo-400 bg-transparent text-slate-700"
                   />
                   <span className="text-gray-300">×</span>
                   <span className="text-gray-400">H</span>
@@ -448,7 +449,8 @@ const App: React.FC = () => {
                     type="number"
                     value={customDimensions.height}
                     onChange={(e) => setCustomDimensions(d => ({ ...d, height: +e.target.value }))}
-                    className="w-14 text-center font-bold outline-none border-b border-transparent focus:border-indigo-400 bg-transparent text-white"
+                    // 👇 Removido o text-white e adicionado text-slate-700
+                    className="w-14 text-center font-bold outline-none border-b border-transparent focus:border-indigo-400 bg-transparent text-slate-700"
                   />
                 </div>
               )}

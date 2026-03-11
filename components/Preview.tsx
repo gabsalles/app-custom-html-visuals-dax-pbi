@@ -300,6 +300,11 @@ const Preview: React.FC<PreviewProps> = ({
     <div 
       ref={containerRef}
       className={`w-full h-full bg-[#0f0f11] overflow-hidden relative select-none ${isPanning ? 'cursor-grabbing' : 'cursor-default'}`}
+      style={{
+        backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.06) 1.5px, transparent 1.5px)',
+        backgroundSize: '24px 24px',
+        backgroundPosition: `${offset.x}px ${offset.y}px`
+      }}
       onMouseDown={(e) => handleMouseDown(e, 'pan')}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
