@@ -8,6 +8,7 @@ import {
   Grid3X3, ArrowUp, ArrowDown, ArrowLeft, Settings2, Sparkles, GripVertical,
   FlaskConical, BookMarked, BookmarkPlus, BookmarkCheck, AlertTriangle,
 } from 'lucide-react';
+import packageJson from '../package.json';
 
 // ─────────────────────────────────────────────────────────────
 // Helpers & UI atoms
@@ -943,7 +944,7 @@ const Editor: React.FC<EditorProps> = ({
           
           <div className="flex items-center">
             <span className="px-2 py-1 rounded-md bg-slate-200/50 text-slate-500 text-[11px] font-mono font-bold leading-none">
-              v1.2.0
+              v{packageJson.version}
             </span>
           </div>
         </div>
