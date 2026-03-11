@@ -3,7 +3,9 @@ import { iconPaths } from './icons';
 
 export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'cards'): string => {
   const { 
-    columns, gap, padding, 
+    columnsDesktop, columnsTablet, columnsMobile, 
+    gap, padding, 
+    marginType, marginAll, marginTop, marginRight, marginBottom, marginLeft, // <- Adicione isso
     primaryColor, cardBackgroundColor,
     textColorTitle, textColorValue, textColorSub,
     positiveColor, negativeColor,
@@ -20,7 +22,7 @@ export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'c
     switch (type) {
       case 'integer': return "#,##0";
       case 'decimal': return `#,##0${zeros}`;
-      case 'currency': return `"R$ " #,##0${zeros}`; 
+      case 'currency': return `#,##0${zeros}`; // ← Alterado aqui (removido o "R$ ") 
       case 'percent': return `0${zeros}%`;
       default: return "";
     }
@@ -115,7 +117,9 @@ VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
           dax += `VAR _C${ci}_Val = "${prefix}" & _C${ci}_Dyn & "${card.suffix || ''}"\n`;
       } else {
           const formatStr = getFormatString(card.formatType, card.decimalPlaces);
-          dax += `VAR _C${ci}_Val = "${card.prefix || ''}" & FORMAT(_C${ci}_Val_Raw, "${formatStr}") & "${card.suffix || ''}"\n`;
+          // Adiciona o prefixo dinamicamente fora da função FORMAT do DAX para evitar erro de sintaxe
+          const explicitPrefix = card.formatType === 'currency' ? "R$ " : (card.prefix || "");
+          dax += `VAR _C${ci}_Val = "${explicitPrefix}" & FORMAT(_C${ci}_Val_Raw, "${formatStr}") & "${card.suffix || ''}"\n`;
       }
       
       if (card.type === 'progress') {
@@ -162,13 +166,26 @@ VAR _CSS = "
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     body { margin: 0; padding: 0; background: transparent; font-family: 'Inter', -apple-system, sans-serif; overflow: hidden; }
     
+    .wrapper { 
+        container-type: inline-size; 
+        width: 100vw; height: 100vh; box-sizing: border-box; 
+    }
+    
     .container { 
         display: grid; 
-        grid-template-columns: repeat(${columns}, 1fr); 
-        grid-auto-rows: 1fr; /* IMPORTANTE: Garante que as linhas estiquem para ocupar espaço */
+        grid-template-columns: repeat(${columnsDesktop || 3}, 1fr); 
+        grid-auto-rows: 1fr; 
         gap: ${gap}px; 
-        padding: ${padding}px;
-        width: 100vw; height: 100vh; box-sizing: border-box;
+        padding: ${(marginType || 'all') === 'specific' ? `${marginTop ?? 10}px ${marginRight ?? 10}px ${marginBottom ?? 10}px ${marginLeft ?? 10}px` : `${marginAll ?? 10}px`};
+        width: 100%; height: 100%; box-sizing: border-box;
+    }
+
+    @container (max-width: 800px) {
+        .container { grid-template-columns: repeat(${columnsTablet || 2}, 1fr); }
+    }
+    @container (max-width: 500px) {
+        .container { grid-template-columns: repeat(${columnsMobile || 1}, 1fr); }
+        .v-item { grid-column: span 1 !important; grid-row: span 1 !important; }
     }
     
     .v-item { 
@@ -218,7 +235,7 @@ VAR _CSS = "
     ${cssCompacto}
 </style>"
 
-VAR _HTML = "<div class='container'>" & 
+VAR _HTML = "<div class='wrapper'><div class='container'>" &
 `;
 
 // === GERAÇÃO DO HTML (Cards ou Charts) ===
@@ -388,7 +405,7 @@ VAR _HTML = "<div class='container'>" &
     });
   }
 
-  dax += `"" & "</div>"
+  dax += `"" & "</div></div>"
 RETURN _CSS & _HTML`;
 
 // --- NOVA FEATURE: INJEÇÃO DE ESTADO INVISÍVEL ---

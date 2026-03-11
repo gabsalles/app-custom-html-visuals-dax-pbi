@@ -123,9 +123,21 @@ export interface DonutChartConfig {
 // ... (resto do arquivo mantido)
 
 export interface GlobalConfig {
-  columns: number;
+  columnsDesktop: number;
+  columnsTablet: number;
+  columnsMobile: number;
   gap: number;
   padding: number;
+
+  // --- NOVOS CAMPOS PARA MARGEM EXTERNA ---
+  marginType: 'all' | 'specific';
+  marginAll: number;
+  marginTop: number;
+  marginRight: number;
+  marginBottom: number;
+  marginLeft: number;
+  // ---------------------------------------
+
   primaryColor: string;
   cardBackgroundColor: string;
   canvasBackgroundColor: string; // <-- ADICIONAR ESTA LINHA

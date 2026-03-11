@@ -13,7 +13,29 @@ interface PreviewProps {
   setCustomDimensions?: (dim: { width: number, height: number }) => void;
   onCardClick?: (id: string) => void;
   selectedCardId?: string | null;
+  testValues?: Record<string, number>;
+  onReorder?: (fromId: string, toId: string) => void;
 }
+
+// Live format test value (matches daxGenerator logic)
+const formatTestValue = (raw: number, card: CardConfig): string => {
+  const { formatType, decimalPlaces = 0, prefix = '', suffix = '' } = card;
+  const abs = Math.abs(raw);
+  const fmt = (n: number, dec = decimalPlaces) =>
+    n.toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  if (formatType === 'none')    return `${prefix}${raw}${suffix}`;
+  if (formatType === 'integer') return raw.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+  if (formatType === 'percent') return `${(raw * 100).toFixed(decimalPlaces)}%`;
+  if (formatType === 'currency') return `R$ ${fmt(raw)}${suffix}`;
+  if (formatType === 'currency_short' || formatType === 'short') {
+    const pre = formatType === 'currency_short' ? 'R$ ' : prefix;
+    if (abs >= 1e9) return `${pre}${fmt(raw / 1e9)} B${suffix}`;
+    if (abs >= 1e6) return `${pre}${fmt(raw / 1e6)} M${suffix}`;
+    if (abs >= 1e3) return `${pre}${fmt(raw / 1e3)} K${suffix}`;
+    return `${pre}${fmt(raw)}${suffix}`;
+  }
+  return `${prefix}${fmt(raw)}${suffix}`;
+};
 
 // Tipos de redimensionamento
 type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
@@ -21,12 +43,15 @@ type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 const Preview: React.FC<PreviewProps> = ({ 
   global, cards, donuts, activeAppTab, viewport, 
   customDimensions, setCustomDimensions, 
-  onCardClick, selectedCardId 
+  onCardClick, selectedCardId, testValues = {}, onReorder
 }) => {
   const [scale, setScale] = useState(0.85);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [dragFromId, setDragFromId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId]  = useState<string | null>(null);
+  const isDraggingRef = useRef(false);
   
   // Estado para Resize expandido
   const [isResizing, setIsResizing] = useState<ResizeHandle | null>(null);
@@ -37,16 +62,31 @@ const Preview: React.FC<PreviewProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => { if (e.code === 'Space') setIsSpacePressed(true); };
-    const handleKeyUp = (e: KeyboardEvent) => { if (e.code === 'Space') setIsSpacePressed(false); };
+    const handleKeyUp   = (e: KeyboardEvent) => { if (e.code === 'Space') setIsSpacePressed(false); };
+    const handleMouseUp = () => {
+      if (isDraggingRef.current && dragFromId && dragOverId && dragFromId !== dragOverId) {
+        onReorder?.(dragFromId, dragOverId);
+      }
+      isDraggingRef.current = false;
+      setDragFromId(null);
+      setDragOverId(null);
+    };
     window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp); };
-  }, []);
+    window.addEventListener('keyup',   handleKeyUp);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup',   handleKeyUp);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [dragFromId, dragOverId, onReorder]);
 
   const resetView = () => { setScale(0.85); setOffset({ x: 0, y: 0 }); };
 
   // Handler de Mouse Unificado
   const handleMouseDown = (e: React.MouseEvent, type: 'pan' | ResizeHandle) => {
+      // Don't start pan if a card drag is already in progress
+      if (isDraggingRef.current) return;
       lastMousePos.current = { x: e.clientX, y: e.clientY };
       
       if (type === 'pan') {
@@ -109,6 +149,7 @@ const Preview: React.FC<PreviewProps> = ({
   const handleMouseUp = () => {
       setIsPanning(false);
       setIsResizing(null);
+      // card drag completion is handled by the global window listener
   };
 
   const hexToRgb = (hex: string) => {
@@ -127,13 +168,23 @@ const Preview: React.FC<PreviewProps> = ({
     animationKeyframes = `@keyframes slideRight { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }`;
   }
 
+  // --- CÁLCULO DINÂMICO DE SOMBRAS ---
+  const shadowAlpha = (global.shadowIntensity || 0) / 100;
+  const shadowDist = global.shadowDistance || 0;
+  const shadowBlur = global.shadowBlur || 0;
+  
+  // Sombra base (para o estado normal)
+  const baseShadow = `0 ${shadowDist}px ${shadowBlur}px rgba(0,0,0,${shadowAlpha})`;
+  // Sombra expandida (para o efeito Hover Lift)
+  const liftShadow = `0 ${shadowDist + 10}px ${shadowBlur + 10}px rgba(0,0,0,${shadowAlpha + 0.1})`;
+
   let hoverStyles = '';
   switch (global.hoverEffect) {
     case 'lift': 
       hoverStyles = `
         transform: translateY(-6px) !important; 
         transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s ease !important;
-        box-shadow: 0 15px 30px rgba(0,0,0,0.15); 
+        box-shadow: ${liftShadow} !important; 
         border-color: var(--p-primary);
       `; 
       break;
@@ -154,23 +205,53 @@ const Preview: React.FC<PreviewProps> = ({
     ${animationKeyframes}
     @keyframes loadBar { from { width: 0; } }
     @keyframes fillRing { to { stroke-dashoffset: var(--offset); } }
-    :root { --p-primary: ${global.primaryColor}; --p-bg: ${global.cardBackgroundColor}; --p-text-title: ${global.textColorTitle}; --p-text-val: ${global.textColorValue}; --p-text-sub: ${global.textColorSub}; --p-radius: ${global.borderRadius}px; --p-gap: ${global.gap}px; --p-pad: ${global.padding}px; --p-min-h: ${global.cardMinHeight}px; --p-badge-size: ${global.fontSizeBadge || 10}px;}
+    :root { 
+      --p-primary: ${global.primaryColor}; 
+      --p-bg: ${global.cardBackgroundColor}; 
+      --p-text-title: ${global.textColorTitle}; 
+      --p-text-val: ${global.textColorValue}; 
+      --p-text-sub: ${global.textColorSub}; 
+      --p-radius: ${global.borderRadius}px; 
+      --p-gap: ${global.gap}px; 
+      --p-pad: ${global.padding}px; 
+      --p-min-h: ${global.cardMinHeight}px; 
+      --p-badge-size: ${global.fontSizeBadge || 10}px;
+      --p-shadow: ${baseShadow}; /* ← SOMBRA BASE APLICADA AQUI */
+    }
     
-    .p-container { 
-        display: grid; 
-        grid-template-columns: repeat(${global.columns}, 1fr); 
-        grid-auto-rows: 1fr; /* Responsividade Vertical - Linhas esticam */
-        gap: var(--p-gap); 
-        padding: 10px; 
+    /* NOVO: O wrapper define o contêiner responsivo */
+    .p-wrapper { 
+        container-type: inline-size; 
         width: 100%; height: 100%; box-sizing: border-box; 
     }
     
+    /* O Grid padrão carrega a versão de DESKTOP */
+    .p-container { 
+        display: grid; 
+        grid-template-columns: repeat(${global.columnsDesktop || 3}, 1fr); 
+        grid-auto-rows: 1fr;
+        gap: var(--p-gap); 
+        padding: ${(global.marginType || 'all') === 'specific' ? `${global.marginTop ?? 10}px ${global.marginRight ?? 10}px ${global.marginBottom ?? 10}px ${global.marginLeft ?? 10}px` : `${global.marginAll ?? 10}px`}; 
+        width: 100%; height: 100%; box-sizing: border-box; 
+    }
+    
+    /* REGRAS RESPONSIVAS AUTOMÁTICAS */
+    @container (max-width: 800px) {
+        .p-container { grid-template-columns: repeat(${global.columnsTablet || 2}, 1fr); }
+    }
+    @container (max-width: 500px) {
+        .p-container { grid-template-columns: repeat(${global.columnsMobile || 1}, 1fr); }
+        /* Se cair pra mobile, força qualquer card a ocupar apenas 1 linha/coluna para não quebrar a tela */
+        .p-card { grid-column: span 1 !important; grid-row: span 1 !important; }
+    }
+
     .p-card { 
         background: var(--p-bg); 
         border-radius: var(--p-radius); 
         padding: var(--p-pad); 
         min-height: var(--p-min-h); 
         border: 1px solid rgba(0,0,0,0.08); 
+        box-shadow: var(--p-shadow); /* ← INJETA A SOMBRA NO CARD */
         display: flex; 
         flex-direction: column; 
         transition: all 0.25s; 
@@ -203,8 +284,8 @@ const Preview: React.FC<PreviewProps> = ({
     .donut-segment { fill: transparent; transition: stroke-dasharray 0.5s ease; }
   `;
 
-  const simWidth = viewport === 'custom' && customDimensions ? customDimensions.width : viewport === 'mobile' ? 375 : viewport === 'tablet' ? 768 : 1000;
-  const simHeight = viewport === 'custom' && customDimensions ? customDimensions.height : 600;
+  const simWidth  = customDimensions ? customDimensions.width  : 800;
+  const simHeight = customDimensions ? customDimensions.height : 400;
 
   const Handle = ({ dir, className, children }: { dir: ResizeHandle, className: string, children?: React.ReactNode }) => (
     <div 
@@ -219,6 +300,11 @@ const Preview: React.FC<PreviewProps> = ({
     <div 
       ref={containerRef}
       className={`w-full h-full bg-[#0f0f11] overflow-hidden relative select-none ${isPanning ? 'cursor-grabbing' : 'cursor-default'}`}
+      style={{
+        backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.06) 1.5px, transparent 1.5px)',
+        backgroundSize: '24px 24px',
+        backgroundPosition: `${offset.x}px ${offset.y}px`
+      }}
       onMouseDown={(e) => handleMouseDown(e, 'pan')}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -273,7 +359,25 @@ const Preview: React.FC<PreviewProps> = ({
                 </>
             )}
 
-            <div className="p-container">
+          {/* Canvas wrapper */}
+            <div className="p-wrapper">
+              {/* Empty state */}
+              {(activeAppTab === 'cards' ? cards : donuts).length === 0 && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: '100%', height: '100%', minHeight: '120px'
+                }}>
+                  <div style={{
+                    border: '2px dashed #cbd5e1', borderRadius: '16px', padding: '40px 32px',
+                    textAlign: 'center', color: '#94a3b8', maxWidth: '280px'
+                  }}>
+                    <div style={{ fontSize: '32px', marginBottom: '12px' }}>📭</div>
+                    <div style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Canvas vazio</div>
+                    <div style={{ fontSize: '11px', lineHeight: 1.5 }}>Clique em <strong>+</strong> em Hierarquia para adicionar um card.</div>
+                  </div>
+                </div>
+              )}
+              <div className="p-container">
               {activeAppTab === 'cards' ? cards.map((card, idx) => {
                 const isCompact = global.cardMinHeight < 140;
                 const baseFTitle = card.fontSizeTitle || global.fontSizeTitle;
@@ -289,6 +393,12 @@ const Preview: React.FC<PreviewProps> = ({
                 const iconRounded = card.iconRounded ? '50%' : '8px';
                 const iconPosition = card.iconPosition || 'top';
                 const align = card.textAlign || global.textAlign || 'left';
+
+                // Focus-dim: when editing a specific card, dim others
+                const isFocused = selectedCardId === card.id;
+                const isDimmed  = selectedCardId !== null && !isFocused;
+                // Canvas drag-and-drop
+                const isDragTarget = dragOverId === card.id && dragFromId !== card.id;
 
                 const IconElement = (
                   <div style={{
@@ -312,16 +422,36 @@ const Preview: React.FC<PreviewProps> = ({
                     gridRow: `span ${card.rowSpan || 1}`
                 };
 
+                // Live test value resolution
+                const testMain = testValues[card.id];
+                const displayValue = testMain !== undefined ? formatTestValue(testMain, card) : card.value;
+                const resolveComp = (comp: any) => {
+                  const key = `${card.id}_${comp.id}`;
+                  const tv = testValues[key];
+                  if (tv === undefined) return { value: comp.value, trend: comp.trend };
+                  const trend = tv > 0 ? 'up' : tv < 0 ? 'down' : 'none';
+                  const pct = `${tv >= 0 ? '+' : ''}${(tv * 100).toFixed(1)}%`;
+                  return { value: pct, trend };
+                };
+
                 if (isCompact) {
                    return (
-                    <div key={card.id} className={`p-card compact ${selectedCardId === card.id ? 'selected' : ''}`} 
+                    <div key={card.id}
+                        className={`p-card compact ${isFocused ? 'selected' : ''}`}
+                        onMouseDown={(e) => { e.stopPropagation(); isDraggingRef.current = true; setDragFromId(card.id); setDragOverId(card.id); }}
+                        onMouseEnter={() => { if (isDraggingRef.current) setDragOverId(card.id); }}
                         style={{ 
                             animationDelay: `${idx * 0.1}s`, 
                             '--p-bg': card.cardBackgroundColor || global.cardBackgroundColor,
                             '--p-primary': card.accentColor || global.primaryColor,
-                            ...gridStyle 
+                            ...gridStyle,
+                            opacity: isDimmed ? 0.35 : dragFromId === card.id && dragOverId !== card.id ? 0.3 : 1,
+                            outline: isDragTarget ? `2px dashed ${global.primaryColor}` : isFocused && selectedCardId ? `2px solid ${global.primaryColor}` : 'none',
+                            outlineOffset: '3px',
+                            transition: 'opacity 0.2s ease, outline 0.15s ease',
+                            cursor: isDraggingRef.current ? 'grabbing' : 'grab',
                         } as any}
-                        onClick={(e) => { e.stopPropagation(); onCardClick?.(card.id); }}>
+                        onClick={(e) => { if (!isDraggingRef.current || dragFromId === card.id) { e.stopPropagation(); onCardClick?.(card.id); } }}>
                       
                       <div className="flex flex-col justify-center z-10" style={{ maxWidth: '60%', marginLeft: '8px' }}>
                         <div className="flex items-center gap-2 mb-0.5">
@@ -333,24 +463,25 @@ const Preview: React.FC<PreviewProps> = ({
                            </span>
                         </div>
                         <div style={{ fontSize: `${fValue}px`, fontWeight: global.fontWeightValue, color: global.textColorValue, lineHeight: 1, whiteSpace: 'nowrap' }}>
-                          {card.value}
+                          {displayValue}
                         </div>
                       </div>
     
                       <div className="flex flex-col items-end justify-center gap-1 z-10 h-full">
                          {card.comparisons.map((comp) => {
+                            const resolved = resolveComp(comp);
                             let badgeColor = global.neutralColor;
-                            if (comp.trend === 'up') {
+                            if (resolved.trend === 'up') {
                                 badgeColor = comp.invertColor ? global.negativeColor : global.positiveColor;
-                            } else if (comp.trend === 'down') {
+                            } else if (resolved.trend === 'down') {
                                 badgeColor = comp.invertColor ? global.positiveColor : global.negativeColor;
                             }
                             return (
                                 <div key={comp.id} className="flex items-center gap-2" style={{ fontSize: `${fSub}px`, fontWeight: 600, color: global.textColorSub }}>
                                    <span className="hidden sm:inline">{comp.label}</span>
-                                   {comp.trend !== 'none' && (
+                                   {resolved.trend !== 'none' && (
                                      <span className="p-badge" style={{ color: badgeColor }}>
-                                       {comp.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>} {comp.value}
+                                       {resolved.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>} {resolved.value}
                                      </span>
                                    )}
                                 </div>
@@ -395,38 +526,46 @@ const Preview: React.FC<PreviewProps> = ({
                 }
 
                 return (
-                <div key={card.id} className={`p-card ${selectedCardId === card.id ? 'selected' : ''}`} 
+                <div key={card.id} className={`p-card ${isFocused ? 'selected' : ''}`}
+                  onMouseDown={(e) => { e.stopPropagation(); isDraggingRef.current = true; setDragFromId(card.id); setDragOverId(card.id); }}
+                  onMouseEnter={() => { if (isDraggingRef.current) setDragOverId(card.id); }}
                   style={{ 
                       animationDelay: `${idx * 0.1}s`, 
                       '--p-bg': card.cardBackgroundColor || global.cardBackgroundColor, 
                       '--p-primary': card.accentColor || global.primaryColor,
-                      ...gridStyle 
+                      ...gridStyle,
+                      opacity: isDimmed ? 0.35 : dragFromId === card.id && dragOverId !== card.id ? 0.3 : 1,
+                      outline: isDragTarget ? `2px dashed ${global.primaryColor}` : isFocused && selectedCardId ? `2px solid ${global.primaryColor}` : 'none',
+                      outlineOffset: '3px',
+                      transition: 'opacity 0.2s ease, outline 0.15s ease',
+                      cursor: isDraggingRef.current ? 'grabbing' : 'grab',
                   } as any}
-                  onClick={(e) => { e.stopPropagation(); onCardClick?.(card.id); }}>
+                  onClick={(e) => { if (!isDraggingRef.current || dragFromId === card.id) { e.stopPropagation(); onCardClick?.(card.id); } }}>
                   
                   <div className="p-header" style={headerStyle}>
                      {headerContent}
                   </div>
     
                   <div className="p-body">
-                     <div style={{ fontSize: `${fValue}px`, fontWeight: global.fontWeightValue, color: global.textColorValue, letterSpacing: '-0.5px', textAlign: align as any }}>{card.value}</div>
+                     <div style={{ fontSize: `${fValue}px`, fontWeight: global.fontWeightValue, color: global.textColorValue, letterSpacing: '-0.5px', textAlign: align as any }}>{displayValue}</div>
                      {card.type === 'progress' && <div className="p-track" style={{ height: `${card.progressHeight || 6}px` }}><div className="p-fill" style={{ width: `${card.progressValue}%`, background: card.progressColor || card.accentColor || global.primaryColor }} /></div>}
                   </div>
     
                   <div className="p-footer">
                     {card.comparisons.map((comp) => {
+                       const resolved = resolveComp(comp);
                        let badgeColor = global.neutralColor;
-                       if (comp.trend === 'up') {
+                       if (resolved.trend === 'up') {
                            badgeColor = comp.invertColor ? global.negativeColor : global.positiveColor;
-                       } else if (comp.trend === 'down') {
+                       } else if (resolved.trend === 'down') {
                            badgeColor = comp.invertColor ? global.positiveColor : global.negativeColor;
                        }
                        return (
                            <div key={comp.id} className="p-row" style={{ fontSize: `${fSub}px` }}>
                               <span>{comp.label}</span>
-                              {comp.trend !== 'none' && (
+                              {resolved.trend !== 'none' && (
                                 <span className="p-badge" style={{ color: badgeColor }}>
-                                  {comp.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>} {comp.value}
+                                  {resolved.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>} {resolved.value}
                                 </span>
                               )}
                            </div>
@@ -524,7 +663,8 @@ const Preview: React.FC<PreviewProps> = ({
                   </div>
                 )
               })}
-            </div>
+              </div>
+            </div> 
           </div>
         </div>
     </div>
