@@ -474,6 +474,22 @@ const App: React.FC = () => {
             <button onClick={undo} disabled={!canUndo} className="p-2 text-gray-400 hover:text-indigo-600"><Undo2 size={16} /></button>
             <button onClick={redo} disabled={!canRedo} className="p-2 text-gray-400 hover:text-indigo-600"><Redo2 size={16} /></button>
             <button onClick={handleReset} className="p-2 text-gray-400 hover:text-red-500"><RotateCcw size={16} /></button>
+            {/* 👇 Elementos adicionados para Importação (Upload) 👇 */}
+            <input 
+              type="file" 
+              accept=".json" 
+              ref={fileInputRef} 
+              style={{ display: 'none' }} 
+              onChange={handleImport} 
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()} 
+              className="p-2 text-gray-400 hover:text-indigo-600"
+              title="Importar projeto (Upload JSON)"
+            >
+              <Upload size={16} />
+            </button>
+            {/* 👆 Fim da adição 👆 */}
             <button onClick={handleExport} className="p-2 text-gray-400 hover:text-indigo-600"><Download size={16} /></button>
             <button onClick={() => setIsDaxModalOpen(true)} className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold"><FileCode2 size={15} /> Ler DAX</button>
           </div>
