@@ -17,8 +17,8 @@ import {
 // Power BI canvas presets (replaces mobile/tablet/desktop)
 // ─────────────────────────────────────────────────────────────
 const PBI_PRESETS = [
-  { id: 'tile-sm',    label: 'Tile P.',     w: 300,  h: 150, icon: SquareDashedBottom },
-  { id: 'card-wide',  label: 'Card Largo',  w: 580,  h: 200, icon: RectangleHorizontal },
+  // { id: 'tile-sm',    label: 'Tile P.',     w: 300,  h: 150, icon: SquareDashedBottom },
+  // { id: 'card-wide',  label: 'Card Largo',  w: 580,  h: 200, icon: RectangleHorizontal },
   { id: 'kpi-strip',  label: 'Faixa KPIs', w: 1100, h: 180, icon: FlipVertical },
   { id: 'half-page',  label: 'Meia Pág.',  w: 640,  h: 360, icon: LayoutGrid },
   { id: 'full-page',  label: 'Pág. Inteira', w: 1280, h: 720, icon: Monitor },
@@ -225,7 +225,7 @@ const App: React.FC = () => {
   localStorage.setItem('daxilizer-help-seen', 'true');
   };
   const [viewMode,         setViewMode]         = useState<'preview' | 'code'>('preview');
-  const [activePreset,     setActivePreset]     = useState<PresetId>('card-wide');
+  const [activePreset,     setActivePreset]     = useState<PresetId>('kpi-strip');
   const [customDimensions, setCustomDimensions] = useState({ width: 800, height: 400 });
   const [copied,           setCopied]           = useState(false);
   const [selectedCardId,   setSelectedCardId]   = useState<string | null>(null);
