@@ -1,8 +1,9 @@
 // utils/icons.ts
 
-export type IconCategory = 
-  | 'finance' | 'people' | 'legal' | 'ops' | 'tech' 
-  | 'marketing' | 'health' | 'education' | 'media' | 'general';
+export type IconCategory =
+  | 'finance' | 'people' | 'legal' | 'ops' | 'tech'
+  | 'marketing' | 'health' | 'education' | 'media'
+  | 'indicators' | 'quality' | 'alerts' | 'business' | 'general';
 
 export interface IconDef {
   path: string;
@@ -68,6 +69,44 @@ export const iconDefinitions: Record<string, IconDef> = {
   play: { path: "M5 3l14 9-14 9V3z", category: 'media', tags: ['vídeo', 'iniciar', 'rodar'] },
   image: { path: "M3 3h18v18H3z M3 15l4-4 4 4 5-5 5 5", category: 'media', tags: ['foto', 'banner', 'galeria'] },
   camera: { path: "M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", category: 'media', tags: ['fotografia', 'captura'] },
+
+  // === INDICATORS (NEW) ===
+  proportionBar: { path: "M4 12h16M4 10v4M20 10v4", category: 'indicators', tags: ['proportion', 'bar', 'compare'] },
+  barChart: { path: "M3 3v18h18 M3 20h2V8M8 20h2V5M13 20h2V10M18 20h2V3", category: 'indicators', tags: ['chart', 'bar', 'graph'] },
+  dot: { path: "M12 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z", category: 'indicators', tags: ['point', 'status', 'indicator'] },
+  equals: { path: "M4 9h16M4 15h16", category: 'indicators', tags: ['equal', 'same', 'equal-value'] },
+  chevronUp: { path: "M18 15l-6-6-6 6", category: 'indicators', tags: ['up', 'direction', 'chevron'] },
+  chevronDown: { path: "M6 9l6 6 6-6", category: 'indicators', tags: ['down', 'direction', 'chevron'] },
+  arrowUpRight: { path: "M7 17L17 7M17 7H7M17 7V17", category: 'indicators', tags: ['up', 'right', 'growth', 'trending'] },
+  arrowDownLeft: { path: "M17 7L7 17M7 17h10M7 17V7", category: 'indicators', tags: ['down', 'left', 'decline', 'trending'] },
+  checkmarkCircle: { path: "M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4l-8.97 8.97M9 13l2.06 2.06L22 7", category: 'indicators', tags: ['check', 'success', 'approve', 'valid'] },
+  xCircle: { path: "M22 11.08V12a10 10 0 1 1-5.93-9.14M15 9l-6 6M9 9l6 6", category: 'indicators', tags: ['x', 'error', 'cancel', 'invalid'] },
+  questionCircle: { path: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 16h.01M12 11c0-.5.449-1 1-1 .551 0 1 .449 1 1s-.449 1-1 1-1-.449-1-1zM9.5 9c0-.5.95-1 1.5-1s1.5.5 1.5 1", category: 'indicators', tags: ['question', 'help', 'info', 'unknown'] },
+  plusCircle: { path: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9h-3v-3h-1v3h-3v1h3v3h1v-3h3v-1z", category: 'indicators', tags: ['plus', 'add', 'increase', 'positive'] },
+
+  // === QUALITY (NEW) ===
+  star: { path: "M13 2l3.29 6.63A10 10 0 0 0 20.16 8.83l7.05-1.27a1 1 0 0 1 .92 1.59l-5.11 4.98a10 10 0 0 0-1.25 7.7l1.07 7.07a1 1 0 0 1-1.54 1.06l-5.82-4.31a10 10 0 0 0-7.56 0l-5.83 4.31a1 1 0 0 1-1.54-1.06l1.07-7.07a10 10 0 0 0-1.25-7.7l-5.1-4.98a1 1 0 0 1 .92-1.59l7.05 1.27a10 10 0 0 0 6.87-3.84L13 2z", category: 'quality', tags: ['star', 'rating', 'favorite'] },
+  starHalf: { path: "M12 2l3.09 6.26L22 9.27l-5.18 5.09 1.12 7.02L12 17.77V2z", category: 'quality', tags: ['star', 'half', 'rating', 'partial'] },
+  award: { path: "M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-2.34M12 14c-2.21 0-4-1.79-4-4V5h8v5c0 2.21-1.79 4-4 4z", category: 'quality', tags: ['award', 'achievement', 'trophy', 'honor'] },
+  badge: { path: "M3.85 8.75a4.25 4.25 0 0 1 7.77-2.3l.92 2.66a4.25 4.25 0 0 1 4.04 5.54l.46 3.35a4.25 4.25 0 0 1-8.3 1.97 4.25 4.25 0 0 1-5.89 0 4.25 4.25 0 0 1 1-8.22z", category: 'quality', tags: ['badge', 'certification', 'emblem', 'seal'] },
+  thumbsUp: { path: "M14 9V5a6 6 0 0 0-6-6H4c-1.1 0-2 .9-2 2v9c0 1.1.9 2 2 2h2.28a2 2 0 0 1 1.79 1.11l2.85 4.27a2 2 0 0 0 1.79 1.11h2.28a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-.5V9z", category: 'quality', tags: ['good', 'positive', 'approval', 'liked'] },
+
+  // === ALERTS (NEW) ===
+  alertTriangle: { path: "M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3.05h16.94a2 2 0 0 0 1.71-3.05l-8.47-14.14a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01", category: 'alerts', tags: ['warning', 'alert', 'caution', 'attention'] },
+  alertCircle: { path: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 8v4M12 16h.01", category: 'alerts', tags: ['warning', 'alert', 'caution', 'attention'] },
+  infoCircle: { path: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 16v-4M12 8h.01", category: 'alerts', tags: ['info', 'information', 'help', 'details'] },
+  successCircle: { path: "M22 11.08V12a10 10 0 1 1-5.93-9.14M9 11l3 3L22 4", category: 'alerts', tags: ['success', 'approve', 'valid', 'check'] },
+  errorCircle: { path: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM15 9l-6 6M9 9l6 6", category: 'alerts', tags: ['error', 'fail', 'invalid', 'wrong'] },
+
+  // === BUSINESS (NEW) ===
+  arrowTrendingUp: { path: "M23 6l-9.5 9.5-5-5L1 18", category: 'business', tags: ['growth', 'up', 'trending', 'increase'] },
+  arrowTrendingDown: { path: "M23 18l-9.5-9.5-5 5L1 6", category: 'business', tags: ['decline', 'down', 'trending', 'decrease'] },
+  scale: { path: "M12 3v18M4.5 21h15M2 21h20v-2H2zM6 16l6-4 6 4", category: 'business', tags: ['balance', 'justice', 'scale', 'compare'] },
+  clipboard: { path: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M8 2h8M9 11h6M9 15h6", category: 'business', tags: ['contract', 'agreement', 'document', 'task'] },
+  handshake: { path: "M17 12h-5v2h5v-2zm-5 4h5v2h-5v-2zM9 3H7c-1.1 0-2 .9-2 2v6h2V5h2V3zm8 0h2v2h2v6h2V5c0-1.1-.9-2-2-2h-2v2z", category: 'business', tags: ['partnership', 'deal', 'agreement', 'connect'] },
+  loudspeaker: { path: "M4 4v16c0 1.1.89 2 2 2h2v-4h4v4h2c1.11 0 2-.9 2-2v-8h4V4c0-1.1-.89-2-2-2h-2v4h-4V2H6c-1.11 0-2 .9-2 2zm14 6h-8v4h8v-4z", category: 'business', tags: ['promotion', 'announce', 'advertise', 'marketing'] },
+  gift: { path: "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z", category: 'business', tags: ['gift', 'promotion', 'offer', 'reward'] },
+  shield: { path: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z", category: 'business', tags: ['certification', 'secure', 'protected', 'verified'] },
 
   // === GENERAL ===
   home: { path: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10", category: 'general', tags: ['início', 'dashboard'] },
