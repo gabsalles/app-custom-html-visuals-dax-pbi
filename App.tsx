@@ -580,6 +580,9 @@ const App: React.FC = () => {
             setSelectedCardId={setSelectedCardId}
             testValues={testValues}
             setTestValues={setTestValues}
+            handleCopyCardConfig={handleCopyCardConfig}
+            handlePasteCardConfig={handlePasteCardConfig}
+            hasCopiedConfig={hasCopiedConfig}
           />
         </div>
       </div>

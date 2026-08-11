@@ -7,7 +7,7 @@ import {
   ALargeSmall, Droplets, PieChart, Layers, Wand2, AlignLeft, AlignCenter, AlignRight,
   Component, BarChart3, Search, Database, PanelTop, PanelLeft, PanelRight, Sun,
   Grid3X3, ArrowUp, ArrowDown, ArrowLeft, Settings2, Sparkles, GripVertical,
-  FlaskConical, BookMarked, BookmarkPlus, BookmarkCheck, AlertTriangle,
+  FlaskConical, BookMarked, BookmarkPlus, BookmarkCheck, AlertTriangle, Copy, Check,
 } from 'lucide-react';
 import packageJson from '../package.json';
 
@@ -244,6 +244,9 @@ interface EditorProps {
   setSelectedCardId: (id: string | null) => void;
   testValues: Record<string, number>;
   setTestValues: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  handleCopyCardConfig?: (cardId: string) => void;
+  handlePasteCardConfig?: (cardId: string) => void;
+  hasCopiedConfig?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -255,6 +258,9 @@ const Editor: React.FC<EditorProps> = ({
   activeAppTab, setActiveAppTab,
   selectedCardId, setSelectedCardId,
   testValues, setTestValues,
+  handleCopyCardConfig,
+  handlePasteCardConfig,
+  hasCopiedConfig,
 }) => {
   const [activeTab,          setActiveTab]          = useState<'data' | 'layout' | 'style' | 'colors' | 'interactive'>('layout');
   const [iconSelectorOpen,   setIconSelectorOpen]   = useState(false);
@@ -779,6 +785,81 @@ const Editor: React.FC<EditorProps> = ({
           <button onClick={() => setActiveAppTab('cards')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeAppTab === 'cards' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><Layers size={14} /> Cards</button>
           <button onClick={() => setActiveAppTab('charts')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeAppTab === 'charts' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><PieChart size={14} /> Gráficos</button>
         </div>
+
+        {/* Cards / Charts list (Layers panel) */}
+        {activeAppTab === 'cards' && (
+          <div className="bg-white border-t border-slate-200 p-3 space-y-2 overflow-y-auto max-h-48 custom-scrollbar">
+            {cards.length === 0 ? (
+              <p className="text-[9px] text-slate-400 text-center py-4">Nenhum card ainda. Adicione um!</p>
+            ) : (
+              cards.map((card) => (
+                <div
+                  key={card.id}
+                  onClick={() => setSelectedCardId(card.id)}
+                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all flex items-center justify-between group ${
+                    selectedCardId === card.id
+                      ? 'bg-indigo-50 border-indigo-400 shadow-sm'
+                      : 'bg-slate-50 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-bold text-slate-700 truncate">{card.title || 'Sem título'}</p>
+                    <p className="text-[9px] text-slate-400 truncate">{card.measurePlaceholder}</p>
+                  </div>
+                  <div className="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {handleCopyCardConfig && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleCopyCardConfig(card.id); }}
+                        title="Copiar configuração"
+                        className="p-1.5 hover:bg-indigo-100 rounded text-indigo-600 transition-colors"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    )}
+                    {handlePasteCardConfig && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handlePasteCardConfig(card.id); }}
+                        disabled={!hasCopiedConfig}
+                        title={hasCopiedConfig ? 'Colar configuração' : 'Nenhuma config copiada'}
+                        className={`p-1.5 rounded transition-colors ${
+                          hasCopiedConfig
+                            ? 'hover:bg-green-100 text-green-600'
+                            : 'text-slate-300 cursor-not-allowed'
+                        }`}
+                      >
+                        <Check size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+        {activeAppTab === 'charts' && (
+          <div className="bg-white border-t border-slate-200 p-3 space-y-2 overflow-y-auto max-h-48 custom-scrollbar">
+            {donuts.length === 0 ? (
+              <p className="text-[9px] text-slate-400 text-center py-4">Nenhum gráfico ainda. Adicione um!</p>
+            ) : (
+              donuts.map((donut) => (
+                <div
+                  key={donut.id}
+                  onClick={() => setSelectedCardId(donut.id)}
+                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all group ${
+                    selectedCardId === donut.id
+                      ? 'bg-indigo-50 border-indigo-400 shadow-sm'
+                      : 'bg-slate-50 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-bold text-slate-700 truncate">{donut.title || 'Sem título'}</p>
+                    <p className="text-[9px] text-slate-400 truncate">{donut.mode === 'completeness' ? 'Atingimento' : 'Distribuição'}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Global config tabs */}
