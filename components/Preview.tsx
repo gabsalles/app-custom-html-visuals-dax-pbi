@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { GlobalConfig, CardConfig, ViewportMode, DonutChartConfig, AppTab } from '../types';
+import { GlobalConfig, CardConfig, ViewportMode, DonutChartConfig, AppTab, ComparisonConfig } from '../types';
 import { ZoomIn, ZoomOut, RotateCcw, BoxSelect, TrendingUp, TrendingDown, GripHorizontal } from 'lucide-react';
 import { iconPaths } from '../utils/icons';
 import { formatTestValue } from '../utils/formatTestValue';
@@ -415,6 +415,51 @@ const Preview: React.FC<PreviewProps> = ({
                   return { value: pct, trend };
                 };
 
+                // v0.4.0 - Advanced Comparison Rendering
+                const renderComparison = (comp: ComparisonConfig, resolved: any) => {
+                  const displayMode = comp.displayMode || 'trend+value';
+                  const iconType = comp.iconType || 'trending';
+
+                  let badgeColor = global.neutralColor;
+                  if (resolved.trend === 'up') {
+                    badgeColor = comp.invertColor ? global.negativeColor : global.positiveColor;
+                  } else if (resolved.trend === 'down') {
+                    badgeColor = comp.invertColor ? global.positiveColor : global.negativeColor;
+                  }
+
+                  // Select icon based on iconType
+                  let trendIcon = null;
+                  if (iconType === 'trending') {
+                    trendIcon = resolved.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>;
+                  } else if (iconType === 'proportion') {
+                    trendIcon = <span style={{ fontSize: '10px', fontWeight: 'bold' }}>—</span>;
+                  } else if (iconType === 'arrow') {
+                    trendIcon = <span style={{ fontSize: '10px', fontWeight: 'bold' }}>→</span>;
+                  } else if (iconType === 'check') {
+                    trendIcon = resolved.trend === 'up' ? <span style={{ fontSize: '10px' }}>✓</span> : <span style={{ fontSize: '10px' }}>✗</span>;
+                  } else if (iconType === 'bar') {
+                    trendIcon = <span style={{ fontSize: '10px', fontWeight: 'bold' }}>▯</span>;
+                  } else if (iconType === 'dot') {
+                    trendIcon = <span style={{ fontSize: '8px', fontWeight: 'bold' }}>●</span>;
+                  } else if (iconType === 'star') {
+                    trendIcon = <span style={{ fontSize: '10px' }}>⭐</span>;
+                  } else if (iconType === 'alert') {
+                    trendIcon = <span style={{ fontSize: '10px' }}>⚠</span>;
+                  }
+
+                  // Render based on displayMode
+                  if (displayMode === 'trend-only') {
+                    return <span className="p-badge" style={{ color: badgeColor }}>{trendIcon}</span>;
+                  } else if (displayMode === 'proportion-only') {
+                    return <span className="p-badge" style={{ color: badgeColor }}>{resolved.value}</span>;
+                  } else if (displayMode === 'custom') {
+                    return <span className="p-badge" style={{ color: comp.labelColor || badgeColor }}>{trendIcon} {comp.valueLabel || resolved.value}</span>;
+                  } else {
+                    // default: trend+value
+                    return <span className="p-badge" style={{ color: badgeColor }}>{trendIcon} {resolved.value}</span>;
+                  }
+                };
+
                 if (isCompact) {
                    return (
                     <div key={card.id}
@@ -451,25 +496,15 @@ const Preview: React.FC<PreviewProps> = ({
                       <div className="flex flex-col items-end justify-center gap-1 z-10 h-full">
                          {card.comparisons.map((comp) => {
                             const resolved = resolveComp(comp);
-                            let badgeColor = global.neutralColor;
-                            if (resolved.trend === 'up') {
-                                badgeColor = comp.invertColor ? global.negativeColor : global.positiveColor;
-                            } else if (resolved.trend === 'down') {
-                                badgeColor = comp.invertColor ? global.positiveColor : global.negativeColor;
-                            }
                             return (
                                 <div key={comp.id} className="flex items-center gap-2" style={{ fontSize: `${fSub}px`, fontWeight: 600, color: global.textColorSub }}>
                                    <span className="hidden sm:inline">{comp.label}</span>
-                                   {resolved.trend !== 'none' && (
-                                     <span className="p-badge" style={{ color: badgeColor }}>
-                                       {resolved.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>} {resolved.value}
-                                     </span>
-                                   )}
+                                   {resolved.trend !== 'none' && renderComparison(comp, resolved)}
                                 </div>
                             );
                          })}
                       </div>
-                      
+
                       {card.type === 'progress' && (
                          <div className="absolute bottom-0 left-0 h-1 transition-all duration-1000" style={{ width: `${card.progressValue}%`, backgroundColor: global.primaryColor }} />
                       )}
@@ -535,20 +570,10 @@ const Preview: React.FC<PreviewProps> = ({
                   <div className="p-footer">
                     {card.comparisons.map((comp) => {
                        const resolved = resolveComp(comp);
-                       let badgeColor = global.neutralColor;
-                       if (resolved.trend === 'up') {
-                           badgeColor = comp.invertColor ? global.negativeColor : global.positiveColor;
-                       } else if (resolved.trend === 'down') {
-                           badgeColor = comp.invertColor ? global.positiveColor : global.negativeColor;
-                       }
                        return (
                            <div key={comp.id} className="p-row" style={{ fontSize: `${fSub}px` }}>
                               <span>{comp.label}</span>
-                              {resolved.trend !== 'none' && (
-                                <span className="p-badge" style={{ color: badgeColor }}>
-                                  {resolved.trend === 'up' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>} {resolved.value}
-                                </span>
-                              )}
+                              {resolved.trend !== 'none' && renderComparison(comp, resolved)}
                            </div>
                        );
                     })}

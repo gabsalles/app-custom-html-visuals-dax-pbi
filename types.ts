@@ -16,14 +16,22 @@ export interface ComparisonConfig {
   label: string;
   value: string;
   trend: TrendDirection;
-  logic: string; 
-  measurePlaceholder: string; 
+  logic: string;
+  measurePlaceholder: string;
   invertColor?: boolean;
   // Advanced Customization
   labelColor?: string;
   labelFontSize?: number;
   icon?: string;
   showIcon?: boolean;
+
+  // v0.4.0 - Advanced Display Modes
+  displayMode?: 'trend+value' | 'trend-only' | 'proportion-only' | 'custom';
+  iconType?: 'trending' | 'proportion' | 'arrow' | 'check' | 'bar' | 'dot' | 'star' | 'alert';
+  showValue?: boolean;
+  valueFormat?: FormatType;
+  valueLabel?: string;
+  customIcon?: string;
 }
 
 export interface DataBinding {

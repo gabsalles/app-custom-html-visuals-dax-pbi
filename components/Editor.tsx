@@ -517,6 +517,55 @@ const Editor: React.FC<EditorProps> = ({
                     <Field label="Rótulo (Texto)"><CustomInput value={comp.label} onChange={(e: any) => { const newC = [...card.comparisons]; newC.find(x => x.id === comp.id)!.label = e.target.value; updateCard(card.id, 'comparisons', newC); }} /></Field>
                     <MeasureSelect label="Medida Variância" value={comp.measurePlaceholder} onChange={(v) => { const newC = [...card.comparisons]; newC.find(x => x.id === comp.id)!.measurePlaceholder = v; updateCard(card.id, 'comparisons', newC); }} bindings={globalConfig.dataBindings || []} />
                   </div>
+
+                  {/* Display Mode Selection (v0.4.0) */}
+                  <div className="mb-3">
+                    <Field label="Modo de Exibição">
+                      <CustomSelect value={comp.displayMode || 'trend+value'} onChange={(e: any) => { const newC = [...card.comparisons]; const idx = newC.findIndex(x => x.id === comp.id); newC[idx].displayMode = e.target.value as any; updateCard(card.id, 'comparisons', newC); }}>
+                        <option value="trend+value">Ícone + Valor</option>
+                        <option value="trend-only">Só Ícone</option>
+                        <option value="proportion-only">Só Valor</option>
+                        <option value="custom">Customizado</option>
+                      </CustomSelect>
+                    </Field>
+                  </div>
+
+                  {/* Icon Type Selection (if not trend-only) */}
+                  {comp.displayMode !== 'trend-only' && (
+                    <div className="mb-3">
+                      <Field label="Tipo de Ícone">
+                        <CustomSelect value={comp.iconType || 'trending'} onChange={(e: any) => { const newC = [...card.comparisons]; const idx = newC.findIndex(x => x.id === comp.id); newC[idx].iconType = e.target.value as any; updateCard(card.id, 'comparisons', newC); }}>
+                          <option value="trending">Trending (↗↘)</option>
+                          <option value="proportion">Proporção (—)</option>
+                          <option value="arrow">Arrow (→)</option>
+                          <option value="check">Check (✓)</option>
+                          <option value="bar">Bar (▯▯▯)</option>
+                          <option value="dot">Dot (●)</option>
+                          <option value="star">Star (⭐)</option>
+                          <option value="alert">Alert (⚠)</option>
+                        </CustomSelect>
+                      </Field>
+                    </div>
+                  )}
+
+                  {/* Value Format (if not proportion-only) */}
+                  {comp.displayMode !== 'proportion-only' && (
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <Field label="Formato Valor">
+                        <CustomSelect value={comp.valueFormat || 'none'} onChange={(e: any) => { const newC = [...card.comparisons]; const idx = newC.findIndex(x => x.id === comp.id); newC[idx].valueFormat = e.target.value as any; updateCard(card.id, 'comparisons', newC); }}>
+                          <option value="none">Puro</option>
+                          <option value="percent">Percentual (%)</option>
+                          <option value="currency">Moeda (R$)</option>
+                          <option value="short">Curto (K/M/B)</option>
+                        </CustomSelect>
+                      </Field>
+                      <Field label="Rótulo Valor">
+                        <CustomInput value={comp.valueLabel || ''} placeholder="Ex: Crescimento" onChange={(e: any) => { const newC = [...card.comparisons]; const idx = newC.findIndex(x => x.id === comp.id); newC[idx].valueLabel = e.target.value; updateCard(card.id, 'comparisons', newC); }} />
+                      </Field>
+                    </div>
+                  )}
+
+                  {/* Core Settings */}
                   <div className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100">
                     <span className="text-[9px] font-black text-slate-500 uppercase">Inverter Cores (Vermelho = Bom)</span>
                     <ToggleSwitch checked={comp.invertColor || false} onChange={(v) => { const newC = [...card.comparisons]; newC.find(x => x.id === comp.id)!.invertColor = v; updateCard(card.id, 'comparisons', newC); }} />

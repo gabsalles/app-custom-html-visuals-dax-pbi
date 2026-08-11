@@ -261,18 +261,43 @@ VAR _HTML = "<div class='wrapper'><div class='container'>" &
               <svg viewBox='0 0 24 24' width='100%' height='100%' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='${iconPath}'/></svg>
           </div>`;
 
-        // NOVO: Construtor de array limpo para os comparativos
+        // NOVO: Construtor de array limpo para os comparativos (v0.4.0)
         let compsDAX = "";
         if (card.comparisons && card.comparisons.length > 0) {
             const compsList = card.comparisons.map((c, cpIdx) => {
                 const cpi = cpIdx + 1;
                 const trueColor = c.invertColor ? "_CorNeg" : "_CorPos";
-                const falseColor = c.invertColor ? "_CorPos" : "_CorNeg"; 
-                const trendUp = iconPaths['trendingUp'];
-                const trendDown = iconPaths['trendingDown'];
-                const iconSvg = `<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round'><path d='" & IF(_C${ci}_Comp${cpi}_Log, "${trendUp}", "${trendDown}") & "'/></svg>`;
+                const falseColor = c.invertColor ? "_CorPos" : "_CorNeg";
+                const displayMode = c.displayMode || 'trend+value';
+                const iconType = c.iconType || 'trending';
 
-                return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                // Get icon paths based on iconType
+                let iconPathUp = iconPaths['trendingUp'];
+                let iconPathDown = iconPaths['trendingDown'];
+                if (iconType === 'proportion') {
+                  iconPathUp = "M4 12h16M4 10v4M20 10v4"; // horizontal bar
+                  iconPathDown = "M4 12h16M4 10v4M20 10v4";
+                } else if (iconType === 'arrow') {
+                  iconPathUp = "M7 17L17 7M17 7H7M17 7V17"; // arrow-up-right
+                  iconPathDown = "M17 7L7 17M7 17h10M7 17V7"; // arrow-down-left
+                } else if (iconType === 'check') {
+                  iconPathUp = "M22 11.08V12a10 10 0 1 1-5.93-9.14M9 11l3 3L22 4"; // check
+                  iconPathDown = "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM15 9l-6 6M9 9l6 6"; // x
+                }
+
+                const iconSvg = `<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round'><path d='" & IF(_C${ci}_Comp${cpi}_Log, "${iconPathUp}", "${iconPathDown}") & "'/></svg>`;
+
+                // Render based on displayMode
+                if (displayMode === 'trend-only') {
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg}</span></div>"`;
+                } else if (displayMode === 'proportion-only') {
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>" & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                } else if (displayMode === 'custom') {
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                } else {
+                  // default: trend+value
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                }
             });
             compsDAX = `" & ${compsList.join(" & ")} & "`;
         }
