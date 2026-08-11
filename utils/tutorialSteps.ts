@@ -80,27 +80,26 @@ export const TUTORIAL_STEPS: TutorialStepExtended[] = [
     action: 'Selecione o template "📊 Simple KPI"',
     ctaText: '📊 Usar Simple KPI',
     ctaAction: () => {
-      // Espera um pouco para garantir que a galeria foi renderizada
+      // Espera a galeria renderizar, depois clica no primeiro template
       setTimeout(() => {
-        const gallery = document.querySelector('[data-tutorial="template-gallery"]');
-        if (gallery) {
-          // Procura pelo primeiro button que seja um template card
-          // Ignora o button de close (X)
-          const allButtons = gallery.querySelectorAll('button');
-          for (let btn of allButtons) {
-            const text = btn.textContent || '';
-            // Se encontrar um button com "Simple KPI" ou similar, clica
-            if (!text.includes('X') && !text.includes('fechar')) {
-              (btn as HTMLElement).click();
-              return;
-            }
-          }
-          // Fallback: clica no primeiro button
-          if (allButtons.length > 0) {
-            (allButtons[0] as HTMLElement).click();
+        // Procura por qualquer button dentro da galeria
+        // Evita o close button (X) procurando por botões com padding/estilo específico
+        const buttons = document.querySelectorAll('button');
+
+        // Encontra o primeiro button que tem conteúdo "Simple KPI" ou é um template
+        for (let btn of buttons) {
+          const text = btn.textContent || '';
+          // Se encontrar "Simple KPI", "Growth", "Rating", etc - clica
+          if ((text.includes('Simple') || text.includes('Growth') || text.includes('Rating') ||
+               text.includes('Progress') || text.includes('Status') || text.includes('KPI')) &&
+              !text.includes('X')) {
+            (btn as HTMLElement).click();
+            console.log('✅ Clicou no template:', text.substring(0, 30));
+            return;
           }
         }
-      }, 300);
+        console.warn('⚠️ Template não encontrado');
+      }, 500);
     },
     feedback: '🎉 Seu card foi criado com a configuração do template!',
     hint: 'Se preferir outro template, pode escolher - todos funcionam igual!',

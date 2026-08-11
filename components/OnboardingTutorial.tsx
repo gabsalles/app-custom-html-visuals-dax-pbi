@@ -42,8 +42,8 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
 
   return (
     <>
-      {/* Backdrop - NO BLUR, very light */}
-      <div className="fixed inset-0 bg-black/10 z-40 animate-fadeIn" onClick={onSkip} />
+      {/* Backdrop - NO BLUR, very light - NOT closeable by clicking */}
+      <div className="fixed inset-0 bg-black/10 z-40 animate-fadeIn pointer-events-none" />
 
       {/* Spotlight overlay with strong glow on target element */}
       {step.targetElement && (
