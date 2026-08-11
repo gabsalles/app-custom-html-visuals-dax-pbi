@@ -39,8 +39,8 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
 
   return (
     <>
-      {/* Backdrop with spotlight */}
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fadeIn" onClick={onSkip} />
+      {/* Backdrop with spotlight - lighter for visibility */}
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 animate-fadeIn" onClick={onSkip} />
 
       {/* Spotlight overlay (if targeting an element) */}
       {step.targetElement && (
@@ -107,23 +107,34 @@ const TutorialPopover: React.FC<TutorialPopoverProps> = ({
         const rect = element.getBoundingClientRect();
         const popoverWidth = 360;
         const popoverHeight = 280;
-        const spacing = 20;
+        const spacing = 16;
+        const viewportPadding = 20;
 
-        let top = rect.top + rect.height + spacing;
+        // Try to position below the element
+        let top = rect.bottom + spacing;
         let left = rect.left + rect.width / 2 - popoverWidth / 2;
 
-        // Adjust if goes off-screen
-        if (left < 10) left = 10;
-        if (left + popoverWidth > window.innerWidth - 10) {
-          left = window.innerWidth - popoverWidth - 10;
+        // Adjust horizontal position if off-screen
+        if (left < viewportPadding) {
+          left = viewportPadding;
         }
-        if (top + popoverHeight > window.innerHeight - 10) {
+        if (left + popoverWidth > window.innerWidth - viewportPadding) {
+          left = window.innerWidth - popoverWidth - viewportPadding;
+        }
+
+        // If popover would go below viewport, position above instead
+        if (top + popoverHeight > window.innerHeight - viewportPadding) {
           top = rect.top - popoverHeight - spacing;
         }
 
+        // If still off-screen vertically, position it in center
+        if (top < viewportPadding) {
+          top = window.innerHeight / 2 - popoverHeight / 2;
+        }
+
         setPosition({
-          top: `${top}px`,
-          left: `${left}px`,
+          top: `${Math.max(viewportPadding, top)}px`,
+          left: `${Math.max(viewportPadding, left)}px`,
         });
       }
     }
@@ -131,7 +142,7 @@ const TutorialPopover: React.FC<TutorialPopoverProps> = ({
 
   return (
     <div
-      className="w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+      className="w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden relative"
       style={{
         position: 'fixed',
         top: position.top,
@@ -139,6 +150,8 @@ const TutorialPopover: React.FC<TutorialPopoverProps> = ({
         transform: 'translate(0, 0)',
       }}
     >
+      {/* Pointer arrow */}
+      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-t border-l border-slate-200 rotate-45" />
       {/* Header with progress bar */}
       <div className="bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-5 border-b border-slate-200">
         <div className="flex items-start justify-between mb-3">
@@ -246,12 +259,12 @@ const TutorialSpotlight: React.FC<TutorialSpotlightProps> = ({ selector }) => {
 
   if (!rect) return null;
 
-  const padding = 8;
+  const padding = 12; // Aumentado para mais espaço visual
   const top = rect.top - padding;
   const left = rect.left - padding;
   const width = rect.width + padding * 2;
   const height = rect.height + padding * 2;
-  const borderRadius = 12;
+  const borderRadius = 16;
 
   return (
     <svg
