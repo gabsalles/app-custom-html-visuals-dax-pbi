@@ -8,6 +8,9 @@ export interface TutorialStep {
   targetElement?: string; // selector for spotlight
   position?: 'top' | 'bottom' | 'left' | 'right';
   action?: string; // optional: instruction for user action
+  ctaText?: string; // Call-to-action button text
+  ctaAction?: () => void; // Action when CTA is clicked
+  hint?: string; // Additional hint
 }
 
 interface OnboardingTutorialProps {
@@ -192,38 +195,58 @@ const TutorialPopover: React.FC<TutorialPopoverProps> = ({
             </p>
           </div>
         )}
+
+        {step.hint && (
+          <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg mb-4">
+            <p className="text-[9px] text-slate-600 italic">{step.hint}</p>
+          </div>
+        )}
       </div>
 
       {/* Footer with buttons */}
-      <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
-        <div className="flex gap-2">
-          {!isFirst && (
-            <button
-              onClick={onPrev}
-              className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
-              title="Voltar"
-            >
-              <ChevronLeft size={18} />
-            </button>
-          )}
-        </div>
+      <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 space-y-3">
+        {/* CTA Button if provided */}
+        {step.ctaText && step.ctaAction && (
+          <button
+            onClick={() => {
+              step.ctaAction!();
+            }}
+            className="w-full px-4 py-2.5 bg-purple-600 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-purple-700 transition-colors shadow-md hover:shadow-lg"
+          >
+            {step.ctaText}
+          </button>
+        )}
 
-        <div className="flex gap-2 ml-auto">
-          {!isLast ? (
-            <button
-              onClick={onNext}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-indigo-700 transition-colors shadow-md hover:shadow-lg"
-            >
-              Próximo <ChevronRight size={14} />
-            </button>
-          ) : (
-            <button
-              onClick={onComplete}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-green-700 transition-colors shadow-md hover:shadow-lg"
-            >
-              <CheckCircle size={14} /> Pronto!
-            </button>
-          )}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex gap-2">
+            {!isFirst && (
+              <button
+                onClick={onPrev}
+                className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+                title="Voltar"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex gap-2 ml-auto">
+            {!isLast ? (
+              <button
+                onClick={onNext}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-indigo-700 transition-colors shadow-md hover:shadow-lg"
+              >
+                Próximo <ChevronRight size={14} />
+              </button>
+            ) : (
+              <button
+                onClick={onComplete}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-green-700 transition-colors shadow-md hover:shadow-lg"
+              >
+                <CheckCircle size={14} /> Pronto!
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
