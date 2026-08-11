@@ -39,8 +39,8 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
 
   return (
     <>
-      {/* Backdrop with spotlight - lighter for visibility */}
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 animate-fadeIn" onClick={onSkip} />
+      {/* Backdrop with spotlight - very light for visibility */}
+      <div className="fixed inset-0 bg-black/25 backdrop-blur-sm z-40 animate-fadeIn" onClick={onSkip} />
 
       {/* Spotlight overlay (if targeting an element) */}
       {step.targetElement && (
@@ -285,26 +285,26 @@ const TutorialSpotlight: React.FC<TutorialSpotlightProps> = ({ selector }) => {
         </mask>
       </defs>
 
-      {/* Spotlight glow effect */}
+      {/* Spotlight glow effect - brighter */}
       <rect
         x={left}
         y={top}
         width={width}
         height={height}
         rx={borderRadius}
-        fill="rgba(79, 70, 229, 0.1)"
-        strokeWidth="2"
-        stroke="rgba(79, 70, 229, 0.5)"
+        fill="rgba(79, 70, 229, 0.15)"
+        strokeWidth="3"
+        stroke="rgba(79, 70, 229, 0.8)"
         style={{
-          filter: 'drop-shadow(0 0 20px rgba(79, 70, 229, 0.4))',
+          filter: 'drop-shadow(0 0 30px rgba(79, 70, 229, 0.6))',
         }}
       />
 
-      {/* Dark overlay with spotlight hole */}
+      {/* Dark overlay with spotlight hole - much lighter */}
       <rect
         width="100%"
         height="100%"
-        fill="rgba(0, 0, 0, 0.6)"
+        fill="rgba(0, 0, 0, 0.25)"
         mask="url(#spotlight-mask)"
       />
     </svg>
