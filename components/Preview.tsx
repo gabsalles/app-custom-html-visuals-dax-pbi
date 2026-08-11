@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GlobalConfig, CardConfig, ViewportMode, DonutChartConfig, AppTab } from '../types';
 import { ZoomIn, ZoomOut, RotateCcw, BoxSelect, TrendingUp, TrendingDown, GripHorizontal } from 'lucide-react';
 import { iconPaths } from '../utils/icons';
+import { formatTestValue } from '../utils/formatTestValue';
 
 interface PreviewProps {
   global: GlobalConfig;
@@ -16,26 +17,6 @@ interface PreviewProps {
   testValues?: Record<string, number>;
   onReorder?: (fromId: string, toId: string) => void;
 }
-
-// Live format test value (matches daxGenerator logic)
-const formatTestValue = (raw: number, card: CardConfig): string => {
-  const { formatType, decimalPlaces = 0, prefix = '', suffix = '' } = card;
-  const abs = Math.abs(raw);
-  const fmt = (n: number, dec = decimalPlaces) =>
-    n.toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
-  if (formatType === 'none')    return `${prefix}${raw}${suffix}`;
-  if (formatType === 'integer') return raw.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
-  if (formatType === 'percent') return `${(raw * 100).toFixed(decimalPlaces)}%`;
-  if (formatType === 'currency') return `R$ ${fmt(raw)}${suffix}`;
-  if (formatType === 'currency_short' || formatType === 'short') {
-    const pre = formatType === 'currency_short' ? 'R$ ' : prefix;
-    if (abs >= 1e9) return `${pre}${fmt(raw / 1e9)} B${suffix}`;
-    if (abs >= 1e6) return `${pre}${fmt(raw / 1e6)} M${suffix}`;
-    if (abs >= 1e3) return `${pre}${fmt(raw / 1e3)} K${suffix}`;
-    return `${pre}${fmt(raw)}${suffix}`;
-  }
-  return `${prefix}${fmt(raw)}${suffix}`;
-};
 
 // Tipos de redimensionamento
 type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
@@ -146,7 +127,7 @@ const Preview: React.FC<PreviewProps> = ({
       }
   };
 
-  const handleMouseUp = () => {
+  const handlePanMouseUp = () => {
       setIsPanning(false);
       setIsResizing(null);
       // card drag completion is handled by the global window listener
@@ -307,8 +288,8 @@ const Preview: React.FC<PreviewProps> = ({
       }}
       onMouseDown={(e) => handleMouseDown(e, 'pan')}
       onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      onMouseUp={handlePanMouseUp}
+      onMouseLeave={handlePanMouseUp}
       onWheel={(e) => { if (e.ctrlKey || e.altKey) { e.preventDefault(); setScale(prev => Math.min(Math.max(prev * (e.deltaY > 0 ? 0.9 : 1.1), 0.05), 5)); } }}
     >
         <style>{dynamicStyles}</style>

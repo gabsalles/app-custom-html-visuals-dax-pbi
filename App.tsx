@@ -141,8 +141,12 @@ const App: React.FC = () => {
         c:  JSON.parse(JSON.stringify(cards)),
         d:  JSON.parse(JSON.stringify(donuts)),
       });
-      if (historyRef.current.length > 30) historyRef.current.shift();
-      else historyIdxRef.current++;
+      if (historyRef.current.length > 30) {
+        historyRef.current.shift();
+        historyIdxRef.current--;
+      } else {
+        historyIdxRef.current++;
+      }
       setHistorySize(historyRef.current.length);
       setHistoryIdx(historyIdxRef.current);
     }, 400);
@@ -235,7 +239,7 @@ const App: React.FC = () => {
   const [daxImportText,    setDaxImportText]    = useState('');
 
   // ── Derived ────────────────────────────────────────────────
-  const currentPreset  = PBI_PRESETS.find(p => p.id === activePreset)!;
+  const currentPreset  = PBI_PRESETS.find(p => p.id === activePreset) || PBI_PRESETS[0];
   const simWidth  = activePreset === 'custom' ? customDimensions.width  : currentPreset.w;
   const simHeight = activePreset === 'custom' ? customDimensions.height : currentPreset.h;
 

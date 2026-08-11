@@ -5,7 +5,7 @@ export type TrendDirection = 'up' | 'down' | 'neutral' | 'none';
 export type AnimationType = 'none' | 'fadeInUp' | 'popIn' | 'slideRight';
 export type HoverEffect = 'none' | 'lift' | 'scale' | 'glow' | 'border';
 export type ViewportMode = 'desktop' | 'tablet' | 'mobile';
-export type AppTab = 'cards' | 'charts';
+export type AppTab = 'cards' | 'donuts';
 export type TextAlign = 'left' | 'center' | 'right';
 export type IconPosition = 'left' | 'top' | 'right';
 

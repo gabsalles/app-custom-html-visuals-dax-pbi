@@ -118,7 +118,7 @@ VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
       } else {
           const formatStr = getFormatString(card.formatType, card.decimalPlaces);
           // Adiciona o prefixo dinamicamente fora da função FORMAT do DAX para evitar erro de sintaxe
-          const explicitPrefix = card.formatType === 'currency' ? "R$ " : (card.prefix || "");
+          const explicitPrefix = card.formatType === 'currency' ? (card.prefix || "R$ ") : (card.prefix || "");
           dax += `VAR _C${ci}_Val = "${explicitPrefix}" & FORMAT(_C${ci}_Val_Raw, "${formatStr}") & "${card.suffix || ''}"\n`;
       }
       
