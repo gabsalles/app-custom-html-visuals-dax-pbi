@@ -3,8 +3,10 @@ import Editor from './components/Editor';
 import Preview from './components/Preview';
 import DaxHighlighter from './components/DaxHighlighter';
 import CardTemplateGallery from './components/CardTemplateGallery';
+import OnboardingTutorial from './components/OnboardingTutorial';
 import { generateDAX } from './utils/daxGenerator';
 import { createCardFromTemplate } from './utils/cardTemplates';
+import { TUTORIAL_STEPS, isTutorialCompleted, markTutorialCompleted, getTutorialStep, saveTutorialStep } from './utils/tutorialSteps';
 import { GlobalConfig, CardConfig, DonutChartConfig, ViewportMode, AppTab } from './types';
 import { parseDaxToState, createImportWarning } from './utils/daxParser';
 import {
@@ -246,6 +248,10 @@ const App: React.FC = () => {
   // v0.5.0 - Template Gallery
   const [isTemplateGalleryOpen, setIsTemplateGalleryOpen] = useState(false);
 
+  // v0.5.0 - Tutorial Onboarding
+  const [showTutorial, setShowTutorial] = useState(() => !isTutorialCompleted());
+  const [tutorialStep, setTutorialStep] = useState(getTutorialStep());
+
   // ── Derived ────────────────────────────────────────────────
   const currentPreset  = PBI_PRESETS.find(p => p.id === activePreset) || PBI_PRESETS[0];
   const simWidth  = activePreset === 'custom' ? customDimensions.width  : currentPreset.w;
@@ -396,6 +402,33 @@ const App: React.FC = () => {
 
   const hasCopiedConfig = copiedCardConfig !== null;
 
+  // v0.5.0 - Tutorial handlers
+  const handleTutorialNext = () => {
+    const nextStep = tutorialStep + 1;
+    if (nextStep < TUTORIAL_STEPS.length) {
+      setTutorialStep(nextStep);
+      saveTutorialStep(nextStep);
+    } else {
+      handleTutorialComplete();
+    }
+  };
+
+  const handleTutorialPrev = () => {
+    const prevStep = Math.max(0, tutorialStep - 1);
+    setTutorialStep(prevStep);
+    saveTutorialStep(prevStep);
+  };
+
+  const handleTutorialSkip = () => {
+    setShowTutorial(false);
+    markTutorialCompleted();
+  };
+
+  const handleTutorialComplete = () => {
+    setShowTutorial(false);
+    markTutorialCompleted();
+  };
+
   const canUndo = historyIdx > 0;
   const canRedo = historyIdx < historySize - 1;
 
@@ -416,6 +449,7 @@ const App: React.FC = () => {
                 <Layers size={14} className="text-indigo-500" /> Camadas
               </h3>
               <button
+                data-tutorial="create-card-button"
                 onClick={() => {
                   if (activeAppTab === 'cards') {
                     setIsTemplateGalleryOpen(true);
@@ -433,7 +467,7 @@ const App: React.FC = () => {
             <p className="text-[9px] text-slate-400 font-medium italic">Gerencie os itens do seu visual</p>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar" data-tutorial="layers-panel">
             {(activeAppTab === 'cards' ? cards : donuts).map((item) => (
               <div 
                 key={item.id}
@@ -485,7 +519,7 @@ const App: React.FC = () => {
         <div className="h-14 bg-white/90 backdrop-blur-md border-b flex items-center justify-between px-4 shadow-sm z-10 gap-3">
           <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200">
             <button onClick={() => setViewMode('preview')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${viewMode === 'preview' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500'}`}><Eye size={13} /> Visual</button>
-            <button onClick={() => setViewMode('code')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${viewMode === 'code' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500'}`}><Code size={13} /> DAX</button>
+            <button data-tutorial="export-dax-button" onClick={() => setViewMode('code')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${viewMode === 'code' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500'}`}><Code size={13} /> DAX</button>
           </div>
 
           {viewMode === 'preview' && (
@@ -579,6 +613,7 @@ const App: React.FC = () => {
       </div>
       
       <div
+        data-tutorial="right-panel"
         className="z-20 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] relative flex flex-col flex-shrink-0 transition-all duration-300 border-l border-slate-200 bg-white"
         style={{ width: rightOpen ? rightWidth : 0, overflow: 'hidden', minWidth: rightOpen ? 300 : 0 }}
       >
@@ -605,10 +640,12 @@ const App: React.FC = () => {
 
       {/* v0.5.0 - Template Gallery Modal */}
       {isTemplateGalleryOpen && (
-        <CardTemplateGallery
-          onSelectTemplate={handleCreateCardFromTemplate}
-          onClose={() => setIsTemplateGalleryOpen(false)}
-        />
+        <div data-tutorial="template-gallery">
+          <CardTemplateGallery
+            onSelectTemplate={handleCreateCardFromTemplate}
+            onClose={() => setIsTemplateGalleryOpen(false)}
+          />
+        </div>
       )}
 
       {/* Modais (Importação DAX) */}
@@ -627,6 +664,20 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* v0.5.0 - Onboarding Tutorial Modal */}
+      {showTutorial && (
+        <OnboardingTutorial
+          currentStep={tutorialStep}
+          totalSteps={TUTORIAL_STEPS.length}
+          step={TUTORIAL_STEPS[tutorialStep]}
+          onNext={handleTutorialNext}
+          onPrev={handleTutorialPrev}
+          onSkip={handleTutorialSkip}
+          onComplete={handleTutorialComplete}
+        />
+      )}
+
       {/* ── Modal de Ajuda (Estilo Apple / Steve Jobs) ── */}
       {isHelpOpen && (
         <div className="fixed inset-0 bg-[#0f0f11]/80 backdrop-blur-md flex items-center justify-center z-50 animate-fadeIn p-4" onClick={handleCloseHelp}>
