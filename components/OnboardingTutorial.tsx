@@ -109,28 +109,44 @@ const TutorialPopover: React.FC<TutorialPopoverProps> = ({
       if (element) {
         const rect = element.getBoundingClientRect();
         const popoverWidth = 360;
-        const popoverHeight = 280;
-        const spacing = 16;
+        const popoverHeight = 320;
+        const spacing = 30; // Aumentado para mais espaço
         const viewportPadding = 20;
 
-        // Try to position below the element
         let top = rect.bottom + spacing;
         let left = rect.left + rect.width / 2 - popoverWidth / 2;
 
-        // Adjust horizontal position if off-screen
-        if (left < viewportPadding) {
-          left = viewportPadding;
+        // Tenta posicionar à direita do elemento primeiro
+        const rightPosition = rect.right + spacing;
+        const leftPosition = rect.left - popoverWidth - spacing;
+
+        // Se houver espaço à direita, coloca lá
+        if (rightPosition + popoverWidth < window.innerWidth - viewportPadding) {
+          left = rightPosition;
+          top = rect.top;
         }
-        if (left + popoverWidth > window.innerWidth - viewportPadding) {
-          left = window.innerWidth - popoverWidth - viewportPadding;
+        // Senão, tenta à esquerda
+        else if (leftPosition > viewportPadding) {
+          left = leftPosition;
+          top = rect.top;
+        }
+        // Senão, coloca abaixo (padrão)
+        else {
+          // Adjust horizontal position if off-screen
+          if (left < viewportPadding) {
+            left = viewportPadding;
+          }
+          if (left + popoverWidth > window.innerWidth - viewportPadding) {
+            left = window.innerWidth - popoverWidth - viewportPadding;
+          }
+
+          // If popover would go below viewport, position above instead
+          if (top + popoverHeight > window.innerHeight - viewportPadding) {
+            top = rect.top - popoverHeight - spacing;
+          }
         }
 
-        // If popover would go below viewport, position above instead
-        if (top + popoverHeight > window.innerHeight - viewportPadding) {
-          top = rect.top - popoverHeight - spacing;
-        }
-
-        // If still off-screen vertically, position it in center
+        // Se ainda ficar fora da tela, centraliza
         if (top < viewportPadding) {
           top = window.innerHeight / 2 - popoverHeight / 2;
         }
@@ -308,48 +324,71 @@ const TutorialSpotlight: React.FC<TutorialSpotlightProps> = ({ selector }) => {
         </mask>
       </defs>
 
-      {/* Spotlight glow effect - VERY STRONG GLOW */}
-      <g>
-        {/* Outer glow layers */}
+      {/* Spotlight glow effect - EXTREME GLOW FOR VISIBILITY */}
+      <defs>
+        <filter id="tutorial-glow">
+          <feGaussianBlur stdDeviation="8" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <g filter="url(#tutorial-glow)">
+        {/* MASSIVE outer glow - very visible */}
         <rect
-          x={left - 20}
-          y={top - 20}
-          width={width + 40}
-          height={height + 40}
-          rx={borderRadius + 10}
+          x={left - 50}
+          y={top - 50}
+          width={width + 100}
+          height={height + 100}
+          rx={borderRadius + 20}
+          fill="none"
+          strokeWidth="60"
+          stroke="rgba(79, 70, 229, 0.2)"
+          style={{
+            filter: 'blur(40px)',
+          }}
+        />
+        {/* Medium glow layer */}
+        <rect
+          x={left - 30}
+          y={top - 30}
+          width={width + 60}
+          height={height + 60}
+          rx={borderRadius + 15}
           fill="none"
           strokeWidth="40"
-          stroke="rgba(79, 70, 229, 0.15)"
+          stroke="rgba(79, 70, 229, 0.4)"
           style={{
-            filter: 'blur(30px)',
+            filter: 'blur(25px)',
           }}
         />
         {/* Inner glow */}
         <rect
-          x={left - 10}
-          y={top - 10}
-          width={width + 20}
-          height={height + 20}
-          rx={borderRadius + 5}
+          x={left - 15}
+          y={top - 15}
+          width={width + 30}
+          height={height + 30}
+          rx={borderRadius + 8}
           fill="none"
-          strokeWidth="20"
-          stroke="rgba(79, 70, 229, 0.3)"
+          strokeWidth="25"
+          stroke="rgba(79, 70, 229, 0.6)"
           style={{
-            filter: 'blur(15px)',
+            filter: 'blur(12px)',
           }}
         />
-        {/* Main highlight border */}
+        {/* Main BRIGHT border */}
         <rect
           x={left}
           y={top}
           width={width}
           height={height}
           rx={borderRadius}
-          fill="rgba(79, 70, 229, 0.05)"
-          strokeWidth="3"
+          fill="rgba(79, 70, 229, 0.1)"
+          strokeWidth="4"
           stroke="rgba(79, 70, 229, 1)"
           style={{
-            filter: 'drop-shadow(0 0 20px rgba(79, 70, 229, 0.8))',
+            filter: 'drop-shadow(0 0 30px rgba(79, 70, 229, 1)) drop-shadow(0 0 50px rgba(79, 70, 229, 0.7))',
           }}
         />
       </g>
