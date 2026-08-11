@@ -1,6 +1,80 @@
 // utils/daxParser.ts
 import { GlobalConfig, CardConfig, AppTab } from '../types';
 
+/**
+ * v0.4.0 - Função helper para extrair CSS variables do DAX
+ * Busca padrões como: --p-primary: #6366f1
+ */
+const extractCSSVariables = (daxText: string): Record<string, string> => {
+  const cssVars: Record<string, string> = {};
+  const cssMatches = daxText.match(/--[\w-]+:\s*([^;}"]+)/g) || [];
+
+  cssMatches.forEach(match => {
+    const [varName, varValue] = match.split(':').map(s => s.trim());
+    if (varName && varValue) {
+      cssVars[varName] = varValue;
+    }
+  });
+
+  return cssVars;
+};
+
+/**
+ * v0.4.0 - Função helper para extrair informações de customização de cards
+ * Analisa CSS inline dos cards para recuperar cores, tamanhos, etc
+ */
+const extractCardCustomizations = (daxText: string): Record<string, any> => {
+  const customizations: Record<string, any> = {};
+
+  // Tenta extrair estilos inline dos cards
+  const styleMatches = daxText.matchAll(/style='([^']*)/g);
+  for (const match of styleMatches) {
+    const styles = match[1];
+
+    // Extrai font-size
+    const fontSizeMatch = styles.match(/font-size:\s*(\d+)px/);
+    if (fontSizeMatch) customizations.fontSize = parseInt(fontSizeMatch[1]);
+
+    // Extrai color
+    const colorMatch = styles.match(/color:\s*(#[a-f0-9]{6})/i);
+    if (colorMatch) customizations.color = colorMatch[1];
+
+    // Extrai background
+    const bgMatch = styles.match(/background:\s*(#[a-f0-9]{6})/i);
+    if (bgMatch) customizations.background = bgMatch[1];
+  }
+
+  return customizations;
+};
+
+/**
+ * v0.4.0 - Estratégia de merge inteligente de estados
+ * Prioriza: Restaurado > Estimado > Default
+ */
+const mergeWithFallback = (
+  restored: any,
+  estimated: any,
+  defaults: any
+): { data: any; estimatedCount: number } => {
+  const merged = { ...defaults };
+  let estimatedCount = 0;
+
+  for (const key in restored) {
+    if (restored[key] !== null && restored[key] !== undefined) {
+      merged[key] = restored[key];
+    }
+  }
+
+  for (const key in estimated) {
+    if (!merged[key] && estimated[key] !== null && estimated[key] !== undefined) {
+      merged[key] = estimated[key];
+      estimatedCount++;
+    }
+  }
+
+  return { data: merged, estimatedCount };
+};
+
 export const parseDaxToState = (daxText: string, defaultGlobal: GlobalConfig) => {
     // 1. TENTATIVA A: Restauração Perfeita (DAXILIZER_STATE)
     const stateRegex = /DAXILIZER_STATE_BEGIN\n(.*?)\nDAXILIZER_STATE_END/s;
@@ -22,7 +96,7 @@ export const parseDaxToState = (daxText: string, defaultGlobal: GlobalConfig) =>
         }
     }
 
-    // 2. TENTATIVA B: Restauração Legada (Regex em DAX antigo)
+    // 2. TENTATIVA B: Restauração Legada + Reverse Engineering Avançado (v0.4.0)
     try {
         let newGlobal = { ...defaultGlobal };
         let newCards: CardConfig[] = [];
@@ -35,6 +109,16 @@ export const parseDaxToState = (daxText: string, defaultGlobal: GlobalConfig) =>
         if (getVarStr('_CorPrimaria')) newGlobal.primaryColor = getVarStr('_CorPrimaria')!;
         if (getVarStr('_CorPos')) newGlobal.positiveColor = getVarStr('_CorPos')!;
         if (getVarStr('_CorNeg')) newGlobal.negativeColor = getVarStr('_CorNeg')!;
+
+        // v0.4.0 - Extrai CSS Variables para recuperar customizações
+        const cssVars = extractCSSVariables(daxText);
+        const cardCustomizations = extractCardCustomizations(daxText);
+
+        // Tenta restaurar cores customizadas do CSS
+        if (cssVars['--p-primary']) newGlobal.primaryColor = cssVars['--p-primary'];
+        if (cssVars['--p-bg']) newGlobal.cardBackgroundColor = cssVars['--p-bg'];
+        if (cardCustomizations.fontSize) newGlobal.fontSizeValue = cardCustomizations.fontSize;
+        if (cardCustomizations.color) newGlobal.textColorValue = cardCustomizations.color;
 
         // Extrai Cards Antigos
         const isCards = daxText.includes('VAR _C1_Tit');
@@ -74,7 +158,19 @@ export const parseDaxToState = (daxText: string, defaultGlobal: GlobalConfig) =>
                 }
                 i++;
             }
-            return { success: true, type: 'legacy', tab: 'cards' as AppTab, global: newGlobal, items: newCards };
+
+            // v0.4.0 - Contar quantos valores foram estimados vs restaurados
+            const estimatedCount = Object.keys(cardCustomizations).length;
+
+            return {
+                success: true,
+                type: 'legacy',
+                tab: 'cards' as AppTab,
+                global: newGlobal,
+                items: newCards,
+                estimatedCount, // Novo campo para informar ao usuário
+                estimatedFields: Object.keys(cardCustomizations) // Quais campos foram estimados
+            };
         }
 
         return { success: false, error: "Nenhum formato DAX reconhecido." };
@@ -82,4 +178,17 @@ export const parseDaxToState = (daxText: string, defaultGlobal: GlobalConfig) =>
     } catch (e) {
         return { success: false, error: "Falha na engenharia reversa do DAX." };
     }
+};
+
+/**
+ * v0.4.0 - Nova função para avisar o usuário sobre valores estimados
+ * Usado quando DAX é importado e alguns valores precisam ser restaurados
+ */
+export const createImportWarning = (estimatedCount: number, estimatedFields: string[]): string => {
+    if (estimatedCount === 0) {
+        return "✅ Importado com sucesso! Estado restaurado completamente.";
+    }
+
+    const fieldList = estimatedFields.join(", ") || "valores customizados";
+    return `⚠️ Importado com sucesso, mas ${estimatedCount} ${estimatedCount === 1 ? "valor foi" : "valores foram"} estimados (${fieldList}). Revise antes de usar.`;
 };

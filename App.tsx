@@ -4,7 +4,7 @@ import Preview from './components/Preview';
 import DaxHighlighter from './components/DaxHighlighter';
 import { generateDAX } from './utils/daxGenerator';
 import { GlobalConfig, CardConfig, DonutChartConfig, ViewportMode, AppTab } from './types';
-import { parseDaxToState } from './utils/daxParser';
+import { parseDaxToState, createImportWarning } from './utils/daxParser';
 import {
   Code, Eye, Copy, Check, Settings2, Download, Upload,
   Trash2, RotateCcw, FileCode2, X, Undo2, Redo2,
@@ -293,9 +293,16 @@ const App: React.FC = () => {
       else setDonuts(result.items as DonutChartConfig[]);
       setIsDaxModalOpen(false);
       setDaxImportText('');
-      alert(result.type === 'perfect'
-        ? '✨ Visual restaurado com 100% de precisão!'
-        : '⚠️ DAX Antigo detectado. Medidas e Títulos foram recuperados, mas reconfigure layout (fontes, ícones, tamanhos).');
+
+      // v0.4.0 - Mostrar alerta mais informativo baseado no tipo de restauração
+      if (result.type === 'perfect') {
+        alert('✨ Visual restaurado com 100% de precisão!');
+      } else {
+        // Legacy: mostrar quantos valores foram estimados
+        const estimatedCount = result.estimatedCount || 0;
+        const warning = createImportWarning(estimatedCount, result.estimatedFields || []);
+        alert(warning);
+      }
     } else {
       alert('Erro: Não foi possível identificar o código DAX. Verifique se copiou o código inteiro.');
     }
