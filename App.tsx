@@ -2,7 +2,9 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import Editor from './components/Editor';
 import Preview from './components/Preview';
 import DaxHighlighter from './components/DaxHighlighter';
+import CardTemplateGallery from './components/CardTemplateGallery';
 import { generateDAX } from './utils/daxGenerator';
+import { createCardFromTemplate } from './utils/cardTemplates';
 import { GlobalConfig, CardConfig, DonutChartConfig, ViewportMode, AppTab } from './types';
 import { parseDaxToState, createImportWarning } from './utils/daxParser';
 import {
@@ -241,6 +243,9 @@ const App: React.FC = () => {
   // v0.5.0 - Copy-Paste Card Config
   const [copiedCardConfig, setCopiedCardConfig] = useState<Partial<CardConfig> | null>(null);
 
+  // v0.5.0 - Template Gallery
+  const [isTemplateGalleryOpen, setIsTemplateGalleryOpen] = useState(false);
+
   // ── Derived ────────────────────────────────────────────────
   const currentPreset  = PBI_PRESETS.find(p => p.id === activePreset) || PBI_PRESETS[0];
   const simWidth  = activePreset === 'custom' ? customDimensions.width  : currentPreset.w;
@@ -378,6 +383,17 @@ const App: React.FC = () => {
     }
   };
 
+  // v0.5.0 - Create Card from Template
+  const handleCreateCardFromTemplate = (templateId: string) => {
+    try {
+      const newCard = createCardFromTemplate(templateId);
+      setCards([...cards, newCard]);
+      setSelectedCardId(newCard.id);
+    } catch (err) {
+      console.error('Failed to create card from template:', err);
+    }
+  };
+
   const hasCopiedConfig = copiedCardConfig !== null;
 
   const canUndo = historyIdx > 0;
@@ -399,15 +415,15 @@ const App: React.FC = () => {
               <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] flex items-center gap-2">
                 <Layers size={14} className="text-indigo-500" /> Camadas
               </h3>
-              <button 
+              <button
                 onClick={() => {
-                  const id = Math.random().toString(36).substr(2, 9);
                   if (activeAppTab === 'cards') {
-                    setCards([...cards, { id, title: 'Novo Card', measurePlaceholder: '[Vendas]', formatType: 'currency', decimalPlaces: 0, prefix: '', suffix: '', type: 'simple', targetMeasurePlaceholder: '1', value: 'R$ 0', progressValue: 0, icon: 'chart', iconPosition: 'top', iconSize: 40, iconPadding: 8, iconRounded: false, comparisons: [], colSpan: 1, rowSpan: 1 }]);
+                    setIsTemplateGalleryOpen(true);
                   } else {
+                    const id = Math.random().toString(36).substr(2, 9);
                     setDonuts([...donuts, { id, title: 'Nova Rosca', mode: 'completeness', geometry: 'full', ringThickness: 12, roundedCorners: true, showCenterText: true, centerTextLabel: 'KPI', centerTextValueMeasure: '[Valor]', completenessMeasure: '[Vendas]', completenessTarget: '[Meta]', slices: [], colSpan: 1, rowSpan: 1 }]);
+                    setSelectedCardId(id);
                   }
-                  setSelectedCardId(id);
                 }}
                 className="p-1.5 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors border border-indigo-100"
               >
@@ -586,6 +602,14 @@ const App: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* v0.5.0 - Template Gallery Modal */}
+      {isTemplateGalleryOpen && (
+        <CardTemplateGallery
+          onSelectTemplate={handleCreateCardFromTemplate}
+          onClose={() => setIsTemplateGalleryOpen(false)}
+        />
+      )}
 
       {/* Modais (Importação DAX) */}
       {isDaxModalOpen && (
