@@ -238,6 +238,9 @@ const App: React.FC = () => {
   const [isDaxModalOpen,   setIsDaxModalOpen]   = useState(false);
   const [daxImportText,    setDaxImportText]    = useState('');
 
+  // v0.5.0 - Copy-Paste Card Config
+  const [copiedCardConfig, setCopiedCardConfig] = useState<Partial<CardConfig> | null>(null);
+
   // ── Derived ────────────────────────────────────────────────
   const currentPreset  = PBI_PRESETS.find(p => p.id === activePreset) || PBI_PRESETS[0];
   const simWidth  = activePreset === 'custom' ? customDimensions.width  : currentPreset.w;
@@ -353,6 +356,29 @@ const App: React.FC = () => {
       localStorage.clear();
     }
   };
+
+  // v0.5.0 - Copy-Paste Card Config
+  const handleCopyCardConfig = (cardId: string) => {
+    if (activeAppTab === 'cards') {
+      const card = cards.find(c => c.id === cardId);
+      if (card) {
+        const { id, ...configWithoutId } = card;
+        setCopiedCardConfig(configWithoutId);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    }
+  };
+
+  const handlePasteCardConfig = (targetCardId: string) => {
+    if (copiedCardConfig && activeAppTab === 'cards') {
+      setCards(cards.map(c =>
+        c.id === targetCardId ? { ...c, ...copiedCardConfig } : c
+      ));
+    }
+  };
+
+  const hasCopiedConfig = copiedCardConfig !== null;
 
   const canUndo = historyIdx > 0;
   const canRedo = historyIdx < historySize - 1;
