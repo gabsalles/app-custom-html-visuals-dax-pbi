@@ -10,6 +10,7 @@ export type TextAlign = 'left' | 'center' | 'right';
 export type IconPosition = 'left' | 'top' | 'right';
 
 export type FormatType = 'none' | 'integer' | 'decimal' | 'currency' | 'currency_short' | 'percent' | 'short';
+export type ThemeName = 'modern' | 'professional' | 'dark' | 'vibrant' | 'minimalist';
 
 export interface ComparisonConfig {
   id: string;
@@ -146,9 +147,12 @@ export interface GlobalConfig {
   marginLeft: number;
   // ---------------------------------------
 
+  // v0.5.0 - Theme system
+  currentTheme?: ThemeName;
+
   primaryColor: string;
   cardBackgroundColor: string;
-  canvasBackgroundColor: string; // <-- ADICIONAR ESTA LINHA
+  canvasBackgroundColor: string;
   textColorTitle: string;
   textColorValue: string;
   textColorSub: string;

@@ -160,6 +160,33 @@ interface ThemePreset {
 }
 
 const THEME_PRESETS: ThemePreset[] = [
+  // v0.5.0 - New Professional Themes
+  {
+    id: 'modern', label: '✨ Modern',
+    swatch: ['#f9fafb', '#6366f1', '#10b981'],
+    config: { primaryColor: '#6366f1', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#f9fafb', textColorTitle: '#1f2937', textColorValue: '#111827', textColorSub: '#6b7280', positiveColor: '#10b981', negativeColor: '#ef4444', neutralColor: '#9ca3af', hoverEffect: 'glow', borderRadius: 12, shadowIntensity: 8, shadowBlur: 20, shadowDistance: 8, fontWeightTitle: 700, fontWeightValue: 700, animation: 'fadeInUp' },
+  },
+  {
+    id: 'professional', label: '💼 Professional',
+    swatch: ['#f3f4f6', '#1f2937', '#0891b2'],
+    config: { primaryColor: '#1f2937', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#f3f4f6', textColorTitle: '#111827', textColorValue: '#1f2937', textColorSub: '#6b7280', positiveColor: '#0891b2', negativeColor: '#dc2626', neutralColor: '#9ca3af', hoverEffect: 'lift', borderRadius: 8, shadowIntensity: 6, shadowBlur: 16, shadowDistance: 6, fontWeightTitle: 600, fontWeightValue: 600, animation: 'slideRight' },
+  },
+  {
+    id: 'dark', label: '🌙 Dark Mode',
+    swatch: ['#111827', '#818cf8', '#34d399'],
+    config: { primaryColor: '#818cf8', cardBackgroundColor: '#1f2937', canvasBackgroundColor: '#111827', textColorTitle: '#f3f4f6', textColorValue: '#e5e7eb', textColorSub: '#9ca3af', positiveColor: '#34d399', negativeColor: '#f87171', neutralColor: '#6b7280', hoverEffect: 'glow', borderRadius: 12, shadowIntensity: 20, shadowBlur: 24, shadowDistance: 8, fontWeightTitle: 700, fontWeightValue: 700, animation: 'fadeInUp' },
+  },
+  {
+    id: 'vibrant', label: '🔥 Vibrant',
+    swatch: ['#fef2f2', '#dc2626', '#ea580c'],
+    config: { primaryColor: '#dc2626', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#fef2f2', textColorTitle: '#7c2d12', textColorValue: '#991b1b', textColorSub: '#b45309', positiveColor: '#ea580c', negativeColor: '#be185d', neutralColor: '#92400e', hoverEffect: 'scale', borderRadius: 16, shadowIntensity: 12, shadowBlur: 24, shadowDistance: 8, fontWeightTitle: 800, fontWeightValue: 800, animation: 'popIn' },
+  },
+  {
+    id: 'minimalist', label: '⚪ Minimalist',
+    swatch: ['#fafafa', '#000000', '#737373'],
+    config: { primaryColor: '#404040', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#fafafa', textColorTitle: '#000000', textColorValue: '#262626', textColorSub: '#737373', positiveColor: '#171717', negativeColor: '#737373', neutralColor: '#a3a3a3', hoverEffect: 'border', borderRadius: 4, shadowIntensity: 2, shadowBlur: 8, shadowDistance: 2, fontWeightTitle: 600, fontWeightValue: 600, animation: 'none' },
+  },
+  // Original themes
   {
     id: 'modern-dark', label: 'Dark Pro',
     swatch: ['#0f0f11', '#6366f1', '#c4b5fd'],
@@ -169,11 +196,6 @@ const THEME_PRESETS: ThemePreset[] = [
     id: 'corporate', label: 'Corporativo',
     swatch: ['#f8fafc', '#1e40af', '#3b82f6'],
     config: { primaryColor: '#1e40af', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#f1f5f9', textColorTitle: '#64748b', textColorValue: '#0f172a', textColorSub: '#94a3b8', positiveColor: '#059669', negativeColor: '#dc2626', hoverEffect: 'lift', borderRadius: 12, shadowIntensity: 8, shadowBlur: 20, shadowDistance: 8, fontWeightTitle: 700, fontWeightValue: 700, animation: 'slideRight' },
-  },
-  {
-    id: 'minimal', label: 'Minimalista',
-    swatch: ['#ffffff', '#000000', '#e5e7eb'],
-    config: { primaryColor: '#111827', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#f9fafb', textColorTitle: '#9ca3af', textColorValue: '#111827', textColorSub: '#d1d5db', positiveColor: '#16a34a', negativeColor: '#dc2626', hoverEffect: 'border', borderRadius: 4, shadowIntensity: 0, shadowBlur: 0, shadowDistance: 0, fontWeightTitle: 400, fontWeightValue: 300, animation: 'none' },
   },
   {
     id: 'nature', label: 'Natureza',
