@@ -39,13 +39,10 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
 
   return (
     <>
-      {/* Backdrop with spotlight - very light for visibility */}
-      <div className="fixed inset-0 bg-black/25 backdrop-blur-sm z-40 animate-fadeIn" onClick={onSkip} />
+      {/* Backdrop - NO BLUR, very light */}
+      <div className="fixed inset-0 bg-black/10 z-40 animate-fadeIn" onClick={onSkip} />
 
-      {/* Spotlight overlay (if targeting an element) */}
-      {step.targetElement && (
-        <TutorialSpotlight selector={step.targetElement} />
-      )}
+      {/* Removed spotlight - focus on tutorial window itself */}
 
       {/* Tutorial Modal */}
       <div className="fixed z-50 animate-fadeIn">
@@ -142,12 +139,18 @@ const TutorialPopover: React.FC<TutorialPopoverProps> = ({
 
   return (
     <div
-      className="w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden relative"
+      className="w-96 bg-white rounded-2xl overflow-hidden relative animate-pulse"
       style={{
         position: 'fixed',
         top: position.top,
         left: position.left,
         transform: 'translate(0, 0)',
+        boxShadow: `
+          0 0 0 2px rgba(79, 70, 229, 0.3),
+          0 0 30px 8px rgba(79, 70, 229, 0.5),
+          0 10px 40px rgba(79, 70, 229, 0.3)
+        `,
+        border: '2px solid rgba(79, 70, 229, 0.5)',
       }}
     >
       {/* Pointer arrow */}
