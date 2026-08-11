@@ -80,11 +80,27 @@ export const TUTORIAL_STEPS: TutorialStepExtended[] = [
     action: 'Selecione o template "📊 Simple KPI"',
     ctaText: '📊 Usar Simple KPI',
     ctaAction: () => {
-      // Clica no primeiro template (Simple KPI)
-      const templates = document.querySelectorAll('[data-tutorial="template-gallery"] button');
-      if (templates.length > 0) {
-        (templates[0] as HTMLElement).click();
-      }
+      // Espera um pouco para garantir que a galeria foi renderizada
+      setTimeout(() => {
+        const gallery = document.querySelector('[data-tutorial="template-gallery"]');
+        if (gallery) {
+          // Procura pelo primeiro button que seja um template card
+          // Ignora o button de close (X)
+          const allButtons = gallery.querySelectorAll('button');
+          for (let btn of allButtons) {
+            const text = btn.textContent || '';
+            // Se encontrar um button com "Simple KPI" ou similar, clica
+            if (!text.includes('X') && !text.includes('fechar')) {
+              (btn as HTMLElement).click();
+              return;
+            }
+          }
+          // Fallback: clica no primeiro button
+          if (allButtons.length > 0) {
+            (allButtons[0] as HTMLElement).click();
+          }
+        }
+      }, 300);
     },
     feedback: '🎉 Seu card foi criado com a configuração do template!',
     hint: 'Se preferir outro template, pode escolher - todos funcionam igual!',
