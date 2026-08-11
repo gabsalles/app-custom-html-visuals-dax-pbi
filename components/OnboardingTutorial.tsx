@@ -42,7 +42,10 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
       {/* Backdrop - NO BLUR, very light */}
       <div className="fixed inset-0 bg-black/10 z-40 animate-fadeIn" onClick={onSkip} />
 
-      {/* Removed spotlight - focus on tutorial window itself */}
+      {/* Spotlight overlay with strong glow on target element */}
+      {step.targetElement && (
+        <TutorialSpotlight selector={step.targetElement} />
+      )}
 
       {/* Tutorial Modal */}
       <div className="fixed z-50 animate-fadeIn">
@@ -139,18 +142,12 @@ const TutorialPopover: React.FC<TutorialPopoverProps> = ({
 
   return (
     <div
-      className="w-96 bg-white rounded-2xl overflow-hidden relative animate-pulse"
+      className="w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden relative"
       style={{
         position: 'fixed',
         top: position.top,
         left: position.left,
         transform: 'translate(0, 0)',
-        boxShadow: `
-          0 0 0 2px rgba(79, 70, 229, 0.3),
-          0 0 30px 8px rgba(79, 70, 229, 0.5),
-          0 10px 40px rgba(79, 70, 229, 0.3)
-        `,
-        border: '2px solid rgba(79, 70, 229, 0.5)',
       }}
     >
       {/* Pointer arrow */}
@@ -288,26 +285,57 @@ const TutorialSpotlight: React.FC<TutorialSpotlightProps> = ({ selector }) => {
         </mask>
       </defs>
 
-      {/* Spotlight glow effect - brighter */}
-      <rect
-        x={left}
-        y={top}
-        width={width}
-        height={height}
-        rx={borderRadius}
-        fill="rgba(79, 70, 229, 0.15)"
-        strokeWidth="3"
-        stroke="rgba(79, 70, 229, 0.8)"
-        style={{
-          filter: 'drop-shadow(0 0 30px rgba(79, 70, 229, 0.6))',
-        }}
-      />
+      {/* Spotlight glow effect - VERY STRONG GLOW */}
+      <g>
+        {/* Outer glow layers */}
+        <rect
+          x={left - 20}
+          y={top - 20}
+          width={width + 40}
+          height={height + 40}
+          rx={borderRadius + 10}
+          fill="none"
+          strokeWidth="40"
+          stroke="rgba(79, 70, 229, 0.15)"
+          style={{
+            filter: 'blur(30px)',
+          }}
+        />
+        {/* Inner glow */}
+        <rect
+          x={left - 10}
+          y={top - 10}
+          width={width + 20}
+          height={height + 20}
+          rx={borderRadius + 5}
+          fill="none"
+          strokeWidth="20"
+          stroke="rgba(79, 70, 229, 0.3)"
+          style={{
+            filter: 'blur(15px)',
+          }}
+        />
+        {/* Main highlight border */}
+        <rect
+          x={left}
+          y={top}
+          width={width}
+          height={height}
+          rx={borderRadius}
+          fill="rgba(79, 70, 229, 0.05)"
+          strokeWidth="3"
+          stroke="rgba(79, 70, 229, 1)"
+          style={{
+            filter: 'drop-shadow(0 0 20px rgba(79, 70, 229, 0.8))',
+          }}
+        />
+      </g>
 
-      {/* Dark overlay with spotlight hole - much lighter */}
+      {/* Dark overlay with spotlight hole - light */}
       <rect
         width="100%"
         height="100%"
-        fill="rgba(0, 0, 0, 0.25)"
+        fill="rgba(0, 0, 0, 0.15)"
         mask="url(#spotlight-mask)"
       />
     </svg>
