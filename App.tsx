@@ -87,6 +87,24 @@ interface Snapshot {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Fix da tela branca: JSON.parse(localStorage.getItem(...)) sem try/catch
+// nos useState() abaixo fazia qualquer estado salvo incompatível (schema
+// antigo, JSON corrompido) explodir DURANTE a primeira renderização — sem
+// Error Boundary no projeto (adicionado agora, ver ErrorBoundary.tsx), isso
+// deixava a árvore inteira sem montar, tela em branco, repetindo em todo
+// refresh porque o dado ruim continuava salvo. Helper centraliza o
+// try/catch: falha ao ler/parsear -> cai no fallback, nunca propaga.
+function loadFromStorage<T>(key: string, fallback: T): T {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : fallback;
+  } catch (e) {
+    console.error(`Falha ao ler '${key}' do localStorage — usando valor padrão.`, e);
+    return fallback;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // App
 // ─────────────────────────────────────────────────────────────
 const App: React.FC = () => {
@@ -94,9 +112,8 @@ const App: React.FC = () => {
   const [activeAppTab, setActiveAppTab] = useState<AppTab>('cards');
 
   const [globalConfig, setGlobalConfig] = useState<GlobalConfig>(() => {
-    const saved = localStorage.getItem('pbi-global');
-    if (saved) {
-      const parsed = JSON.parse(saved);
+    const parsed = loadFromStorage<any>('pbi-global', null);
+    if (parsed) {
       if (parsed.columns !== undefined) {
         parsed.columnsDesktop = parsed.columns;
         parsed.columnsTablet  = Math.max(1, parsed.columns - 1);
@@ -108,21 +125,14 @@ const App: React.FC = () => {
     return INITIAL_GLOBAL;
   });
 
-  const [cards, setCards] = useState<CardConfig[]>(() => {
-    const saved = localStorage.getItem('pbi-cards');
-    return saved ? JSON.parse(saved) : INITIAL_CARDS;
-  });
+  const [cards, setCards] = useState<CardConfig[]>(() => loadFromStorage('pbi-cards', INITIAL_CARDS));
 
-  const [donuts, setDonuts] = useState<DonutChartConfig[]>(() => {
-    const saved = localStorage.getItem('pbi-donuts');
-    return saved ? JSON.parse(saved) : INITIAL_DONUTS;
-  });
+  const [donuts, setDonuts] = useState<DonutChartConfig[]>(() => loadFromStorage('pbi-donuts', INITIAL_DONUTS));
 
   // Fase 4 etapa 5: prova de conceito — mesmo padrão de donuts, fiação de
   // estado de nível de app (ver contract.ts pra clarificação do critério).
   const [bars, setBars] = useState<BarChartConfig[]>(() => {
-    const saved = localStorage.getItem('pbi-bars');
-    return saved ? JSON.parse(saved) : [];
+    return loadFromStorage<BarChartConfig[]>('pbi-bars', []);
   });
 
   const [testValues, setTestValues] = useState<Record<string, number>>({});
