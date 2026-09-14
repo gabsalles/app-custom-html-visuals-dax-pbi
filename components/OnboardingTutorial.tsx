@@ -2,6 +2,23 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { ChevronRight, ChevronLeft, X, CheckCircle } from 'lucide-react';
 import { TutorialStepV2 } from '../utils/tutorialSteps';
 
+// Fix da tela branca: os seletores dos passos do tutorial são strings
+// digitadas à mão (utils/tutorialSteps.ts) — um seletor inválido (ex.: uma
+// sintaxe só do Playwright, que já causou o bug real) faz
+// document.querySelector() lançar SyntaxError. Sem isso, essa exceção
+// acontecia sem try/catch, travando a renderização inteira do app numa
+// transição de passo. Esta função é a única porta de entrada pra
+// querySelector neste arquivo daqui pra frente — nunca deixa a exceção
+// escapar, só avisa no console e retorna null (equivalente a "não achei").
+function safeQuerySelector(selector: string): Element | null {
+  try {
+    return document.querySelector(selector);
+  } catch (e) {
+    console.error(`Tutorial: seletor inválido "${selector}" — passo pulará o destaque em vez de travar a página.`, e);
+    return null;
+  }
+}
+
 export interface TutorialStep {
   id: string;
   title: string;
@@ -69,7 +86,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
       const handler = () => {
         handleAutoAdvance();
       };
-      const element = document.querySelector(step.triggerSelector);
+      const element = safeQuerySelector(step.triggerSelector);
       if (element) {
         element.addEventListener('click', handler);
         return () => element.removeEventListener('click', handler);
@@ -88,7 +105,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
         }
       };
 
-      const element = document.querySelector(step.triggerSelector);
+      const element = safeQuerySelector(step.triggerSelector);
       if (element) {
         element.addEventListener('input', handler);
         return () => element.removeEventListener('input', handler);
@@ -101,11 +118,11 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
         console.log('🎯 Watching for template gallery closure...');
 
         // Check immediately first
-        const galleryExists = document.querySelector('[data-tutorial="template-gallery"]');
+        const galleryExists = safeQuerySelector('[data-tutorial="template-gallery"]');
         console.log('Gallery exists now:', !!galleryExists);
 
         const observer = new MutationObserver(() => {
-          const gallery = document.querySelector('[data-tutorial="template-gallery"]');
+          const gallery = safeQuerySelector('[data-tutorial="template-gallery"]');
           console.log('MutationObserver fired - Gallery exists:', !!gallery);
 
           if (!gallery) {
@@ -132,7 +149,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
       // For icon selector: watch if it opens
       if (step.id === 'customize-icon') {
         const observer = new MutationObserver(() => {
-          const iconSelector = document.querySelector('[data-tutorial="icon-selector"]');
+          const iconSelector = safeQuerySelector('[data-tutorial="icon-selector"]');
           if (iconSelector) {
             handleAutoAdvance();
             observer.disconnect();
@@ -229,7 +246,7 @@ const TutorialPopover: React.FC<TutorialPopoverProps> = ({
 
   useEffect(() => {
     if (targetElement) {
-      const element = document.querySelector(targetElement);
+      const element = safeQuerySelector(targetElement);
       if (element) {
         const rect = element.getBoundingClientRect();
         const popoverWidth = 360;
@@ -416,7 +433,7 @@ const TutorialSpotlight: React.FC<TutorialSpotlightProps> = ({
   const [secondaryRects, setSecondaryRects] = useState<DOMRect[]>([]);
 
   useEffect(() => {
-    const element = document.querySelector(selector);
+    const element = safeQuerySelector(selector);
     if (element) {
       setRect(element.getBoundingClientRect());
     }
@@ -425,7 +442,7 @@ const TutorialSpotlight: React.FC<TutorialSpotlightProps> = ({
     if (secondary && secondary.length > 0) {
       const rects: DOMRect[] = [];
       secondary.forEach((sel) => {
-        const el = document.querySelector(sel);
+        const el = safeQuerySelector(sel);
         if (el) {
           rects.push(el.getBoundingClientRect());
         }
@@ -434,7 +451,7 @@ const TutorialSpotlight: React.FC<TutorialSpotlightProps> = ({
     }
 
     const handleResize = () => {
-      const el = document.querySelector(selector);
+      const el = safeQuerySelector(selector);
       if (el) {
         setRect(el.getBoundingClientRect());
       }

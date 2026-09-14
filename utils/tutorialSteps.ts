@@ -104,11 +104,14 @@ export const TUTORIAL_STEPS_V2: TutorialStepV2[] = [
     title: '✏️ Customize o título do card',
     description:
       'Vamos dar um nome significativo ao seu card!\n\nEncontre o campo de texto no topo do Editor (direita) onde está escrito "Novo Card".\n\n👉 Mude para um nome como: "Receita", "Vendas", "Clientes", etc.',
-    highlightSelector: 'input[value="Novo Card"]',
+    // Fix da tela branca (passo 7→8): 'input[value="Novo Card"]' era frágil
+    // (só casava por coincidir com o texto padrão) — trocado pelo atributo
+    // data-tutorial que components/Editor.tsx já expõe nesse input.
+    highlightSelector: '[data-tutorial="title-input"]',
     highlightSecondary: ['[data-tutorial="right-panel"]'],
     action: 'Clique no campo de título e mude o nome',
     autoAdvanceTrigger: 'input',
-    triggerSelector: 'input[value]',
+    triggerSelector: '[data-tutorial="title-input"]',
     triggerValue: 'minLength=3', // Qualquer texto com 3+ caracteres
     feedback: '✨ Ótimo! Seu card tem um nome significativo',
     hint: 'O título aparece também no preview (centro)',
@@ -120,11 +123,16 @@ export const TUTORIAL_STEPS_V2: TutorialStepV2[] = [
     title: '🎨 Escolha um ícone representativo',
     description:
       'O ícone comunica visualmente o que o card é!\n\nNa seção "Iconografia" (meio do Editor direito):\n\n1️⃣ Clique no botão "TROCAR"\n2️⃣ Escolha um ícone (💰 moeda, 📈 trending, etc)\n3️⃣ Clique para confirmar\n\n👉 Escolha um ícone que represente sua métrica!',
-    highlightSelector: 'button:has-text("TROCAR")',
+    // Fix da tela branca (causa raiz do bug reportado): 'button:has-text(...)'
+    // é sintaxe do Playwright, não CSS válido — document.querySelector()
+    // lançava SyntaxError sem try/catch, travando a renderização inteira
+    // nesta transição de passo. Trocado por um data-tutorial de verdade
+    // (adicionado no botão TROCAR em components/Editor.tsx).
+    highlightSelector: '[data-tutorial="icon-trocar-button"]',
     highlightSecondary: ['[data-tutorial="right-panel"]'],
     action: 'Procure pela seção "Iconografia" e clique em "TROCAR"',
     autoAdvanceTrigger: 'modal',
-    triggerSelector: 'button:has-text("TROCAR")',
+    triggerSelector: '[data-tutorial="icon-trocar-button"]',
     feedback: '🎨 Lindo! O ícone deixa o card mais comunicativo',
     hint: 'Você verá o ícone atualizar em tempo real no preview',
     ctaHidden: true,
@@ -135,6 +143,8 @@ export const TUTORIAL_STEPS_V2: TutorialStepV2[] = [
     title: '📊 Configure a medida principal',
     description:
       'Agora vamos dizer ao card qual é a INFORMAÇÃO PRINCIPAL!\n\nNa seção "Dados & Formatação":\n\n1️⃣ Clique em "Medida Principal (DAX)"\n2️⃣ Escolha uma métrica da lista\n3️⃣ Escolha o "Formato" (moeda, porcentagem, etc)\n\n👉 Isso vai mostrar o número grande no card!',
+    // Fix: esse atributo não existia em lugar nenhum até agora (adicionado
+    // em MeasureSelect/Editor.tsx) — o destaque nunca aparecia neste passo.
     highlightSelector: '[data-tutorial="measure-select"]',
     highlightSecondary: ['[data-tutorial="right-panel"]'],
     action: 'Selecione uma "Medida Principal" na seção Dados',
@@ -149,7 +159,9 @@ export const TUTORIAL_STEPS_V2: TutorialStepV2[] = [
     title: '👁️ Veja seu card pronto!',
     description:
       'Tudo o que você configurou aparece INSTANTANEAMENTE no preview:\n\n✨ Título customizado\n🎨 Ícone escolhido  \n📊 Número principal\n🎨 Cores do template\n\nSeu card é PROFISSIONAL e foi criado em minutos! 🎉',
-    highlightSelector: '.preview-card', // Destaca o card no preview
+    // Fix: a classe real do card no preview é '.p-card' (components/Preview.tsx)
+    // — '.preview-card' nunca existiu, o destaque nunca aparecia neste passo.
+    highlightSelector: '.p-card',
     action: 'Olhe para o CENTRO da tela e veja seu card pronto',
     autoAdvanceTrigger: 'none',
     ctaText: 'Próximo - Pro Tips',

@@ -126,11 +126,11 @@ const SectionHeader = ({ icon: Icon, title, rightElement }: any) => (
   </div>
 );
 
-const MeasureSelect = ({ label, value, onChange, bindings }: { label: string, value: string, onChange: (val: string) => void, bindings: any[] }) => {
+const MeasureSelect = ({ label, value, onChange, bindings, dataTutorial }: { label: string, value: string, onChange: (val: string) => void, bindings: any[], dataTutorial?: string }) => {
   const isBound = bindings.some(b => b.value === value);
   const [mode, setMode] = useState<'select' | 'manual'>(isBound || value === '' ? 'select' : 'manual');
   return (
-    <div className="space-y-1.5 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+    <div data-tutorial={dataTutorial} className="space-y-1.5 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
       <div className="flex justify-between items-center mb-2">
         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
         <button onClick={() => setMode(mode === 'select' ? 'manual' : 'select')} className="text-[9px] font-bold text-indigo-500 uppercase hover:text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded transition-colors">
@@ -552,7 +552,7 @@ const Editor: React.FC<EditorProps> = ({
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
             <SectionHeader icon={Binary} title="Dados & Formatação" />
             <div className="space-y-4">
-              <MeasureSelect label="Medida Principal (DAX)" value={card.measurePlaceholder} onChange={(v) => updateCard(card.id, 'measurePlaceholder', v)} bindings={globalConfig.dataBindings || []} />
+              <MeasureSelect dataTutorial="measure-select" label="Medida Principal (DAX)" value={card.measurePlaceholder} onChange={(v) => updateCard(card.id, 'measurePlaceholder', v)} bindings={globalConfig.dataBindings || []} />
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Formato">
                   <CustomSelect value={card.formatType} onChange={(e: any) => updateCard(card.id, 'formatType', e.target.value)}>
@@ -597,7 +597,7 @@ const Editor: React.FC<EditorProps> = ({
                   </div>
                   <span className="text-[10px] font-bold text-slate-500 uppercase">Atual: {card.icon || 'chart'}</span>
                 </div>
-                <button onClick={() => setIconSelectorOpen(!iconSelectorOpen)} className="text-[10px] font-black bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">TROCAR</button>
+                <button data-tutorial="icon-trocar-button" onClick={() => setIconSelectorOpen(!iconSelectorOpen)} className="text-[10px] font-black bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">TROCAR</button>
               </div>
 
               {iconSelectorOpen && (
