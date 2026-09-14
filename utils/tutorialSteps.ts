@@ -1,244 +1,223 @@
 import { TutorialStep } from '../components/OnboardingTutorial';
 
 /**
- * Tutorial steps - COMPREHENSIVE PATH with UX best practices
- * v0.5.0 - Full guided experience
+ * Tutorial Steps v2 - Complete Rewrite with Auto-Advance
  *
- * UX Principles Applied:
- * ✓ Clear progression (1/11, 2/11, etc)
- * ✓ Orientation in space (where to look)
- * ✓ Progressive disclosure (learn one thing at a time)
- * ✓ Feedback (what just happened)
- * ✓ Clear CTAs (what to do next)
- * ✓ Hints (why you're doing this)
- * ✓ Confirmation (success states)
- * ✓ Ability to undo (don't be afraid to try)
- * ✓ Encouragement (you're doing great!)
- * ✓ Clear payoff (here's the result)
+ * Key Improvements:
+ * - Auto-detect when user completes an action
+ * - Highlight specific fields (not just panels)
+ * - Automatic modal detection and navigation
+ * - Smart positioning and detection
  */
-export interface TutorialStepExtended extends TutorialStep {
-  autoAction?: () => void;
+export interface TutorialStepV2 extends TutorialStep {
+  // What to highlight
+  highlightSelector?: string; // Primary element to glow
+  highlightSecondary?: string[]; // Additional elements to subtly highlight
+
+  // Auto-advance logic
+  autoAdvanceTrigger?: 'click' | 'input' | 'modal' | 'none';
+  triggerSelector?: string; // What to watch for changes/clicks
+  triggerValue?: string; // For input fields, what value to check for
+
+  // Context hints
   ctaText?: string;
-  ctaAction?: () => void;
+  ctaHidden?: boolean; // Hide auto-CTA, just show explanation
   hint?: string;
-  feedback?: string; // What happened after this step
+  feedback?: string;
 }
 
-export const TUTORIAL_STEPS: TutorialStepExtended[] = [
+export const TUTORIAL_STEPS_V2: TutorialStepV2[] = [
   {
     id: 'welcome',
     title: '🎓 Bem-vindo ao DAXILIZER!',
     description:
-      'Você está prestes a criar seu primeiro card visual profissional para Power BI. Este tutorial vai guiar você em 10 passos simples.\n\n⏱️ Tempo estimado: 5 minutos\n\nVamos começar?',
-    action: 'Clique em "Começar" para iniciar a jornada',
+      'Você está prestes a criar seu primeiro card visual profissional para Power BI em apenas 5 minutos!\n\nEste tutorial vai guiar você passo a passo. Cada ação que você fizer vai ser detectada automaticamente.',
+    action: 'Clique em "Próximo" para começar a jornada',
+    autoAdvanceTrigger: 'none',
     ctaText: 'Começar 🚀',
   },
 
   {
     id: 'interface-overview',
-    title: '🏠 Conheça a interface',
+    title: '🏠 Conheça a interface em 3 painéis',
     description:
-      'O DAXILIZER tem 3 painéis principais:\n\n📍 ESQUERDA: "Camadas" - Lista de todos os cards\n📍 CENTRO: "Preview" - Visualização do dashboard\n📍 DIREITA: "Editor" - Configurações e customização\n\nCada passo vai usar um desses painéis. Vamos explorar!',
+      'O DAXILIZER tem 3 painéis principais:\n\n📍 ESQUERDA: "Camadas" - Lista de cards\n📍 CENTRO: "Preview" - Visualização do dashboard\n📍 DIREITA: "Editor" - Configurações\n\nCada passo vai usar esses painéis. Você pronto?',
     action: 'Observe os 3 painéis na tela',
-    hint: 'Você pode minimizar/maximizar cada painel conforme necessário',
-    feedback: 'Perfeito! Agora você sabe onde tudo está 👍',
+    autoAdvanceTrigger: 'none',
+    ctaText: 'Entendi! Próximo',
+    hint: 'Os painéis são redimensionáveis - arraste as bordas se quiser',
   },
 
   {
     id: 'layers-panel-intro',
-    title: '📋 O painel "Camadas" (Esquerda)',
+    title: '📋 Painel "Camadas" (Esquerda)',
     description:
-      'Este painel mostra todos os cards do seu dashboard. É aqui que você:\n\n✏️ Cria novos cards (botão "+")\n👁️ Seleciona um card para editar\n📋 Vê a lista de todos os elementos\n\nVamos criar seu primeiro card aqui!',
-    targetElement: '[data-tutorial="layers-panel"]',
-    action: 'Veja o botão "+" no topo do painel esquerdo',
-    hint: 'O botão "+" está ao lado de "CAMADAS"',
-    feedback: 'Ótimo! Você identificou aonde criar novos cards',
+      'Este é o hub central! Aqui você:\n\n✅ Cria novos cards com o botão "+"\n✅ Vê a lista de todos os elementos\n✅ Seleciona qual card editar\n✅ Usa Copy/Paste para duplicar configurações\n\nVamos criar seu primeiro card!',
+    highlightSelector: '[data-tutorial="layers-panel"]',
+    action: 'Veja a seção "CAMADAS" à esquerda',
+    autoAdvanceTrigger: 'none',
+    ctaText: 'Próximo',
   },
 
   {
     id: 'create-card-button',
-    title: '➕ Crie um novo card',
+    title: '➕ Clique no botão "+" para criar um card',
     description:
-      'Vamos clicar no botão "+" para abrir a galeria de templates!\n\nEste botão é a porta de entrada para criar qualquer novo card. Após clicar, você verá 5 templates profissionais prontos para usar.',
-    targetElement: '[data-tutorial="create-card-button"]',
-    action: 'Clique no botão "+" agora',
-    ctaText: '👆 Abrir galeria de templates',
-    ctaAction: () => {
-      const btn = document.querySelector('[data-tutorial="create-card-button"]') as HTMLElement;
-      btn?.click();
-    },
-    feedback: 'Excelente! A galeria de templates está aberta',
+      'O botão "+" é a porta de entrada para criar cards!\n\nAo clicar, a galeria de templates vai abrir mostrando 5 opções profissionais prontas para usar.\n\n👉 Clique no botão "+" AGORA.',
+    highlightSelector: '[data-tutorial="create-card-button"]',
+    action: 'O botão "+" está realçado em ROXO. Clique nele!',
+    autoAdvanceTrigger: 'click',
+    triggerSelector: '[data-tutorial="create-card-button"]',
+    feedback: '✅ Excelente! A galeria de templates está aberta',
     hint: 'A galeria deve aparecer no centro da tela',
+    ctaHidden: true,
   },
 
   {
     id: 'template-selection',
-    title: '🎨 Escolha um template',
+    title: '🎨 Escolha o template "Simple KPI"',
     description:
-      'A galeria de templates está mostrando 5 opções profissionais:\n\n📊 Simple KPI - Métrica básica com trending\n⬆️ Growth YoY - Comparação anual + mensal\n⭐ Rating - Para scores/avaliações\n🎯 Progress - Para metas e objetivos\n✅ Status - Para indicadores sim/não\n\nCada um vem pré-configurado com as melhores práticas. Escolha um para começar!',
-    targetElement: '[data-tutorial="template-gallery"]',
-    action: 'Selecione o template "📊 Simple KPI"',
-    ctaText: '📊 Usar Simple KPI',
-    ctaAction: () => {
-      // Espera a galeria renderizar, depois clica no primeiro template
-      setTimeout(() => {
-        // Procura por qualquer button dentro da galeria
-        // Evita o close button (X) procurando por botões com padding/estilo específico
-        const buttons = document.querySelectorAll('button');
-
-        // Encontra o primeiro button que tem conteúdo "Simple KPI" ou é um template
-        for (let btn of buttons) {
-          const text = btn.textContent || '';
-          // Se encontrar "Simple KPI", "Growth", "Rating", etc - clica
-          if ((text.includes('Simple') || text.includes('Growth') || text.includes('Rating') ||
-               text.includes('Progress') || text.includes('Status') || text.includes('KPI')) &&
-              !text.includes('X')) {
-            (btn as HTMLElement).click();
-            console.log('✅ Clicou no template:', text.substring(0, 30));
-            return;
-          }
-        }
-        console.warn('⚠️ Template não encontrado');
-      }, 500);
-    },
-    feedback: '🎉 Seu card foi criado com a configuração do template!',
-    hint: 'Se preferir outro template, pode escolher - todos funcionam igual!',
+      'A galeria está mostrando 5 templates profissionais:\n\n📊 Simple KPI - Métrica básica com trending\n⬆️ Growth YoY - Comparação anual\n⭐ Rating - Para scores\n🎯 Progress - Para metas\n✅ Status - Para indicadores\n\n👉 Selecione "📊 Simple KPI" AGORA.',
+    highlightSelector: '[data-tutorial="template-gallery"]',
+    action: 'Clique no primeiro template (Simple KPI)',
+    autoAdvanceTrigger: 'modal',
+    triggerSelector: '[data-tutorial="create-card-button"]',
+    feedback: '🎉 Card criado com sucesso!',
+    hint: 'Cada template vem pré-configurado com as melhores práticas',
+    ctaHidden: true,
   },
 
   {
-    id: 'card-created-confirmation',
-    title: '✅ Card criado com sucesso!',
+    id: 'card-confirmation',
+    title: '✅ Seu card foi criado!',
     description:
-      'Perfeito! Um novo card foi criado e já está visível:\n\n✅ Na lista de "Camadas" (esquerda)\n✅ No preview (centro)\n✅ No editor (direita)\n\nAgora vamos customizar este card para deixar com a sua cara. O painel direito é onde toda a mágica acontece!',
-    targetElement: '[data-tutorial="right-panel"]',
-    action: 'Veja o painel "Editor" no lado direito',
+      'Perfeito! Um novo card apareceu:\n\n✅ Na lista "Camadas" (esquerda)\n✅ No preview (centro)\n✅ No editor (direita)\n\nAgora vamos customizar! O painel DIREITO é onde a mágica acontece.',
+    highlightSelector: '[data-tutorial="right-panel"]',
+    action: 'Observe o painel "Editor" no lado direito',
+    autoAdvanceTrigger: 'none',
+    ctaText: 'Próximo',
     feedback: 'Você tem um card funcional pronto para customizar!',
-    hint: 'O painel direito tem abas: Dados, Layout, Fontes, Cores, Efeitos',
   },
 
   {
     id: 'customize-title',
     title: '✏️ Customize o título do card',
     description:
-      'Vamos começar a customizar! O primeiro passo é dar um nome significativo ao seu card.\n\nVocê verá um campo de texto no topo do editor direito onde está escrito "Novo Card". Mude para algo como:\n\n💰 "Receita Mensal"\n📊 "Total de Vendas"\n👥 "Quantidade de Clientes"\n\nUse um nome que descreva a métrica!',
-    targetElement: '[data-tutorial="right-panel"]',
-    position: 'left',
-    action: 'Encontre o campo "Título" e mude o nome',
-    ctaText: 'Entendi 👍',
-    feedback: 'Ótimo! Seu card agora tem um nome significativo',
+      'Vamos dar um nome significativo ao seu card!\n\nEncontre o campo de texto no topo do Editor (direita) onde está escrito "Novo Card".\n\n👉 Mude para um nome como: "Receita", "Vendas", "Clientes", etc.',
+    highlightSelector: 'input[value="Novo Card"]',
+    highlightSecondary: ['[data-tutorial="right-panel"]'],
+    action: 'Clique no campo de título e mude o nome',
+    autoAdvanceTrigger: 'input',
+    triggerSelector: 'input[value]',
+    triggerValue: 'minLength=3', // Qualquer texto com 3+ caracteres
+    feedback: '✨ Ótimo! Seu card tem um nome significativo',
     hint: 'O título aparece também no preview (centro)',
+    ctaHidden: true,
   },
 
   {
     id: 'customize-icon',
     title: '🎨 Escolha um ícone representativo',
     description:
-      'O ícone é super importante para comunicar visualmente. Na seção "Iconografia" você pode:\n\n📍 Escolher entre 30+ ícones\n📍 Categorizar por tipo (finanças, pessoas, etc)\n📍 Ver preview em tempo real\n\nProcure um ícone que represente sua métrica. Ex: 💰 para dinheiro, 📈 para crescimento, etc.',
-    targetElement: '[data-tutorial="right-panel"]',
-    position: 'left',
-    action: 'Clique em "TROCAR" na seção Iconografia',
-    feedback: 'Lindo! O ícone deixa o card mais comunicativo',
-    hint: 'O ícone aparece grande no preview - escolha um que você goste!',
+      'O ícone comunica visualmente o que o card é!\n\nNa seção "Iconografia" (meio do Editor direito):\n\n1️⃣ Clique no botão "TROCAR"\n2️⃣ Escolha um ícone (💰 moeda, 📈 trending, etc)\n3️⃣ Clique para confirmar\n\n👉 Escolha um ícone que represente sua métrica!',
+    highlightSelector: 'button:has-text("TROCAR")',
+    highlightSecondary: ['[data-tutorial="right-panel"]'],
+    action: 'Procure pela seção "Iconografia" e clique em "TROCAR"',
+    autoAdvanceTrigger: 'modal',
+    triggerSelector: 'button:has-text("TROCAR")',
+    feedback: '🎨 Lindo! O ícone deixa o card mais comunicativo',
+    hint: 'Você verá o ícone atualizar em tempo real no preview',
+    ctaHidden: true,
   },
 
   {
-    id: 'customize-measure',
+    id: 'configure-measure',
     title: '📊 Configure a medida principal',
     description:
-      'Agora vamos dizer ao card qual é a informação principal que ele deve mostrar.\n\nNa seção "Dados & Formatação" você:\n\n1️⃣ Escolhe a "Medida Principal (DAX)" - é o número que vai aparecer grande\n2️⃣ Escolhe o "Formato" - como exibir (moeda, porcentagem, etc)\n3️⃣ Configura "Decimais" - quantas casas decimais mostrar\n\nEste é o "coração" do seu card!',
-    targetElement: '[data-tutorial="right-panel"]',
-    position: 'left',
-    action: 'Clique em "Medida Principal (DAX)" e escolha uma métrica',
-    feedback: '🎯 Agora seu card sabe qual número mostrar!',
-    hint: 'Você verá um preview atualizado em tempo real no centro',
+      'Agora vamos dizer ao card qual é a INFORMAÇÃO PRINCIPAL!\n\nNa seção "Dados & Formatação":\n\n1️⃣ Clique em "Medida Principal (DAX)"\n2️⃣ Escolha uma métrica da lista\n3️⃣ Escolha o "Formato" (moeda, porcentagem, etc)\n\n👉 Isso vai mostrar o número grande no card!',
+    highlightSelector: '[data-tutorial="measure-select"]',
+    highlightSecondary: ['[data-tutorial="right-panel"]'],
+    action: 'Selecione uma "Medida Principal" na seção Dados',
+    autoAdvanceTrigger: 'none',
+    ctaText: 'Próximo - Ver resultado',
+    feedback: '🎯 Perfeito! Seu card sabe qual número mostrar',
+    hint: 'Você verá o número atualizar no preview (centro)',
   },
 
   {
     id: 'preview-result',
-    title: '👁️ Veja o resultado em tempo real',
+    title: '👁️ Veja seu card pronto!',
     description:
-      'Tudo o que você configurar aparece INSTANTANEAMENTE no preview (centro da tela)!\n\nVocê tem:\n\n✨ Título customizado\n🎨 Ícone escolhido\n📊 Número principal\n🎨 Cores do template\n\nSeeu card não está assim, volte e ajuste no editor (direita). Tudo é reversível!',
-    targetElement: '[data-tutorial="layers-panel"]',
-    position: 'right',
-    action: 'Olhe para o centro da tela e veja seu card pronto',
-    feedback: 'Você criou um card profissional em minutos! 🎉',
-    hint: 'Pode continuar customizando: cores, comparativos, efeitos - tudo é possível',
+      'Tudo o que você configurou aparece INSTANTANEAMENTE no preview:\n\n✨ Título customizado\n🎨 Ícone escolhido  \n📊 Número principal\n🎨 Cores do template\n\nSeu card é PROFISSIONAL e foi criado em minutos! 🎉',
+    highlightSelector: '.preview-card', // Destaca o card no preview
+    action: 'Olhe para o CENTRO da tela e veja seu card pronto',
+    autoAdvanceTrigger: 'none',
+    ctaText: 'Próximo - Pro Tips',
+    feedback: 'Você criou um card profissional em minutos!',
+    hint: 'Pode continuar customizando: cores, efeitos, comparativos - tudo é possível',
   },
 
   {
-    id: 'copy-paste-feature',
-    title: '📋 Duplicate rápido com Copy/Paste',
+    id: 'copy-paste-pro-tip',
+    title: '⚡ Pro Tip: Copy/Paste para profissionais',
     description:
-      'Se você precisar criar múltiplos cards similares, existe um atalho:\n\n1️⃣ Hover no card na lista (esquerda) - aparecem botões\n2️⃣ Clique em [👆 Copy] - copia toda a configuração\n3️⃣ Vá para outro card\n4️⃣ Clique em [📌 Paste] - aplica a configuração\n\nEconomiza MUITO tempo quando você tem 20+ cards! ⏱️',
-    targetElement: '[data-tutorial="layers-panel"]',
-    position: 'right',
+      'Se você precisar de múltiplos cards similares, existe um ATALHO PROFISSIONAL:\n\n1️⃣ Hover no card na lista (esquerda)\n2️⃣ Clique em [👆 Copy] - copia tudo\n3️⃣ Vá para outro card\n4️⃣ Clique em [📌 Paste] - aplica em 1 segundo\n\nEconomiza MUITO tempo com 20+ cards! ⚡',
+    highlightSelector: '[data-tutorial="layers-panel"]',
     action: 'Você verá botões Copy/Paste ao passar mouse',
-    feedback: 'Você aprendeu o truque dos profissionais! 🚀',
+    autoAdvanceTrigger: 'none',
+    ctaText: 'Próximo - Exportar',
+    feedback: 'Você aprendeu o truque dos profissionais!',
     hint: 'Copy/Paste copia tudo MENOS a medida - cada card fica único',
   },
 
   {
     id: 'export-dax',
-    title: '💾 Exporte para o Power BI',
+    title: '🚀 Exporte seu card para Power BI!',
     description:
-      'A melhor parte: levar seu card para o Power BI!\n\nPROCESSO:\n1️⃣ Clique na aba "DAX" (lado direito)\n2️⃣ O código completo será gerado automaticamente\n3️⃣ Copie tudo (Ctrl+A, Ctrl+C)\n4️⃣ Vá no Power BI e cole em um Visual Script\n5️⃣ Pronto! Seu card visual funciona perfeitamente\n\nO código inclui TODAS as suas customizações automaticamente!',
-    targetElement: '[data-tutorial="export-dax-button"]',
-    position: 'bottom',
+      'A melhor parte: levar seu card para o Power BI!\n\n1️⃣ Clique na aba "DAX" (lado direito, próximo a "Visual")\n2️⃣ Código completo vai ser gerado automaticamente\n3️⃣ Copie tudo (Ctrl+A, Ctrl+C)\n4️⃣ Vá no Power BI e cole em um Visual Script\n5️⃣ Seu card está vivo! 🚀\n\n👉 O código inclui TODAS as suas customizações!',
+    highlightSelector: '[data-tutorial="export-dax-button"]',
     action: 'Clique na aba "DAX" para ver o código gerado',
-    ctaText: '📋 Mostrar código DAX',
-    ctaAction: () => {
-      const btn = document.querySelector('[data-tutorial="export-dax-button"]') as HTMLElement;
-      btn?.click();
-    },
-    feedback: 'Seu card está pronto para o Power BI! 🚀',
-    hint: 'Você pode copiar e fazer upload quantas vezes quiser',
+    autoAdvanceTrigger: 'click',
+    triggerSelector: '[data-tutorial="export-dax-button"]',
+    feedback: '✅ Seu card está pronto para o Power BI!',
+    ctaHidden: true,
   },
 
   {
     id: 'completion',
-    title: '🎊 Parabéns! Você domina o DAXILIZER!',
+    title: '🏆 Parabéns! Você domina o DAXILIZER!',
     description:
-      'Excelente trabalho! 🏆\n\nVocê aprendeu:\n\n✅ Criar cards com templates profissionais\n✅ Customizar título, ícone, medidas\n✅ Ver preview em tempo real\n✅ Duplicar com Copy/Paste\n✅ Exportar DAX para Power BI\n\nAgora você pode:\n\n🎨 Criar quantos cards quiser\n🎯 Experimentar diferentes templates\n⚡ Trabalhar muito mais rápido com Copy/Paste\n🚀 Levar seus cards pro Power BI\n\nQualquer dúvida, este tutorial está sempre disponível. Divirta-se criando! 🎉',
-    action: 'Você está pronto para criar dashboards profissionais!',
+      'Excelente trabalho! 🎊\n\nVocê aprendeu:\n\n✅ Criar cards com templates profissionais\n✅ Customizar título, ícone, medidas\n✅ Ver preview em tempo real\n✅ Usar Copy/Paste (pro move)\n✅ Exportar DAX para Power BI\n\nAgora você pode:\n🎨 Criar quantos cards quiser\n⚡ Trabalhar muito mais rápido\n🚀 Levar seus cards pro Power BI\n\nDivirta-se criando dashboards profissionais! 🎉',
+    action: 'Você está pronto!',
+    autoAdvanceTrigger: 'none',
     ctaText: 'Finalizar e começar 🚀',
-    feedback: 'Bem-vindo à comunidade DAXILIZER! 👋',
+    feedback: 'Bem-vindo à comunidade DAXILIZER!',
   },
 ];
 
 /**
- * Check if user has completed tutorial
+ * Tutorial state management
  */
 export const isTutorialCompleted = (): boolean => {
   if (typeof window === 'undefined') return false;
   return localStorage.getItem('daxilizer-tutorial-completed') === 'true';
 };
 
-/**
- * Mark tutorial as completed
- */
 export const markTutorialCompleted = (): void => {
   localStorage.setItem('daxilizer-tutorial-completed', 'true');
 };
 
-/**
- * Reset tutorial (for testing)
- */
 export const resetTutorial = (): void => {
   localStorage.removeItem('daxilizer-tutorial-completed');
+  localStorage.removeItem('daxilizer-tutorial-step');
 };
 
-/**
- * Get current tutorial step (for resuming)
- */
 export const getTutorialStep = (): number => {
   if (typeof window === 'undefined') return 0;
   const saved = localStorage.getItem('daxilizer-tutorial-step');
   return saved ? parseInt(saved, 10) : 0;
 };
 
-/**
- * Save current tutorial step
- */
 export const saveTutorialStep = (step: number): void => {
   localStorage.setItem('daxilizer-tutorial-step', step.toString());
 };

@@ -6,16 +6,18 @@ import CardTemplateGallery from './components/CardTemplateGallery';
 import OnboardingTutorial from './components/OnboardingTutorial';
 import { generateDAX } from './utils/daxGenerator';
 import { createCardFromTemplate } from './utils/cardTemplates';
-import { TUTORIAL_STEPS, isTutorialCompleted, markTutorialCompleted, getTutorialStep, saveTutorialStep } from './utils/tutorialSteps';
-import { GlobalConfig, CardConfig, DonutChartConfig, ViewportMode, AppTab } from './types';
+import { TUTORIAL_STEPS_V2, isTutorialCompleted, markTutorialCompleted, getTutorialStep, saveTutorialStep, resetTutorial } from './utils/tutorialSteps';
+import { GlobalConfig, CardConfig, DonutChartConfig, BarChartConfig, ViewportMode, AppTab } from './types';
 import { parseDaxToState, createImportWarning } from './utils/daxParser';
 import {
   Code, Eye, Copy, Check, Settings2, Download, Upload,
   Trash2, RotateCcw, FileCode2, X, Undo2, Redo2,
   Monitor, FlipVertical, RectangleHorizontal, LayoutGrid, SquareDashedBottom,
   Layers, Plus, GripVertical, Layout, PieChart,
-  HelpCircle, Sparkles, Database, Play // <- Adicione estes ícones
+  HelpCircle, Sparkles, Database, Play, AlertTriangle, BarChart3 // <- Adicione estes ícones
 } from 'lucide-react';
+import { chartTypeRegistry } from './utils/chartTypes';
+import { DAX_CHAR_SAFE_BUDGET, DAX_CHAR_HARD_LIMIT } from './utils/visualConstants';
 
 // ─────────────────────────────────────────────────────────────
 // Power BI canvas presets (replaces mobile/tablet/desktop)
@@ -116,18 +118,26 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : INITIAL_DONUTS;
   });
 
+  // Fase 4 etapa 5: prova de conceito — mesmo padrão de donuts, fiação de
+  // estado de nível de app (ver contract.ts pra clarificação do critério).
+  const [bars, setBars] = useState<BarChartConfig[]>(() => {
+    const saved = localStorage.getItem('pbi-bars');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [testValues, setTestValues] = useState<Record<string, number>>({});
 
   // ── Auto-save ──────────────────────────────────────────────
   useEffect(() => { localStorage.setItem('pbi-global', JSON.stringify(globalConfig)); }, [globalConfig]);
   useEffect(() => { localStorage.setItem('pbi-cards',  JSON.stringify(cards));        }, [cards]);
   useEffect(() => { localStorage.setItem('pbi-donuts', JSON.stringify(donuts));       }, [donuts]);
+  useEffect(() => { localStorage.setItem('pbi-bars',   JSON.stringify(bars));         }, [bars]);
 
   // ── Undo / Redo ────────────────────────────────────────────
   const historyRef      = useRef<Snapshot[]>([]);
   const historyIdxRef   = useRef(-1);
   const isUndoRedoRef   = useRef(false);
-  const debounceRef     = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef     = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [historySize, setHistorySize]  = useState(0); 
   const [historyIdx,  setHistoryIdx]   = useState(-1);
   
@@ -236,6 +246,7 @@ const App: React.FC = () => {
   const [activePreset,     setActivePreset]     = useState<PresetId>('kpi-strip');
   const [customDimensions, setCustomDimensions] = useState({ width: 800, height: 400 });
   const [copied,           setCopied]           = useState(false);
+  const [daxCopied,        setDaxCopied]         = useState(false); // Fase 3 etapa 4
   const [selectedCardId,   setSelectedCardId]   = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -258,9 +269,31 @@ const App: React.FC = () => {
   const simHeight = activePreset === 'custom' ? customDimensions.height : currentPreset.h;
 
   const daxCode = useMemo(() => {
-    const items = activeAppTab === 'cards' ? cards : donuts;
+    const items = activeAppTab === 'cards' ? cards : activeAppTab === 'donuts' ? donuts : bars;
     return generateDAX(globalConfig, items, activeAppTab);
   }, [globalConfig, cards, donuts, activeAppTab]);
+
+  // Fase 3 etapa 4: mede o mesmo daxCode já gerado acima — não reimplementa
+  // uma fórmula de estimativa separada (utils/visualConstants.ts tem o
+  // porquê dos números de orçamento; utils/daxGenerator.ts getGeneratedDaxLength
+  // existe pra quem precisar medir uma config hipotética fora deste componente).
+  const daxLength = daxCode.length;
+  const daxOverSafeBudget = daxLength > DAX_CHAR_SAFE_BUDGET;
+  const daxOverHardLimit = daxLength > DAX_CHAR_HARD_LIMIT;
+
+  const handleCopyDax = () => {
+    if (daxOverHardLimit) {
+      const ok = window.confirm(
+        `Este DAX tem ${daxLength.toLocaleString('pt-BR')} caracteres — acima do teto conhecido de ${DAX_CHAR_HARD_LIMIT.toLocaleString('pt-BR')} (referência histórica, não confirmada pra toda versão do Power BI). ` +
+        `Provavelmente vai falhar ao colar/avaliar. Copiar mesmo assim?`
+      );
+      if (!ok) return;
+    }
+    navigator.clipboard.writeText(daxCode).then(() => {
+      setDaxCopied(true);
+      setTimeout(() => setDaxCopied(false), 2000);
+    });
+  };
 
   // ── Handlers ───────────────────────────────────────────────
   const handleCardClick = useCallback((id: string) => {
@@ -402,10 +435,10 @@ const App: React.FC = () => {
 
   const hasCopiedConfig = copiedCardConfig !== null;
 
-  // v0.5.0 - Tutorial handlers
+  // v0.5.0 - Tutorial handlers (v2 with auto-advance)
   const handleTutorialNext = () => {
     const nextStep = tutorialStep + 1;
-    if (nextStep < TUTORIAL_STEPS.length) {
+    if (nextStep < TUTORIAL_STEPS_V2.length) {
       setTutorialStep(nextStep);
       saveTutorialStep(nextStep);
     } else {
@@ -427,6 +460,18 @@ const App: React.FC = () => {
   const handleTutorialComplete = () => {
     setShowTutorial(false);
     markTutorialCompleted();
+  };
+
+  // Auto-advance when user completes the step's action
+  const handleTutorialAutoAdvance = () => {
+    handleTutorialNext();
+  };
+
+  // Reopen tutorial (via Help button)
+  const handleReopenTutorial = () => {
+    resetTutorial();
+    setShowTutorial(true);
+    setTutorialStep(0);
   };
 
   const canUndo = historyIdx > 0;
@@ -453,9 +498,23 @@ const App: React.FC = () => {
                 onClick={() => {
                   if (activeAppTab === 'cards') {
                     setIsTemplateGalleryOpen(true);
-                  } else {
+                  } else if (activeAppTab === 'donuts') {
                     const id = Math.random().toString(36).substr(2, 9);
                     setDonuts([...donuts, { id, title: 'Nova Rosca', mode: 'completeness', geometry: 'full', ringThickness: 12, roundedCorners: true, showCenterText: true, centerTextLabel: 'KPI', centerTextValueMeasure: '[Valor]', completenessMeasure: '[Vendas]', completenessTarget: '[Meta]', slices: [], colSpan: 1, rowSpan: 1 }]);
+                    setSelectedCardId(id);
+                  } else {
+                    // Fase 4 etapa 5: cria com fatias de exemplo, igual ao padrão de donuts acima —
+                    // fiação de app-level, não lógica de negócio da barra (ver contract.ts).
+                    const id = Math.random().toString(36).substr(2, 9);
+                    setBars([...bars, {
+                      id, title: 'Novo Gráfico de Barras',
+                      bars: [
+                        { id: 'b1', label: 'Categoria 1', measurePlaceholder: '[Vendas]', color: '#4f46e5', value: '0' },
+                        { id: 'b2', label: 'Categoria 2', measurePlaceholder: '[Vendas]', color: '#059669', value: '0' },
+                        { id: 'b3', label: 'Categoria 3', measurePlaceholder: '[Vendas]', color: '#f59e0b', value: '0' },
+                      ],
+                      formatType: 'integer', decimalPlaces: 0, colSpan: 1, rowSpan: 1,
+                    }]);
                     setSelectedCardId(id);
                   }
                 }}
@@ -468,22 +527,22 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar" data-tutorial="layers-panel">
-            {(activeAppTab === 'cards' ? cards : donuts).map((item) => (
-              <div 
+            {(activeAppTab === 'cards' ? cards : activeAppTab === 'donuts' ? donuts : bars).map((item) => (
+              <div
                 key={item.id}
                 onClick={() => setSelectedCardId(item.id)}
                 className={`group flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${selectedCardId === item.id ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-100 hover:border-indigo-100'}`}
               >
                 <GripVertical size={14} className="text-slate-200 group-hover:text-indigo-300" />
                 <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-indigo-500 shadow-sm">
-                  {activeAppTab === 'cards' ? <Layout size={14}/> : <PieChart size={14}/>}
+                  {activeAppTab === 'cards' ? <Layout size={14}/> : activeAppTab === 'donuts' ? <PieChart size={14}/> : <BarChart3 size={14}/>}
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <p className="text-[11px] font-bold text-slate-700 truncate leading-none">{item.title}</p>
-                  <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-tighter">{(item as any).type || (item as any).mode}</p>
+                  <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-tighter">{(item as any).type || (item as any).mode || (activeAppTab === 'bars' ? `${(item as any).bars?.length || 0} barras` : '')}</p>
                 </div>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); if (activeAppTab === 'cards') setCards(cards.filter(c => c.id !== item.id)); else setDonuts(donuts.filter(d => d.id !== item.id)); }}
+                <button
+                  onClick={(e) => { e.stopPropagation(); if (activeAppTab === 'cards') setCards(cards.filter(c => c.id !== item.id)); else if (activeAppTab === 'donuts') setDonuts(donuts.filter(d => d.id !== item.id)); else setBars(bars.filter(b => b.id !== item.id)); }}
                   className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-red-500 transition-all"
                 >
                   <Trash2 size={14} />
@@ -495,7 +554,7 @@ const App: React.FC = () => {
           <div className="p-4 bg-slate-50 border-t border-slate-100 shrink-0">
             <div className="flex items-center justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest">
                 <span>Elementos</span>
-                <span className="text-indigo-600">{(activeAppTab === 'cards' ? cards : donuts).length}</span>
+                <span className="text-indigo-600">{(activeAppTab === 'cards' ? cards : activeAppTab === 'donuts' ? donuts : bars).length}</span>
             </div>
           </div>
         </div>
@@ -553,8 +612,8 @@ const App: React.FC = () => {
           )}
 
           <div className="flex items-center gap-1.5">
-            {/* 👇 Adicione o botão de Ajuda aqui 👇 */}
-            <button onClick={() => setIsHelpOpen(true)} className="p-2 text-gray-400 hover:text-indigo-600 transition-colors" title="Como usar">
+            {/* 👇 Help button - reopens tutorial anytime 👇 */}
+            <button onClick={handleReopenTutorial} className="p-2 text-gray-400 hover:text-indigo-600 transition-colors" title="Reabrir tutorial">
               <HelpCircle size={16} />
             </button>
             <div className="w-px h-4 bg-slate-200 mx-1" /> {/* Linha divisória charmosa */}
@@ -579,6 +638,15 @@ const App: React.FC = () => {
             {/* 👆 Fim da adição 👆 */}
             <button onClick={handleExport} className="p-2 text-gray-400 hover:text-indigo-600"><Download size={16} /></button>
             <button onClick={() => setIsDaxModalOpen(true)} className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold"><FileCode2 size={15} /> Ler DAX</button>
+            {/* Fase 3 etapa 4: não existia nenhum jeito de copiar o DAX antes disso
+                (só seleção manual no texto). Gate de confirmação só acima do teto hard —
+                nunca bloqueio rígido, dado que 32k é referência, não certeza. */}
+            <button
+              onClick={handleCopyDax}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold transition-colors ${daxCopied ? 'bg-emerald-50 text-emerald-600' : daxOverHardLimit ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+            >
+              {daxCopied ? <Check size={15} /> : <Copy size={15} />} {daxCopied ? 'Copiado!' : 'Copiar DAX'}
+            </button>
           </div>
         </div>
 
@@ -586,14 +654,26 @@ const App: React.FC = () => {
         <div className="flex-1 overflow-hidden relative">
           {viewMode === 'preview' ? (
             <Preview
-              global={globalConfig} cards={cards} donuts={donuts} activeAppTab={activeAppTab}
+              global={globalConfig} cards={cards} donuts={donuts} bars={bars} activeAppTab={activeAppTab}
               viewport="custom" customDimensions={{ width: simWidth, height: simHeight }}
               setCustomDimensions={(dim) => { setActivePreset('custom'); setCustomDimensions(dim); }}
               onCardClick={handleCardClick} selectedCardId={selectedCardId} testValues={testValues} onReorder={handleReorder}
             />
           ) : (
-            <div className="w-full h-full bg-[#1e1e1e] overflow-hidden">
-              <DaxHighlighter code={daxCode} />
+            <div className="w-full h-full bg-[#1e1e1e] overflow-hidden flex flex-col">
+              {/* Fase 3 etapa 4: 3 níveis — nada abaixo de 24k, banner visível entre
+                  24k-32k, e acima de 32k o botão Copiar DAX já mostra o gate (acima). */}
+              {daxOverSafeBudget && (
+                <div className={`flex items-center gap-2 px-4 py-2 text-[11px] font-bold shrink-0 ${daxOverHardLimit ? 'bg-red-950 text-red-300' : 'bg-amber-950 text-amber-300'}`}>
+                  <AlertTriangle size={14} className="shrink-0" />
+                  {daxOverHardLimit
+                    ? `${daxLength.toLocaleString('pt-BR')} caracteres — acima do teto conhecido (${DAX_CHAR_HARD_LIMIT.toLocaleString('pt-BR')}). Risco real de falhar no Power BI.`
+                    : `${daxLength.toLocaleString('pt-BR')} caracteres — acima do orçamento de segurança (${DAX_CHAR_SAFE_BUDGET.toLocaleString('pt-BR')}). Ainda dentro do teto conhecido, mas com pouca folga.`}
+                </div>
+              )}
+              <div className="flex-1 overflow-hidden">
+                <DaxHighlighter code={daxCode} />
+              </div>
             </div>
           )}
         </div>
@@ -625,6 +705,8 @@ const App: React.FC = () => {
             setCards={setCards}
             donuts={donuts}
             setDonuts={setDonuts}
+            bars={bars}
+            setBars={setBars}
             activeAppTab={activeAppTab}
             setActiveAppTab={setActiveAppTab}
             selectedCardId={selectedCardId}
@@ -634,6 +716,7 @@ const App: React.FC = () => {
             handleCopyCardConfig={handleCopyCardConfig}
             handlePasteCardConfig={handlePasteCardConfig}
             hasCopiedConfig={hasCopiedConfig}
+            daxLength={daxLength}
           />
         </div>
       </div>
@@ -665,16 +748,17 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* v0.5.0 - Onboarding Tutorial Modal */}
+      {/* v0.5.0 - Onboarding Tutorial Modal (v2 with auto-advance) */}
       {showTutorial && (
         <OnboardingTutorial
           currentStep={tutorialStep}
-          totalSteps={TUTORIAL_STEPS.length}
-          step={TUTORIAL_STEPS[tutorialStep]}
+          totalSteps={TUTORIAL_STEPS_V2.length}
+          step={TUTORIAL_STEPS_V2[tutorialStep]}
           onNext={handleTutorialNext}
           onPrev={handleTutorialPrev}
           onSkip={handleTutorialSkip}
           onComplete={handleTutorialComplete}
+          onAutoAdvance={handleTutorialAutoAdvance}
         />
       )}
 

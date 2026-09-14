@@ -21,6 +21,7 @@ export const CardTemplateGallery: React.FC<CardTemplateGalleryProps> = ({
       onClick={onClose}
     >
       <div
+        data-tutorial="template-gallery"
         className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col cursor-default border border-slate-200"
         onClick={(e) => e.stopPropagation()}
       >

@@ -9,7 +9,7 @@ const extractCSSVariables = (daxText: string): Record<string, string> => {
   const cssVars: Record<string, string> = {};
   const cssMatches = daxText.match(/--[\w-]+:\s*([^;}"]+)/g) || [];
 
-  cssMatches.forEach(match => {
+  cssMatches.forEach((match: string) => {
     const [varName, varValue] = match.split(':').map(s => s.trim());
     if (varName && varValue) {
       cssVars[varName] = varValue;
