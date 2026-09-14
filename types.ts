@@ -5,25 +5,61 @@ export type TrendDirection = 'up' | 'down' | 'neutral' | 'none';
 export type AnimationType = 'none' | 'fadeInUp' | 'popIn' | 'slideRight';
 export type HoverEffect = 'none' | 'lift' | 'scale' | 'glow' | 'border';
 export type ViewportMode = 'desktop' | 'tablet' | 'mobile';
-export type AppTab = 'cards' | 'charts';
+export type AppTab = 'cards' | 'donuts' | 'bars';
 export type TextAlign = 'left' | 'center' | 'right';
 export type IconPosition = 'left' | 'top' | 'right';
 
 export type FormatType = 'none' | 'integer' | 'decimal' | 'currency' | 'currency_short' | 'percent' | 'short';
+export type ThemeName = 'modern' | 'professional' | 'dark' | 'vibrant' | 'minimalist';
+
+// Fase 2: Formatação Condicional
+export type ConditionalOperator = '>' | '>=' | '<' | '<=' | '=' | 'between';
+
+export interface ConditionalRule {
+  id: string;
+  operator: ConditionalOperator;
+  value: number;
+  value2?: number; // usado só quando operator === 'between'
+  color: string;
+  label?: string; // ex.: "Crítico", "Atenção", "Ok" — só documentação, não afeta a lógica
+}
+
+// Fase 3: Cards Agregados por Categoria (Opção 1 — toggle no CardConfig existente)
+export type CategoricalSortBy = 'value_desc' | 'value_asc' | 'alpha';
+
+export interface CategoricalConfig {
+  column: string; // texto livre, ex: "'Produtos'[Categoria]" — mesmo padrão de measurePlaceholder
+  maxSlots: number; // padrão 10
+  showOthersBucket: boolean; // padrão true — título+valor apenas, sem comparativos/condicional
+  sortBy: CategoricalSortBy; // padrão 'value_desc' — Outros só faz sentido pleno nessa ordenação
+  testCategories?: string[]; // nomes fictícios pro preview, ex: ["Norte","Sul","Sudeste"]
+  // Colunas do MINI-GRID próprio do grupo — independente de columnsDesktop/Tablet/Mobile
+  // do canvas principal. O grupo inteiro é 1 item do grid principal (usa colSpan/rowSpan
+  // do próprio card molde); dentro dele, os slots se organizam nessa quantidade de colunas.
+  columns: number; // padrão 3
+}
 
 export interface ComparisonConfig {
   id: string;
   label: string;
   value: string;
   trend: TrendDirection;
-  logic: string; 
-  measurePlaceholder: string; 
+  logic: string;
+  measurePlaceholder: string;
   invertColor?: boolean;
   // Advanced Customization
   labelColor?: string;
   labelFontSize?: number;
   icon?: string;
   showIcon?: boolean;
+
+  // v0.4.0 - Advanced Display Modes
+  displayMode?: 'trend+value' | 'trend-only' | 'proportion-only' | 'custom';
+  iconType?: 'trending' | 'proportion' | 'arrow' | 'check' | 'bar' | 'dot' | 'star' | 'alert';
+  showValue?: boolean;
+  valueFormat?: FormatType;
+  valueLabel?: string;
+  customIcon?: string;
 }
 
 export interface DataBinding {
@@ -64,7 +100,16 @@ export interface CardConfig {
   iconRounded: boolean;
 
   isOpen?: boolean;
-  accentColor?: string; 
+  accentColor?: string;
+  // Fase 2: regras avaliadas em ORDEM, primeira que casar vence. Se nenhuma casar
+  // (ou a lista estiver vazia/indefinida), usa accentColor normalmente — sem mudança
+  // de comportamento pra cards que não configuram isso.
+  conditionalRules?: ConditionalRule[];
+  // Fase 3: presença deste campo = modo categórico ativo. O card vira um "molde"
+  // que se expande em até categorical.maxSlots cards no canvas (Opção 1 aprovada:
+  // toggle no CardConfig existente, não um tipo de item novo). Sem isso, comportamento
+  // de card único de sempre — sem mudança pra quem não usa a feature.
+  categorical?: CategoricalConfig;
   textAlign?: TextAlign;
   
   fontSizeTitle?: number;
@@ -102,13 +147,22 @@ export interface DonutChartConfig {
   roundedCorners: boolean;
   
   // --- NOVO CAMPO: TAMANHO DO GRÁFICO ---
-  chartSize?: number; // Porcentagem (ex: 90 para 90%)
+  // Porcentagem (ex: 90 para 90%). Faixa válida: GAUGE_CHART_SIZE_MIN (30) a
+  // GAUGE_CHART_SIZE_MAX (100) — ver utils/visualConstants.ts. Leitura em
+  // Preview.tsx/daxGenerator.ts sempre passa por resolveChartSizePct()
+  // (utils/gaugeMath.ts), que reclampa defensivamente valores fora da faixa
+  // (proteção contra estado salvo antes desse clamp existir no input).
+  chartSize?: number;
 
   showCenterText: boolean;
   centerTextLabel: string;
   centerTextValueMeasure: string;
   completenessMeasure: string;
   completenessTarget: string;
+  // Fase 0.5: valor de teste (0-100) só para o preview do modo 'completeness'.
+  // Espelha o papel de DonutSlice.value no modo 'distribution' — o cálculo real
+  // em produção usa _D{di}_Pct = MIN(1, MAX(0, DIVIDE(...))) em utils/daxGenerator.ts.
+  previewPercent?: number;
   slices: DonutSlice[];
   isOpen?: boolean;
   cardBackgroundColor?: string;
@@ -118,6 +172,40 @@ export interface DonutChartConfig {
   fontSizeTitle?: number;
   fontSizeValue?: number;
   fontSizeLabel?: number;
+}
+
+// Fase 4, Etapa 5 — prova de conceito de tipo de gráfico novo (utils/chartTypes/).
+// Shape análogo a DonutSlice[]/DonutChartConfig, decidido explicitamente (não
+// reaproveita/estende CardConfig nem DonutChartConfig, por design — ver README
+// de utils/chartTypes/).
+export interface BarSlice {
+  id: string;
+  label: string;
+  measurePlaceholder: string;
+  color: string;
+  value: string; // valor de teste, mesmo padrão de DonutSlice.value
+}
+
+export interface BarChartConfig {
+  id: string;
+  title: string;
+  bars: BarSlice[];
+  colSpan?: number;
+  rowSpan?: number;
+  cardBackgroundColor?: string;
+  accentColor?: string;
+  textAlign?: TextAlign;
+  fontSizeTitle?: number;
+  fontSizeValue?: number;
+  fontSizeLabel?: number;
+  formatType?: FormatType;
+  decimalPlaces?: number;
+  prefix?: string;
+  suffix?: string;
+  // Fase 2 reaproveitada com o mesmo padrão da Fase 3: 1 conjunto de regras no
+  // gráfico, avaliado independentemente contra o valor de CADA barra — não
+  // passa por ChartTypeDefinition.getConditionalTarget (ver contract.ts).
+  conditionalRules?: ConditionalRule[];
 }
 
 // ... (resto do arquivo mantido)
@@ -138,9 +226,12 @@ export interface GlobalConfig {
   marginLeft: number;
   // ---------------------------------------
 
+  // v0.5.0 - Theme system
+  currentTheme?: ThemeName;
+
   primaryColor: string;
   cardBackgroundColor: string;
-  canvasBackgroundColor: string; // <-- ADICIONAR ESTA LINHA
+  canvasBackgroundColor: string;
   textColorTitle: string;
   textColorValue: string;
   textColorSub: string;

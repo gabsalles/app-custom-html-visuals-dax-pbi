@@ -1,12 +1,15 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { CardConfig, GlobalConfig, ComparisonConfig, DonutChartConfig, AppTab, DonutSlice } from '../types';
+import { CardConfig, GlobalConfig, ComparisonConfig, DonutChartConfig, AppTab, DonutSlice, BarChartConfig, BarSlice } from '../types';
 import { iconDefinitions, IconCategory } from '../utils/icons';
+import { formatTestValue } from '../utils/formatTestValue';
+import { DAX_CHAR_SAFE_BUDGET, DAX_CHAR_HARD_LIMIT, GAUGE_CHART_SIZE_MIN, GAUGE_CHART_SIZE_MAX } from '../utils/visualConstants';
+import { resolveChartSizePct } from '../utils/gaugeMath';
 import {
   Trash2, Plus, Type, Palette, Layout, ChevronDown, MousePointer2, X, Binary,
   ALargeSmall, Droplets, PieChart, Layers, Wand2, AlignLeft, AlignCenter, AlignRight,
   Component, BarChart3, Search, Database, PanelTop, PanelLeft, PanelRight, Sun,
   Grid3X3, ArrowUp, ArrowDown, ArrowLeft, Settings2, Sparkles, GripVertical,
-  FlaskConical, BookMarked, BookmarkPlus, BookmarkCheck, AlertTriangle,
+  FlaskConical, BookMarked, BookmarkPlus, BookmarkCheck, AlertTriangle, Copy, Check,
 } from 'lucide-react';
 import packageJson from '../package.json';
 
@@ -159,6 +162,33 @@ interface ThemePreset {
 }
 
 const THEME_PRESETS: ThemePreset[] = [
+  // v0.5.0 - New Professional Themes
+  {
+    id: 'modern', label: '✨ Modern',
+    swatch: ['#f9fafb', '#6366f1', '#10b981'],
+    config: { primaryColor: '#6366f1', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#f9fafb', textColorTitle: '#1f2937', textColorValue: '#111827', textColorSub: '#6b7280', positiveColor: '#10b981', negativeColor: '#ef4444', neutralColor: '#9ca3af', hoverEffect: 'glow', borderRadius: 12, shadowIntensity: 8, shadowBlur: 20, shadowDistance: 8, fontWeightTitle: 700, fontWeightValue: 700, animation: 'fadeInUp' },
+  },
+  {
+    id: 'professional', label: '💼 Professional',
+    swatch: ['#f3f4f6', '#1f2937', '#0891b2'],
+    config: { primaryColor: '#1f2937', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#f3f4f6', textColorTitle: '#111827', textColorValue: '#1f2937', textColorSub: '#6b7280', positiveColor: '#0891b2', negativeColor: '#dc2626', neutralColor: '#9ca3af', hoverEffect: 'lift', borderRadius: 8, shadowIntensity: 6, shadowBlur: 16, shadowDistance: 6, fontWeightTitle: 600, fontWeightValue: 600, animation: 'slideRight' },
+  },
+  {
+    id: 'dark', label: '🌙 Dark Mode',
+    swatch: ['#111827', '#818cf8', '#34d399'],
+    config: { primaryColor: '#818cf8', cardBackgroundColor: '#1f2937', canvasBackgroundColor: '#111827', textColorTitle: '#f3f4f6', textColorValue: '#e5e7eb', textColorSub: '#9ca3af', positiveColor: '#34d399', negativeColor: '#f87171', neutralColor: '#6b7280', hoverEffect: 'glow', borderRadius: 12, shadowIntensity: 20, shadowBlur: 24, shadowDistance: 8, fontWeightTitle: 700, fontWeightValue: 700, animation: 'fadeInUp' },
+  },
+  {
+    id: 'vibrant', label: '🔥 Vibrant',
+    swatch: ['#fef2f2', '#dc2626', '#ea580c'],
+    config: { primaryColor: '#dc2626', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#fef2f2', textColorTitle: '#7c2d12', textColorValue: '#991b1b', textColorSub: '#b45309', positiveColor: '#ea580c', negativeColor: '#be185d', neutralColor: '#92400e', hoverEffect: 'scale', borderRadius: 16, shadowIntensity: 12, shadowBlur: 24, shadowDistance: 8, fontWeightTitle: 800, fontWeightValue: 800, animation: 'popIn' },
+  },
+  {
+    id: 'minimalist', label: '⚪ Minimalist',
+    swatch: ['#fafafa', '#000000', '#737373'],
+    config: { primaryColor: '#404040', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#fafafa', textColorTitle: '#000000', textColorValue: '#262626', textColorSub: '#737373', positiveColor: '#171717', negativeColor: '#737373', neutralColor: '#a3a3a3', hoverEffect: 'border', borderRadius: 4, shadowIntensity: 2, shadowBlur: 8, shadowDistance: 2, fontWeightTitle: 600, fontWeightValue: 600, animation: 'none' },
+  },
+  // Original themes
   {
     id: 'modern-dark', label: 'Dark Pro',
     swatch: ['#0f0f11', '#6366f1', '#c4b5fd'],
@@ -168,11 +198,6 @@ const THEME_PRESETS: ThemePreset[] = [
     id: 'corporate', label: 'Corporativo',
     swatch: ['#f8fafc', '#1e40af', '#3b82f6'],
     config: { primaryColor: '#1e40af', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#f1f5f9', textColorTitle: '#64748b', textColorValue: '#0f172a', textColorSub: '#94a3b8', positiveColor: '#059669', negativeColor: '#dc2626', hoverEffect: 'lift', borderRadius: 12, shadowIntensity: 8, shadowBlur: 20, shadowDistance: 8, fontWeightTitle: 700, fontWeightValue: 700, animation: 'slideRight' },
-  },
-  {
-    id: 'minimal', label: 'Minimalista',
-    swatch: ['#ffffff', '#000000', '#e5e7eb'],
-    config: { primaryColor: '#111827', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#f9fafb', textColorTitle: '#9ca3af', textColorValue: '#111827', textColorSub: '#d1d5db', positiveColor: '#16a34a', negativeColor: '#dc2626', hoverEffect: 'border', borderRadius: 4, shadowIntensity: 0, shadowBlur: 0, shadowDistance: 0, fontWeightTitle: 400, fontWeightValue: 300, animation: 'none' },
   },
   {
     id: 'nature', label: 'Natureza',
@@ -206,29 +231,6 @@ const saveCardPresets = (presets: CardConfig[]) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// Format test value (same logic as daxGenerator but in JS)
-// ─────────────────────────────────────────────────────────────
-export const formatTestValue = (raw: number, card: CardConfig): string => {
-  const { formatType, decimalPlaces = 0, prefix = '', suffix = '' } = card;
-  const abs = Math.abs(raw);
-  const fmt = (n: number, dec = decimalPlaces) =>
-    n.toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
-
-  if (formatType === 'none')    return `${prefix}${raw}${suffix}`;
-  if (formatType === 'integer') return raw.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
-  if (formatType === 'percent') return `${(raw * 100).toFixed(decimalPlaces)}%`;
-  if (formatType === 'currency')      return `R$ ${fmt(raw)}${suffix}`;
-  if (formatType === 'currency_short' || formatType === 'short') {
-    const pre = formatType === 'currency_short' ? 'R$ ' : prefix;
-    if (abs >= 1e9) return `${pre}${fmt(raw / 1e9)} B${suffix}`;
-    if (abs >= 1e6) return `${pre}${fmt(raw / 1e6)} M${suffix}`;
-    if (abs >= 1e3) return `${pre}${fmt(raw / 1e3)} K${suffix}`;
-    return `${pre}${fmt(raw)}${suffix}`;
-  }
-  return `${prefix}${fmt(raw)}${suffix}`;
-};
-
-// ─────────────────────────────────────────────────────────────
 // Props
 // ─────────────────────────────────────────────────────────────
 interface EditorProps {
@@ -238,12 +240,18 @@ interface EditorProps {
   setCards: React.Dispatch<React.SetStateAction<CardConfig[]>>;
   donuts: DonutChartConfig[];
   setDonuts: React.Dispatch<React.SetStateAction<DonutChartConfig[]>>;
+  bars: BarChartConfig[];
+  setBars: React.Dispatch<React.SetStateAction<BarChartConfig[]>>;
   activeAppTab: AppTab;
   setActiveAppTab: (tab: AppTab) => void;
   selectedCardId: string | null;
   setSelectedCardId: (id: string | null) => void;
   testValues: Record<string, number>;
   setTestValues: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  handleCopyCardConfig?: (cardId: string) => void;
+  handlePasteCardConfig?: (cardId: string) => void;
+  hasCopiedConfig?: boolean;
+  daxLength?: number; // Fase 3 etapa 4: tamanho atual do DAX gerado (medida real, não estimativa)
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -251,10 +259,14 @@ interface EditorProps {
 // ─────────────────────────────────────────────────────────────
 const Editor: React.FC<EditorProps> = ({
   globalConfig, setGlobalConfig,
-  cards, setCards, donuts, setDonuts,
+  cards, setCards, donuts, setDonuts, bars, setBars,
   activeAppTab, setActiveAppTab,
   selectedCardId, setSelectedCardId,
   testValues, setTestValues,
+  handleCopyCardConfig,
+  handlePasteCardConfig,
+  hasCopiedConfig,
+  daxLength,
 }) => {
   const [activeTab,          setActiveTab]          = useState<'data' | 'layout' | 'style' | 'colors' | 'interactive'>('layout');
   const [iconSelectorOpen,   setIconSelectorOpen]   = useState(false);
@@ -270,7 +282,8 @@ const Editor: React.FC<EditorProps> = ({
 
   const selectedCard  = useMemo(() => cards.find(c => c.id === selectedCardId), [cards, selectedCardId]);
   const selectedDonut = useMemo(() => donuts.find(d => d.id === selectedCardId), [donuts, selectedCardId]);
-  const isEditingItem = selectedCardId !== null && (selectedCard || selectedDonut);
+  const selectedBar   = useMemo(() => bars.find(b => b.id === selectedCardId), [bars, selectedCardId]);
+  const isEditingItem = selectedCardId !== null && (selectedCard || selectedDonut || selectedBar);
 
   const filteredIcons = useMemo(() => Object.entries(iconDefinitions).filter(([name, def]) => {
     const matchSearch   = name.toLowerCase().includes(iconSearch.toLowerCase()) || def.tags.some(t => t.toLowerCase().includes(iconSearch.toLowerCase()));
@@ -280,6 +293,7 @@ const Editor: React.FC<EditorProps> = ({
 
   const updateCard  = (id: string, field: keyof CardConfig, value: any) => setCards(cards.map(c => c.id === id ? { ...c, [field]: value } : c));
   const updateDonut = (id: string, field: keyof DonutChartConfig, value: any) => setDonuts(donuts.map(d => d.id === id ? { ...d, [field]: value } : d));
+  const updateBar    = (id: string, field: keyof BarChartConfig, value: any) => setBars(bars.map(b => b.id === id ? { ...b, [field]: value } : b));
 
   const applyThemePreset = (preset: ThemePreset) => {
     setGlobalConfig(prev => ({ ...prev, ...preset.config }));
@@ -359,13 +373,134 @@ const Editor: React.FC<EditorProps> = ({
           <button onClick={() => setSelectedCardId(null)} className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 transition-colors"><ArrowLeft size={16} /></button>
           <div className="flex-1">
             <p className="text-[8px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-0.5">Propriedades do Card</p>
-            <input value={card.title} onChange={(e) => updateCard(card.id, 'title', e.target.value)} className="w-full font-bold text-sm text-slate-800 bg-transparent outline-none border-b-2 border-transparent focus:border-indigo-400 transition-colors" placeholder="Título do Card" />
+            <input data-tutorial="title-input" value={card.title} onChange={(e) => updateCard(card.id, 'title', e.target.value)} className="w-full font-bold text-sm text-slate-800 bg-transparent outline-none border-b-2 border-transparent focus:border-indigo-400 transition-colors" placeholder="Título do Card" />
           </div>
           {/* Save as preset */}
           <button onClick={() => saveAsPreset(card)} title="Salvar como preset" className="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-xl transition-colors"><BookmarkPlus size={16} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar pb-20">
+
+          {/* Fase 3 (etapa 1+2): Modo Categórico — no topo do painel de propósito, pra
+              não exigir vasculhar o resto pra achar. Toggle mínimo pra testar a expansão
+              em grupo/mini-grid no preview. Orçamento completo vem na etapa 5 do plano;
+              aqui os defaults ao ligar já são os aprovados (N=10, Outros ligado, valor desc). */}
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <SectionHeader icon={Layers} title="Modo Categórico" rightElement={
+              <ToggleSwitch
+                checked={!!card.categorical}
+                onChange={(v) => updateCard(card.id, 'categorical', v ? {
+                  column: '', maxSlots: 10, showOthersBucket: true, sortBy: 'value_desc', testCategories: [], columns: 3,
+                } : undefined)}
+              />
+            } />
+            {card.categorical ? (
+              <div className="space-y-3">
+                <p className="text-[9px] text-slate-400 font-medium italic">
+                  Este card vira um molde: gera até {card.categorical.maxSlots} cards no canvas, um por categoria. Comparativos não aparecem nos gerados (sem dado de teste por categoria ainda).
+                </p>
+                <MeasureSelect
+                  label="Coluna Categórica"
+                  value={card.categorical.column}
+                  onChange={(v) => updateCard(card.id, 'categorical', { ...card.categorical!, column: v })}
+                  bindings={globalConfig.dataBindings || []}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Máximo de Categorias (N)">
+                    <CustomInput
+                      type="number" min="1" max="30"
+                      value={card.categorical.maxSlots}
+                      onChange={(e: any) => updateCard(card.id, 'categorical', { ...card.categorical!, maxSlots: Math.max(1, +e.target.value) })}
+                    />
+                  </Field>
+                  <Field label="Colunas do Grupo (mini-grid próprio)">
+                    <CustomInput
+                      type="number" min="1" max="10"
+                      value={card.categorical.columns}
+                      onChange={(e: any) => updateCard(card.id, 'categorical', { ...card.categorical!, columns: Math.max(1, +e.target.value) })}
+                    />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Ordenação">
+                    <CustomSelect
+                      value={card.categorical.sortBy}
+                      onChange={(e: any) => updateCard(card.id, 'categorical', { ...card.categorical!, sortBy: e.target.value })}
+                    >
+                      <option value="value_desc">Valor (maior primeiro)</option>
+                      <option value="value_asc">Valor (menor primeiro)</option>
+                      <option value="alpha">Alfabética</option>
+                    </CustomSelect>
+                  </Field>
+                  <Field label='Bucket "Outros"'>
+                    <div className="flex items-center h-full pt-1">
+                      <ToggleSwitch
+                        checked={card.categorical.showOthersBucket}
+                        onChange={(v) => updateCard(card.id, 'categorical', { ...card.categorical!, showOthersBucket: v })}
+                      />
+                    </div>
+                  </Field>
+                </div>
+                {/* Fase 3 etapa 4: mesma medição real usada em toda a app — sem
+                    fórmula de estimativa separada aqui. */}
+                {daxLength !== undefined && (
+                  <div className={`flex items-center gap-1.5 text-[9px] font-bold px-2 py-1.5 rounded-lg ${
+                    daxLength > DAX_CHAR_HARD_LIMIT ? 'bg-red-50 text-red-600' : daxLength > DAX_CHAR_SAFE_BUDGET ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400'
+                  }`}>
+                    {daxLength > DAX_CHAR_SAFE_BUDGET && <AlertTriangle size={10} />}
+                    Orçamento DAX total: {daxLength.toLocaleString('pt-BR')} / {DAX_CHAR_SAFE_BUDGET.toLocaleString('pt-BR')} caracteres
+                  </div>
+                )}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Categorias de Teste (Preview)</label>
+                    <button
+                      onClick={() => {
+                        const names = [...(card.categorical!.testCategories || []), ''];
+                        updateCard(card.id, 'categorical', { ...card.categorical!, testCategories: names });
+                      }}
+                      className="text-[10px] font-bold text-indigo-600 px-2 py-1 bg-indigo-50 rounded hover:bg-indigo-100"
+                    >+ Categoria</button>
+                  </div>
+                  <div className="space-y-2">
+                    {(card.categorical.testCategories || []).map((name, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <input
+                          value={name}
+                          placeholder={`Categoria ${i + 1}`}
+                          onChange={(e) => {
+                            const names = [...(card.categorical!.testCategories || [])];
+                            names[i] = e.target.value;
+                            updateCard(card.id, 'categorical', { ...card.categorical!, testCategories: names });
+                          }}
+                          className="flex-1 bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-bold rounded-lg px-2 py-1.5 outline-none focus:border-indigo-400"
+                        />
+                        <CustomInput
+                          type="number" placeholder="Valor"
+                          value={testValues[`${card.id}_cat_${i}`] ?? ''}
+                          onChange={(e: any) => setTestValues(prev => e.target.value === '' ? (({ [`${card.id}_cat_${i}`]: _, ...rest }) => rest)(prev) : { ...prev, [`${card.id}_cat_${i}`]: +e.target.value })}
+                          className="w-24"
+                        />
+                        <button
+                          onClick={() => {
+                            const names = (card.categorical!.testCategories || []).filter((_, idx) => idx !== i);
+                            updateCard(card.id, 'categorical', { ...card.categorical!, testCategories: names });
+                          }}
+                          className="text-slate-300 hover:text-red-500"
+                        ><X size={14} /></button>
+                      </div>
+                    ))}
+                    {(!card.categorical.testCategories || card.categorical.testCategories.length === 0) && (
+                      <p className="text-xs text-center text-slate-400 py-2">Nenhuma categoria de teste ainda.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[9px] text-slate-400 font-medium italic">Card único, comportamento normal.</p>
+            )}
+          </div>
+
 
           {/* Live Test Values */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
@@ -523,6 +658,103 @@ const Editor: React.FC<EditorProps> = ({
             </Field>
           </div>
 
+          {/* Fase 2: Conditional Formatting — accent bar only */}
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <SectionHeader icon={Droplets} title="Formatação Condicional (Acento)" rightElement={
+              <button
+                onClick={() => updateCard(card.id, 'conditionalRules', [
+                  ...(card.conditionalRules || []),
+                  { id: Math.random().toString(36).substr(2, 9), operator: '>=', value: 0, color: globalConfig.positiveColor },
+                ])}
+                className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[8px] font-black text-slate-600 transition-colors"
+              >+ REGRA</button>
+            } />
+            <p className="text-[9px] text-slate-400 font-medium italic mb-3">
+              Colore só a barra de acento (borda esquerda), conforme o valor principal. Regras avaliadas em ordem — a primeira que casar vence. Sem regras, usa o "Acento Local" normal acima.
+            </p>
+            {card.formatType === 'percent' && (
+              <div className="flex items-center gap-1.5 text-[9px] font-bold px-2 py-1.5 rounded-lg bg-amber-50 text-amber-600 mb-3">
+                <AlertTriangle size={11} className="shrink-0" />
+                Formato é percentual: os valores das regras são em decimal, não no percentual exibido (0.5 = 50%, não "50").
+              </div>
+            )}
+            <div className="space-y-2">
+              {(card.conditionalRules || []).map((rule, idx) => (
+                <div key={rule.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl relative group">
+                  <button
+                    onClick={() => updateCard(card.id, 'conditionalRules', (card.conditionalRules || []).filter(r => r.id !== rule.id))}
+                    className="absolute top-2 right-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                  ><X size={14} /></button>
+                  <div className="flex items-center gap-1 mb-2">
+                    <span className="text-[8px] font-black text-slate-400 uppercase">#{idx + 1}</span>
+                    <span className="text-[8px] text-slate-300">— primeiro que casar vence</span>
+                  </div>
+                  <div className={`grid ${rule.operator === 'between' ? 'grid-cols-3' : 'grid-cols-2'} gap-2 mb-2`}>
+                    <CustomSelect
+                      value={rule.operator}
+                      onChange={(e: any) => {
+                        const rules = [...(card.conditionalRules || [])];
+                        rules[idx] = { ...rules[idx], operator: e.target.value };
+                        updateCard(card.id, 'conditionalRules', rules);
+                      }}
+                    >
+                      <option value=">">maior que</option>
+                      <option value=">=">maior ou igual</option>
+                      <option value="<">menor que</option>
+                      <option value="<=">menor ou igual</option>
+                      <option value="=">igual a</option>
+                      <option value="between">entre</option>
+                    </CustomSelect>
+                    <CustomInput
+                      type="number" placeholder="Valor"
+                      value={rule.value}
+                      onChange={(e: any) => {
+                        const rules = [...(card.conditionalRules || [])];
+                        rules[idx] = { ...rules[idx], value: +e.target.value };
+                        updateCard(card.id, 'conditionalRules', rules);
+                      }}
+                    />
+                    {rule.operator === 'between' && (
+                      <CustomInput
+                        type="number" placeholder="até"
+                        value={rule.value2 ?? ''}
+                        onChange={(e: any) => {
+                          const rules = [...(card.conditionalRules || [])];
+                          rules[idx] = { ...rules[idx], value2: +e.target.value };
+                          updateCard(card.id, 'conditionalRules', rules);
+                        }}
+                      />
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <ColorPickerSimple
+                      value={rule.color}
+                      onChange={(v) => {
+                        const rules = [...(card.conditionalRules || [])];
+                        rules[idx] = { ...rules[idx], color: v };
+                        updateCard(card.id, 'conditionalRules', rules);
+                      }}
+                    />
+                    <input
+                      value={rule.label || ''}
+                      placeholder="Rótulo (opcional, ex: Crítico)"
+                      onChange={(e) => {
+                        const rules = [...(card.conditionalRules || [])];
+                        rules[idx] = { ...rules[idx], label: e.target.value };
+                        updateCard(card.id, 'conditionalRules', rules);
+                      }}
+                      className="bg-white border border-slate-200 text-slate-700 text-[11px] rounded-lg px-2 py-1.5 outline-none focus:border-indigo-400"
+                    />
+                  </div>
+                </div>
+              ))}
+              {(!card.conditionalRules || card.conditionalRules.length === 0) && (
+                <p className="text-xs text-center text-slate-400 py-2">Nenhuma regra — acento usa a cor fixa de sempre.</p>
+              )}
+            </div>
+          </div>
+
+
           {/* Comparisons */}
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
             <SectionHeader icon={ArrowUp} title="Comparativos (Badges)" rightElement={
@@ -539,6 +771,55 @@ const Editor: React.FC<EditorProps> = ({
                     <Field label="Rótulo (Texto)"><CustomInput value={comp.label} onChange={(e: any) => { const newC = [...card.comparisons]; newC.find(x => x.id === comp.id)!.label = e.target.value; updateCard(card.id, 'comparisons', newC); }} /></Field>
                     <MeasureSelect label="Medida Variância" value={comp.measurePlaceholder} onChange={(v) => { const newC = [...card.comparisons]; newC.find(x => x.id === comp.id)!.measurePlaceholder = v; updateCard(card.id, 'comparisons', newC); }} bindings={globalConfig.dataBindings || []} />
                   </div>
+
+                  {/* Display Mode Selection (v0.4.0) */}
+                  <div className="mb-3">
+                    <Field label="Modo de Exibição">
+                      <CustomSelect value={comp.displayMode || 'trend+value'} onChange={(e: any) => { const newC = [...card.comparisons]; const idx = newC.findIndex(x => x.id === comp.id); newC[idx].displayMode = e.target.value as any; updateCard(card.id, 'comparisons', newC); }}>
+                        <option value="trend+value">Ícone + Valor</option>
+                        <option value="trend-only">Só Ícone</option>
+                        <option value="proportion-only">Só Valor</option>
+                        <option value="custom">Customizado</option>
+                      </CustomSelect>
+                    </Field>
+                  </div>
+
+                  {/* Icon Type Selection (if not trend-only) */}
+                  {comp.displayMode !== 'trend-only' && (
+                    <div className="mb-3">
+                      <Field label="Tipo de Ícone">
+                        <CustomSelect value={comp.iconType || 'trending'} onChange={(e: any) => { const newC = [...card.comparisons]; const idx = newC.findIndex(x => x.id === comp.id); newC[idx].iconType = e.target.value as any; updateCard(card.id, 'comparisons', newC); }}>
+                          <option value="trending">Trending (↗↘)</option>
+                          <option value="proportion">Proporção (—)</option>
+                          <option value="arrow">Arrow (→)</option>
+                          <option value="check">Check (✓)</option>
+                          <option value="bar">Bar (▯▯▯)</option>
+                          <option value="dot">Dot (●)</option>
+                          <option value="star">Star (⭐)</option>
+                          <option value="alert">Alert (⚠)</option>
+                        </CustomSelect>
+                      </Field>
+                    </div>
+                  )}
+
+                  {/* Value Format (if not proportion-only) */}
+                  {comp.displayMode !== 'proportion-only' && (
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <Field label="Formato Valor">
+                        <CustomSelect value={comp.valueFormat || 'none'} onChange={(e: any) => { const newC = [...card.comparisons]; const idx = newC.findIndex(x => x.id === comp.id); newC[idx].valueFormat = e.target.value as any; updateCard(card.id, 'comparisons', newC); }}>
+                          <option value="none">Puro</option>
+                          <option value="percent">Percentual (%)</option>
+                          <option value="currency">Moeda (R$)</option>
+                          <option value="short">Curto (K/M/B)</option>
+                        </CustomSelect>
+                      </Field>
+                      <Field label="Rótulo Valor">
+                        <CustomInput value={comp.valueLabel || ''} placeholder="Ex: Crescimento" onChange={(e: any) => { const newC = [...card.comparisons]; const idx = newC.findIndex(x => x.id === comp.id); newC[idx].valueLabel = e.target.value; updateCard(card.id, 'comparisons', newC); }} />
+                      </Field>
+                    </div>
+                  )}
+
+                  {/* Core Settings */}
                   <div className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100">
                     <span className="text-[9px] font-black text-slate-500 uppercase">Inverter Cores (Vermelho = Bom)</span>
                     <ToggleSwitch checked={comp.invertColor || false} onChange={(v) => { const newC = [...card.comparisons]; newC.find(x => x.id === comp.id)!.invertColor = v; updateCard(card.id, 'comparisons', newC); }} />
@@ -603,7 +884,11 @@ const Editor: React.FC<EditorProps> = ({
             </div>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <Field label="Espessura da Linha"><CustomInput type="number" value={donut.ringThickness || 12} onChange={(e: any) => updateDonut(donut.id, 'ringThickness', +e.target.value)} /></Field>
-              <Field label="Escala (Tamanho %)"><CustomInput type="number" value={donut.chartSize || 90} onChange={(e: any) => updateDonut(donut.id, 'chartSize', +e.target.value)} /></Field>
+              {/* Fix do gauge: clamp real no input (30-100), mesmo padrão do
+                  previewPercent logo abaixo — sem isso, valores como
+                  901010101 viravam estado válido. 100 é o teto que o CSS de
+                  fato respeita (ver resolveChartSizePct/gaugeMath.ts). */}
+              <Field label="Escala (Tamanho %)"><CustomInput type="number" min={GAUGE_CHART_SIZE_MIN} max={GAUGE_CHART_SIZE_MAX} value={donut.chartSize || 90} onChange={(e: any) => updateDonut(donut.id, 'chartSize', resolveChartSizePct(+e.target.value))} /></Field>
             </div>
             {donut.mode !== 'distribution' && (
               <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 mt-2">
@@ -619,6 +904,7 @@ const Editor: React.FC<EditorProps> = ({
               <div className="space-y-4">
                 <MeasureSelect label="Realizado (Valor)" value={donut.completenessMeasure} onChange={(v) => updateDonut(donut.id, 'completenessMeasure', v)} bindings={globalConfig.dataBindings || []} />
                 <MeasureSelect label="Meta (Target Total)" value={donut.completenessTarget} onChange={(v) => updateDonut(donut.id, 'completenessTarget', v)} bindings={globalConfig.dataBindings || []} />
+                <Field label="Preview (%) — valor de teste do preenchimento"><CustomInput type="number" min="0" max="100" value={donut.previewPercent ?? 75} onChange={(e: any) => updateDonut(donut.id, 'previewPercent', Math.min(100, Math.max(0, +e.target.value)))} /></Field>
                 <Field label="Cor da Barra de Progresso"><ColorPickerSimple value={donut.accentColor || globalConfig.primaryColor} onChange={(v) => updateDonut(donut.id, 'accentColor', v)} /></Field>
               </div>
             ) : (
@@ -646,8 +932,130 @@ const Editor: React.FC<EditorProps> = ({
               <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-100">
                 <Field label="Rótulo Fixo"><CustomInput value={donut.centerTextLabel} onChange={(e: any) => updateDonut(donut.id, 'centerTextLabel', e.target.value)} /></Field>
                 <MeasureSelect label="Medida do Valor" value={donut.centerTextValueMeasure} onChange={(v) => updateDonut(donut.id, 'centerTextValueMeasure', v)} bindings={globalConfig.dataBindings || []} />
+                {/* Fase 1 item 1: mesmo mecanismo de testValues que os cards já usam
+                    (Record<string, number> em App.tsx), chave própria por donut. */}
+                <Field label="Valor de Teste (Preview)" className="col-span-2">
+                  <CustomInput
+                    type="number" placeholder="Ex: 87 (número puro, sem % ou formatação)"
+                    value={testValues[`${donut.id}_centerText`] ?? ''}
+                    onChange={(e: any) => setTestValues(prev => e.target.value === '' ? (({ [`${donut.id}_centerText`]: _, ...rest }) => rest)(prev) : { ...prev, [`${donut.id}_centerText`]: +e.target.value })}
+                  />
+                </Field>
               </div>
             )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Bar chart edit panel (Fase 4, Etapa 5 — prova de conceito) ─
+  // Escopo mínimo pra PoC de arquitetura: título, dimensões, tipografia,
+  // formato/valor e lista de barras (cor/rótulo/medida/valor de teste).
+  // Formatação condicional das barras reaproveita o mesmo motor de
+  // ConditionalRule já usado em cards (Fase 2) — sem UI própria aqui ainda,
+  // igual ao que já está registrado no TODO.md pros itens 2/3 (ring,
+  // labelColor): funcional via JSON/estado, sem controle de UI dedicado.
+  if (isEditingItem && selectedBar) {
+    const bar = selectedBar;
+    const addBarSlice = () => {
+      const newSlice: BarSlice = {
+        id: Math.random().toString(36).substr(2, 9),
+        label: `Barra ${bar.bars.length + 1}`,
+        measurePlaceholder: '[Medida]',
+        color: '#4f46e5',
+        value: '0',
+      };
+      updateBar(bar.id, 'bars', [...bar.bars, newSlice]);
+    };
+    const updateBarSlice = (sliceId: string, field: keyof BarSlice, value: any) => {
+      updateBar(bar.id, 'bars', bar.bars.map(s => s.id === sliceId ? { ...s, [field]: value } : s));
+    };
+    const deleteBarSlice = (sliceId: string) => {
+      updateBar(bar.id, 'bars', bar.bars.filter(s => s.id !== sliceId));
+    };
+
+    return (
+      <div className="flex flex-col h-full bg-slate-50 border-r border-slate-200 z-20 animate-fadeIn">
+        <div className="p-4 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center gap-3 sticky top-0 z-10 shadow-sm">
+          <button onClick={() => setSelectedCardId(null)} className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 transition-colors"><ArrowLeft size={16} /></button>
+          <div className="flex-1">
+            <p className="text-[8px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-0.5">Propriedades do Gráfico de Barras</p>
+            <input value={bar.title} onChange={(e) => updateBar(bar.id, 'title', e.target.value)} className="w-full font-bold text-sm text-slate-800 bg-transparent outline-none border-b-2 border-transparent focus:border-indigo-400 transition-colors" placeholder="Título do Gráfico" />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar pb-20">
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <SectionHeader icon={Grid3X3} title="Dimensões no Grid" />
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Colunas (Largura)"><CustomInput type="number" min="1" max={globalConfig.columnsDesktop || 3} value={bar.colSpan || 1} onChange={(e: any) => updateBar(bar.id, 'colSpan', +e.target.value)} /></Field>
+              <Field label="Linhas (Altura)"><CustomInput type="number" min="1" value={bar.rowSpan || 1} onChange={(e: any) => updateBar(bar.id, 'rowSpan', +e.target.value)} /></Field>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <SectionHeader icon={Type} title="Tipografia" />
+            <div className="grid grid-cols-3 gap-3">
+              <Field label="Título"><CustomInput type="number" value={bar.fontSizeTitle || globalConfig.fontSizeTitle} onChange={(e: any) => updateBar(bar.id, 'fontSizeTitle', +e.target.value)} className="px-2" /></Field>
+              <Field label="Valor"><CustomInput type="number" value={bar.fontSizeValue || 16} onChange={(e: any) => updateBar(bar.id, 'fontSizeValue', +e.target.value)} className="px-2" /></Field>
+              <Field label="Rótulo"><CustomInput type="number" value={bar.fontSizeLabel || 10} onChange={(e: any) => updateBar(bar.id, 'fontSizeLabel', +e.target.value)} className="px-2" /></Field>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <SectionHeader icon={Binary} title="Formato do Valor" />
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Formato">
+                <CustomSelect value={bar.formatType || 'none'} onChange={(e: any) => updateBar(bar.id, 'formatType', e.target.value)}>
+                  <option value="none">Texto Livre</option>
+                  <option value="integer">Inteiro (1.000)</option>
+                  <option value="decimal">Decimal (1.000,00)</option>
+                  <option value="currency">Moeda (R$ 1.000)</option>
+                  <option value="currency_short">Moeda Curta (R$ 1M)</option>
+                  <option value="short">Curto (1M)</option>
+                  <option value="percent">Porcentagem (%)</option>
+                </CustomSelect>
+              </Field>
+              <Field label="Decimais"><CustomInput type="number" value={bar.decimalPlaces || 0} onChange={(e: any) => updateBar(bar.id, 'decimalPlaces', +e.target.value)} /></Field>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <SectionHeader icon={PanelLeft} title="Cor & Fundo" />
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Cor de Destaque Padrão"><ColorPickerSimple value={bar.accentColor || globalConfig.primaryColor} onChange={(v) => updateBar(bar.id, 'accentColor', v)} /></Field>
+              <Field label="Fundo do Card"><ColorPickerSimple value={bar.cardBackgroundColor || '#ffffff'} onChange={(v) => updateBar(bar.id, 'cardBackgroundColor', v)} /></Field>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <SectionHeader icon={BarChart3} title="Barras" rightElement={<button onClick={addBarSlice} className="text-[10px] font-bold text-indigo-600 px-2 py-1 bg-indigo-50 rounded hover:bg-indigo-100">+ Barra</button>} />
+            <div className="space-y-3">
+              {bar.bars.map((slice, i) => (
+                <div key={slice.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 relative group">
+                  <button onClick={() => deleteBarSlice(slice.id)} className="absolute top-2 right-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><X size={14} /></button>
+                  <div className="flex gap-2 mb-3 pr-6">
+                    <input type="color" value={slice.color} onChange={(e) => updateBarSlice(slice.id, 'color', e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer p-0 border-0" />
+                    <input value={slice.label} onChange={(e) => updateBarSlice(slice.id, 'label', e.target.value)} className="flex-1 bg-transparent text-[11px] font-bold text-slate-700 outline-none border-b border-slate-300 focus:border-indigo-400 placeholder-slate-400 py-1 px-2" placeholder="Rótulo da Barra" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <MeasureSelect label="Medida (DAX)" value={slice.measurePlaceholder} onChange={(v) => updateBarSlice(slice.id, 'measurePlaceholder', v)} bindings={globalConfig.dataBindings || []} />
+                    {/* Chave de teste segue o mesmo padrão de testValues usado pelos
+                        outros tipos (cards, centro de donut) — mas indexado por
+                        posição (`${bar.id}_bar_${i}`), igual ao que
+                        barChartType.tsx (renderPreview) já lê. */}
+                    <Field label="Valor de Teste (Preview)">
+                      <CustomInput
+                        type="number" placeholder="Ex: 120"
+                        value={testValues[`${bar.id}_bar_${i}`] ?? ''}
+                        onChange={(e: any) => setTestValues(prev => e.target.value === '' ? (({ [`${bar.id}_bar_${i}`]: _, ...rest }) => rest)(prev) : { ...prev, [`${bar.id}_bar_${i}`]: +e.target.value })}
+                      />
+                    </Field>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -725,11 +1133,88 @@ const Editor: React.FC<EditorProps> = ({
           )}
         </div>
 
-        {/* Cards / Charts tab */}
+        {/* Cards / Charts / Bars tab */}
         <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
           <button onClick={() => setActiveAppTab('cards')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeAppTab === 'cards' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><Layers size={14} /> Cards</button>
-          <button onClick={() => setActiveAppTab('charts')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeAppTab === 'charts' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><PieChart size={14} /> Gráficos</button>
+          <button onClick={() => setActiveAppTab('donuts')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeAppTab === 'donuts' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><PieChart size={14} /> Gráficos</button>
+          {/* Fase 4 etapa 5: prova de conceito — mesma fiação de app-level que donuts já usa */}
+          <button onClick={() => setActiveAppTab('bars')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeAppTab === 'bars' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><BarChart3 size={14} /> Barras</button>
         </div>
+
+        {/* Cards / Charts list (Layers panel) */}
+        {activeAppTab === 'cards' && (
+          <div className="bg-white border-t border-slate-200 p-3 space-y-2 overflow-y-auto max-h-48 custom-scrollbar">
+            {cards.length === 0 ? (
+              <p className="text-[9px] text-slate-400 text-center py-4">Nenhum card ainda. Adicione um!</p>
+            ) : (
+              cards.map((card) => (
+                <div
+                  key={card.id}
+                  onClick={() => setSelectedCardId(card.id)}
+                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all flex items-center justify-between group ${
+                    selectedCardId === card.id
+                      ? 'bg-indigo-50 border-indigo-400 shadow-sm'
+                      : 'bg-slate-50 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-bold text-slate-700 truncate">{card.title || 'Sem título'}</p>
+                    <p className="text-[9px] text-slate-400 truncate">{card.measurePlaceholder}</p>
+                  </div>
+                  <div className="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {handleCopyCardConfig && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleCopyCardConfig(card.id); }}
+                        title="Copiar configuração"
+                        className="p-1.5 hover:bg-indigo-100 rounded text-indigo-600 transition-colors"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    )}
+                    {handlePasteCardConfig && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handlePasteCardConfig(card.id); }}
+                        disabled={!hasCopiedConfig}
+                        title={hasCopiedConfig ? 'Colar configuração' : 'Nenhuma config copiada'}
+                        className={`p-1.5 rounded transition-colors ${
+                          hasCopiedConfig
+                            ? 'hover:bg-green-100 text-green-600'
+                            : 'text-slate-300 cursor-not-allowed'
+                        }`}
+                      >
+                        <Check size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+        {activeAppTab === 'donuts' && (
+          <div className="bg-white border-t border-slate-200 p-3 space-y-2 overflow-y-auto max-h-48 custom-scrollbar">
+            {donuts.length === 0 ? (
+              <p className="text-[9px] text-slate-400 text-center py-4">Nenhum gráfico ainda. Adicione um!</p>
+            ) : (
+              donuts.map((donut) => (
+                <div
+                  key={donut.id}
+                  onClick={() => setSelectedCardId(donut.id)}
+                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all group ${
+                    selectedCardId === donut.id
+                      ? 'bg-indigo-50 border-indigo-400 shadow-sm'
+                      : 'bg-slate-50 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-bold text-slate-700 truncate">{donut.title || 'Sem título'}</p>
+                    <p className="text-[9px] text-slate-400 truncate">{donut.mode === 'completeness' ? 'Atingimento' : 'Distribuição'}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Global config tabs */}
