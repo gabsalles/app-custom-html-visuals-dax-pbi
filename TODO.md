@@ -320,50 +320,6 @@ reservando `FORMAT` só pro texto exibido ao usuário.
 
 ---
 
-## 10. `sortDir` do preview de barra categórica não resincroniza com a config
-
-**Origem**: code-review (2 passes) antes do merge de
-`feature/bar-chart-categorico`.
-
-**O que é**: `utils/chartTypes/bar/barChartType.tsx` (~linha 198) —
-`CategoricalBarPreview` inicializa `sortDir` uma única vez via `useState`
-a partir de `cat.sortBy`, sem nenhum `useEffect` de resync. Mudar o
-dropdown "Ordenação" no Editor depois do componente já montado não
-atualiza a ordem exibida no preview.
-
-**Impacto atual**: só afeta o preview do editor (não o visual exportado)
-— o usuário muda a configuração, mas o preview continua mostrando a
-ordem antiga até interagir manualmente com o botão de toggle ou o
-componente remontar.
-
-**O que falta pra resolver**: adicionar um `useEffect` que resincroniza
-`sortDir` quando `cat.sortBy` muda.
-
----
-
-## 11. Controles de Tipografia (Valor/Rótulo) sem efeito no motor categórico de barras
-
-**Origem**: code-review (2 passes) antes do merge de
-`feature/bar-chart-categorico`.
-
-**O que é**: `components/Editor.tsx` (~linha 1165) — o painel
-"Tipografia" do gráfico de barras ainda expõe controles de tamanho de
-fonte de Valor (`fontSizeValue`) e Rótulo (`fontSizeLabel`), mas o motor
-categórico novo (`generateCategoricalBarDax` e `CategoricalBarPreview`,
-ambos em `barChartType.tsx`) nunca lê esses dois campos — só
-`fontSizeTitle` é usado, e só no cabeçalho do preview.
-
-**Impacto atual**: regressão de UX (não de dados) — no modo manual antigo
-esses controles funcionavam de verdade; agora mudam a configuração salva
-mas nada no preview/DAX muda. Confuso pro usuário, não quebra nada.
-
-**O que falta pra resolver**: decidir entre (a) fazer o motor categórico
-realmente ler `fontSizeValue`/`fontSizeLabel` nos lugares certos, ou (b)
-remover esses dois controles do painel quando o tipo ativo é bar chart
-categórico.
-
----
-
 ## 12. `RANKX` alfabético sem garantia formal de ordem no gráfico de barras (orientação "ranking")
 
 **Origem**: code-review (2 passes) antes do merge de

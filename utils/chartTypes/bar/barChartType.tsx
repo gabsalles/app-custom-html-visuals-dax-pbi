@@ -6,7 +6,7 @@
 // (What-if Parameter do Power BI). Existiu um modo manual (barra por barra,
 // BarSlice[]) — removido a pedido explícito; este arquivo só tem o categórico.
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChartConfig } from '../../../types';
 import { ChartTypeDefinition, ChartDaxContext, ChartPreviewContext, DaxFragment } from '../contract';
 import { getFormatString } from '../../valueFormatDax';
@@ -196,6 +196,11 @@ const CategoricalBarPreview: React.FC<{ config: BarChartConfig; ctx: ChartPrevie
   const cat = config.categorical!;
   const isAlpha = cat.sortBy === 'alpha';
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>(cat.sortBy === 'value_asc' ? 'asc' : 'desc');
+  // Item 10: sem isso, mudar "Ordenação" no painel do Editor não refletia no
+  // preview até o componente remontar — o useState acima só roda na montagem.
+  useEffect(() => {
+    setSortDir(cat.sortBy === 'value_asc' ? 'asc' : 'desc');
+  }, [cat.sortBy]);
   const orientation = config.barOrientation || 'horizontal';
   const maxCategories = Math.max(1, cat.maxCategories ?? 10);
   const isSelected = ctx.selectedId === config.id;
