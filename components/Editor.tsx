@@ -1161,10 +1161,11 @@ const Editor: React.FC<EditorProps> = ({
 
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
             <SectionHeader icon={Type} title="Tipografia" />
+            {/* Item 11: "Valor"/"Rótulo" removidos — o motor categórico (único modo
+                de barra existente hoje) nunca leu fontSizeValue/fontSizeLabel; só
+                "Título" tem efeito real no preview/DAX. */}
             <div className="grid grid-cols-3 gap-3">
               <Field label="Título"><CustomInput type="number" value={bar.fontSizeTitle || globalConfig.fontSizeTitle} onChange={(e: any) => updateBar(bar.id, 'fontSizeTitle', +e.target.value)} className="px-2" /></Field>
-              <Field label="Valor"><CustomInput type="number" value={bar.fontSizeValue || 16} onChange={(e: any) => updateBar(bar.id, 'fontSizeValue', +e.target.value)} className="px-2" /></Field>
-              <Field label="Rótulo"><CustomInput type="number" value={bar.fontSizeLabel || 10} onChange={(e: any) => updateBar(bar.id, 'fontSizeLabel', +e.target.value)} className="px-2" /></Field>
             </div>
           </div>
 
