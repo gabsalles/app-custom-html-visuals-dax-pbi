@@ -269,6 +269,127 @@ concatenação de string.
 
 ---
 
+## 8. Badge de comparativo em valor exatamente 0 diverge entre preview e produção
+
+**Origem**: consistency-checker (TypeSafe/Jev, `scripts/consistency-check/`)
+construído nesta sessão, na primeira rodada real comparando `Preview.tsx`
+x `daxGenerator.ts`.
+
+**O que é**: `daxGenerator.ts` (região `comparisonTrend`) calcula
+`_C{ci}_Comp{cpi}_Log = _C{ci}_Comp{cpi}_Val_Raw > 0`. No DAX gerado,
+`IF(_Log, corPositiva/ícone-up, corNegativa/ícone-down)` — em exatamente
+0, `_Log` é `false`, então produção mostra o badge **negativo** ("down").
+Já em `Preview.tsx` (`resolveComp`): `trend = tv > 0 ? 'up' : tv < 0 ?
+'down' : 'none'` — em exatamente 0, `trend = 'none'`, e a linha do
+comparativo inteira é **ocultada** (`resolved.trend !== 'none' &&
+renderComparison(...)`).
+
+**Impacto atual**: uma medida de comparativo que resolve pra exatamente
+0% não aparece no preview do editor, mas aparece como badge negativo no
+visual exportado (Power BI). Divergência visual real entre o que o
+usuário configura e o que é entregue.
+
+**O que falta pra resolver**: decidir qual dos dois comportamentos é o
+correto (provavelmente um estado "neutro" explícito nos dois lados, não
+apenas "esconde" ou "trata como negativo") e alinhar `Preview.tsx` e
+`daxGenerator.ts`.
+
+---
+
+## 9. Sort do gráfico de barras quebra sob locale de vírgula decimal
+
+**Origem**: code-review (2 passes) antes do merge de
+`feature/bar-chart-categorico`.
+
+**O que é**: `utils/chartTypes/bar/barChartType.tsx` (~linha 152) — o
+script de ordenação client-side no HTML exportado faz `parseFloat` no
+atributo `data-value`, que vem de `FORMAT(_RowValorRaw,
+"0.##############")` no DAX. `FORMAT()` usa o separador decimal do
+locale do relatório/modelo do Power BI — em pt-BR isso é vírgula.
+`parseFloat('1234,5')` retorna `1234` (trunca no separador), então
+valores não-inteiros diferentes podem colapsar pro mesmo número.
+
+**Impacto atual**: o botão interativo "Ordenar" no visual HTML exportado
+(produção, não só preview) pode ordenar errado ou de forma instável
+quando o relatório usa locale de vírgula decimal e as medidas não são
+inteiras — bem provável dado que este app é 100% pt-BR.
+
+**O que falta pra resolver**: usar um valor sem formatação de locale (ex.:
+o número bruto, ou `FORMAT` com uma cultura fixa) pro `data-value`,
+reservando `FORMAT` só pro texto exibido ao usuário.
+
+---
+
+## 10. `sortDir` do preview de barra categórica não resincroniza com a config
+
+**Origem**: code-review (2 passes) antes do merge de
+`feature/bar-chart-categorico`.
+
+**O que é**: `utils/chartTypes/bar/barChartType.tsx` (~linha 198) —
+`CategoricalBarPreview` inicializa `sortDir` uma única vez via `useState`
+a partir de `cat.sortBy`, sem nenhum `useEffect` de resync. Mudar o
+dropdown "Ordenação" no Editor depois do componente já montado não
+atualiza a ordem exibida no preview.
+
+**Impacto atual**: só afeta o preview do editor (não o visual exportado)
+— o usuário muda a configuração, mas o preview continua mostrando a
+ordem antiga até interagir manualmente com o botão de toggle ou o
+componente remontar.
+
+**O que falta pra resolver**: adicionar um `useEffect` que resincroniza
+`sortDir` quando `cat.sortBy` muda.
+
+---
+
+## 11. Controles de Tipografia (Valor/Rótulo) sem efeito no motor categórico de barras
+
+**Origem**: code-review (2 passes) antes do merge de
+`feature/bar-chart-categorico`.
+
+**O que é**: `components/Editor.tsx` (~linha 1165) — o painel
+"Tipografia" do gráfico de barras ainda expõe controles de tamanho de
+fonte de Valor (`fontSizeValue`) e Rótulo (`fontSizeLabel`), mas o motor
+categórico novo (`generateCategoricalBarDax` e `CategoricalBarPreview`,
+ambos em `barChartType.tsx`) nunca lê esses dois campos — só
+`fontSizeTitle` é usado, e só no cabeçalho do preview.
+
+**Impacto atual**: regressão de UX (não de dados) — no modo manual antigo
+esses controles funcionavam de verdade; agora mudam a configuração salva
+mas nada no preview/DAX muda. Confuso pro usuário, não quebra nada.
+
+**O que falta pra resolver**: decidir entre (a) fazer o motor categórico
+realmente ler `fontSizeValue`/`fontSizeLabel` nos lugares certos, ou (b)
+remover esses dois controles do painel quando o tipo ativo é bar chart
+categórico.
+
+---
+
+## 12. `RANKX` alfabético sem garantia formal de ordem no gráfico de barras (orientação "ranking")
+
+**Origem**: code-review (2 passes) antes do merge de
+`feature/bar-chart-categorico`.
+
+**O que é**: `utils/chartTypes/bar/barChartType.tsx` (~linha 92) — para
+orientação `'ranking'` combinada com `sortBy: 'alpha'`, o número do badge
+de rank vem de `RANKX(topVar, columnExpr, , orderDir, DENSE)` ranqueando
+uma coluna de texto. O próprio comentário do autor no código já reconhece
+que não há garantia formal do DAX de que `RANKX` produz uma posição
+alfabética bem definida sobre texto.
+
+**Impacto atual**: baixa probabilidade — só afeta gráficos de barra em
+orientação "ranking" + sort alfabético + nomes de categoria com
+acentos/case misto, onde a semântica de comparação de texto do `RANKX`
+pode diferir da ordenação usada para montar a lista de linhas (`TOPN`),
+gerando badges de rank que não combinam visualmente com a ordem exibida.
+
+**O que falta pra resolver**: validar empiricamente no Power BI real se
+`RANKX(<coluna texto>, ..., DENSE)` bate com a ordem do `TOPN` usado para
+a lista, ou trocar a fonte do número do badge para um índice sequencial
+calculado a partir da própria lista já ordenada, em vez de um `RANKX`
+independente.
+
+---
+
 ## Convenção deste arquivo
 
 - Novo achado registrado aqui: adicionar seção nova, com origem clara
