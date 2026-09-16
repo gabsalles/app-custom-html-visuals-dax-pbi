@@ -15,6 +15,9 @@ dist-ssr
 # TypeSafe consistency check cache (local, per-machine)
 .typesafe-consistency-cache.json
 
+# TypeSafe PR triage report (regenerated each run)
+.triage-report.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

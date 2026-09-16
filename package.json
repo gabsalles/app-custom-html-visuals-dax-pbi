@@ -10,6 +10,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "check:consistency": "node scripts/consistency-check/run.mjs --range HEAD~1",
+    "triage": "node scripts/pr-triage/run.mjs",
     "postinstall": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
