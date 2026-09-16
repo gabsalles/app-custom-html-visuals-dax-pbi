@@ -12,9 +12,9 @@ function baseCard(id: string, overrides: Partial<CardConfig> = {}): CardConfig {
   return {
     id, title: `Card ${id}`, measurePlaceholder: '[Vendas]',
     formatType: 'currency', decimalPlaces: 0, prefix: 'R$ ', suffix: '',
-    type: 'simple', progressValue: 0, targetMeasurePlaceholder: '', value: '0',
+    type: 'simple', progressValue: 0, value: '0',
     icon: 'chart', iconPosition: 'top', iconSize: 40, iconPadding: 8, iconRounded: false,
-    comparisons: [{ id: 'cp1', label: 'MoM', value: '', trend: 'up', logic: 'true', measurePlaceholder: '[D]' }],
+    comparisons: [{ id: 'cp1', label: 'MoM', value: '', trend: 'up', measurePlaceholder: '[D]' }],
     ...overrides,
   };
 }

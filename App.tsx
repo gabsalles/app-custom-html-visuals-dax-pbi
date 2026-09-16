@@ -9,6 +9,7 @@ import { createCardFromTemplate } from './utils/cardTemplates';
 import { TUTORIAL_STEPS_V2, isTutorialCompleted, markTutorialCompleted, getTutorialStep, saveTutorialStep, resetTutorial } from './utils/tutorialSteps';
 import { GlobalConfig, CardConfig, DonutChartConfig, BarChartConfig, ViewportMode, AppTab } from './types';
 import { parseDaxToState, createImportWarning } from './utils/daxParser';
+import { migrateBarConfig } from './utils/barMigration';
 import {
   Code, Eye, Copy, Check, Settings2, Download, Upload,
   Trash2, RotateCcw, FileCode2, X, Undo2, Redo2,
@@ -59,10 +60,10 @@ const INITIAL_CARDS: CardConfig[] = [
   {
     id: '1', title: 'Exemplo Vendas', measurePlaceholder: '[Total Vendas]',
     formatType: 'currency', decimalPlaces: 0, prefix: '', suffix: '',
-    targetMeasurePlaceholder: '1000000', value: 'R$ 842.500', type: 'progress',
+    progressTarget: '1000000', value: 'R$ 842.500', type: 'progress',
     progressValue: 84, progressHeight: 8, icon: 'chart', iconPosition: 'top',
     iconSize: 40, iconPadding: 8, iconRounded: false, isOpen: true,
-    comparisons: [{ id: 'c1', label: 'vs Meta', value: '+14%', trend: 'up', logic: '[Vendas] > [Meta]', measurePlaceholder: '[Meta]' }],
+    comparisons: [{ id: 'c1', label: 'vs Meta', value: '+14%', trend: 'up', measurePlaceholder: 'DIVIDE([Total Vendas] - [Meta Vendas], [Meta Vendas], 0)' }],
     colSpan: 1, rowSpan: 1,
   }
 ];
@@ -76,6 +77,29 @@ const INITIAL_DONUTS: DonutChartConfig[] = [
     slices: [], isOpen: false, colSpan: 1, rowSpan: 1,
   }
 ];
+
+const INITIAL_BARS: BarChartConfig[] = [
+  {
+    id: 'bar1', title: 'Vendas por Categoria',
+    formatType: 'currency', decimalPlaces: 0,
+    // Sem accentColor fixo de propósito — sem isso, a barra ignora qualquer
+    // "Tema Pronto" aplicado (accentColor de item sempre vence sobre
+    // global.primaryColor em `config.accentColor || global.primaryColor`).
+    barOrientation: 'horizontal',
+    colSpan: 2, rowSpan: 1,
+    categorical: {
+      column: "'Produtos'[Categoria]", measurePlaceholder: '[Total Vendas]',
+      maxCategoriesMode: 'fixed', maxCategories: 5,
+      sortBy: 'value_desc', sortEnabled: true, useGradient: false,
+      testCategories: ['Eletrônicos', 'Vestuário', 'Casa & Decoração', 'Esportes', 'Livros'],
+    },
+  }
+];
+// Valores de teste do bar chart padrão acima — testValues não persiste em
+// localStorage (state só de preview), então isso só vale pra 1ª carga.
+const INITIAL_BAR_TEST_VALUES: Record<string, number> = {
+  bar1_cat_0: 48200, bar1_cat_1: 36600, bar1_cat_2: 26100, bar1_cat_3: 14900, bar1_cat_4: 8700,
+};
 
 // ─────────────────────────────────────────────────────────────
 // History snapshot type
@@ -129,13 +153,14 @@ const App: React.FC = () => {
 
   const [donuts, setDonuts] = useState<DonutChartConfig[]>(() => loadFromStorage('pbi-donuts', INITIAL_DONUTS));
 
-  // Fase 4 etapa 5: prova de conceito — mesmo padrão de donuts, fiação de
-  // estado de nível de app (ver contract.ts pra clarificação do critério).
+  // Mesmo padrão de donuts, fiação de estado de nível de app (ver contract.ts
+  // pra clarificação do critério).
   const [bars, setBars] = useState<BarChartConfig[]>(() => {
-    return loadFromStorage<BarChartConfig[]>('pbi-bars', []);
+    const loaded = loadFromStorage<BarChartConfig[]>('pbi-bars', INITIAL_BARS);
+    return (loaded || []).map(migrateBarConfig);
   });
 
-  const [testValues, setTestValues] = useState<Record<string, number>>({});
+  const [testValues, setTestValues] = useState<Record<string, number>>(INITIAL_BAR_TEST_VALUES);
 
   // ── Auto-save ──────────────────────────────────────────────
   useEffect(() => { localStorage.setItem('pbi-global', JSON.stringify(globalConfig)); }, [globalConfig]);
@@ -281,7 +306,7 @@ const App: React.FC = () => {
   const daxCode = useMemo(() => {
     const items = activeAppTab === 'cards' ? cards : activeAppTab === 'donuts' ? donuts : bars;
     return generateDAX(globalConfig, items, activeAppTab);
-  }, [globalConfig, cards, donuts, activeAppTab]);
+  }, [globalConfig, cards, donuts, bars, activeAppTab]);
 
   // Fase 3 etapa 4: mede o mesmo daxCode já gerado acima — não reimplementa
   // uma fórmula de estimativa separada (utils/visualConstants.ts tem o
@@ -513,17 +538,20 @@ const App: React.FC = () => {
                     setDonuts([...donuts, { id, title: 'Nova Rosca', mode: 'completeness', geometry: 'full', ringThickness: 12, roundedCorners: true, showCenterText: true, centerTextLabel: 'KPI', centerTextValueMeasure: '[Valor]', completenessMeasure: '[Vendas]', completenessTarget: '[Meta]', slices: [], colSpan: 1, rowSpan: 1 }]);
                     setSelectedCardId(id);
                   } else {
-                    // Fase 4 etapa 5: cria com fatias de exemplo, igual ao padrão de donuts acima —
-                    // fiação de app-level, não lógica de negócio da barra (ver contract.ts).
+                    // Mesmo padrão de donuts acima — fiação de app-level, não
+                    // lógica de negócio da barra (ver contract.ts). Único modo
+                    // é o categórico, então já nasce com esse shape.
                     const id = Math.random().toString(36).substr(2, 9);
                     setBars([...bars, {
                       id, title: 'Novo Gráfico de Barras',
-                      bars: [
-                        { id: 'b1', label: 'Categoria 1', measurePlaceholder: '[Vendas]', color: '#4f46e5', value: '0' },
-                        { id: 'b2', label: 'Categoria 2', measurePlaceholder: '[Vendas]', color: '#059669', value: '0' },
-                        { id: 'b3', label: 'Categoria 3', measurePlaceholder: '[Vendas]', color: '#f59e0b', value: '0' },
-                      ],
                       formatType: 'integer', decimalPlaces: 0, colSpan: 1, rowSpan: 1,
+                      barOrientation: 'horizontal',
+                      categorical: {
+                        column: '', measurePlaceholder: '[Medida]',
+                        maxCategoriesMode: 'fixed', maxCategories: 10,
+                        sortBy: 'value_desc', sortEnabled: true, useGradient: false,
+                        testCategories: [],
+                      },
                     }]);
                     setSelectedCardId(id);
                   }
@@ -549,7 +577,7 @@ const App: React.FC = () => {
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <p className="text-[11px] font-bold text-slate-700 truncate leading-none">{item.title}</p>
-                  <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-tighter">{(item as any).type || (item as any).mode || (activeAppTab === 'bars' ? `${(item as any).bars?.length || 0} barras` : '')}</p>
+                  <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-tighter">{(item as any).type || (item as any).mode || (activeAppTab === 'bars' ? { horizontal: 'Barras Horizontais', ranking: 'Ranking', vertical: 'Colunas Verticais' }[(item as any).barOrientation as string] || 'Barras Horizontais' : '')}</p>
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); if (activeAppTab === 'cards') setCards(cards.filter(c => c.id !== item.id)); else if (activeAppTab === 'donuts') setDonuts(donuts.filter(d => d.id !== item.id)); else setBars(bars.filter(b => b.id !== item.id)); }}

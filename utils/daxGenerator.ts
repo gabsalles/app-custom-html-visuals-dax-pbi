@@ -92,7 +92,6 @@ export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'c
 VAR _CorPrimaria = "${primaryColor}"
 VAR _CorPos      = "${positiveColor}"
 VAR _CorNeg      = "${negativeColor}"
-VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
 `;
 
   // Fase 4, Etapa 5 — despacho puro: toda a lógica de barra mora em
@@ -262,6 +261,11 @@ VAR _CSS = "
     .row-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }    
     .badge {
       font-size: ${fontSizeBadge || 10}px; padding: ${BADGE_PADDING}; border-radius: ${BADGE_RADIUS_PX}px; font-weight: 800; display: flex; align-items: center; gap: 4px; letter-spacing: -0.02em;
+      /* Fallback pra quando nada inline sobrescreve (barras no modo ranking —
+         cards sempre definem color/background inline por comparativo, então
+         isso nunca aparece pra eles). Sem isso, o badge "não-#1" saía sem
+         nenhum estilo em produção. */
+      background: var(--accent-tint, rgba(128,128,128,0.12)); color: ${textColorValue};
     }
     .badge svg { width: ${BADGE_ICON_SIZE_PX}px; height: ${BADGE_ICON_SIZE_PX}px; stroke-width: ${BADGE_ICON_STROKE_WIDTH}; }
     .icon-box { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -289,6 +293,40 @@ VAR _CSS = "
         overflow: hidden;
     }
     .center-text { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
+
+    /* Gráfico de barras — modo categórico (3 orientações). Reaproveita .title/
+       .badge/.v-item já existentes; classes abaixo são só as novas. */
+    .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+    .header-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .subtitle { font-size: 11px; font-weight: 500; color: ${textColorSub}; margin: 4px 0 14px 0; }
+    .sort-btn { flex: 0 0 auto; display: flex; align-items: center; gap: 5px; background: var(--accent-soft); border: 1px solid var(--accent-bar); border-radius: 7px; padding: 4px 9px; font-size: 9.5px; font-weight: 700; color: var(--accent-bar); cursor: pointer; }
+    .sort-btn svg { width: 11px; height: 11px; flex-shrink: 0; }
+    .footer-note { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.05); font-size: 10px; color: ${textColorSub}; text-align: right; }
+
+    .bar-cat-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .bar-cat-row:last-of-type { margin-bottom: 0; }
+    .bar-label { flex: 0 0 92px; font-size: 11px; font-weight: 600; color: ${textColorTitle}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-track { flex: 1; height: 8px; background: #F3F4F6; border-radius: 100px; overflow: hidden; }
+    /* Preenchimento anima de verdade no carregamento (não só num transition, que
+       não dispara no primeiro paint porque o HTML já nasce com a largura final
+       no atributo style) — mesmo truque de --offset já usado em .ring-val abaixo. */
+    .bar-fill { height: 100%; border-radius: 100px; animation: fillBarWidth 1s cubic-bezier(0.16,1,0.3,1) forwards; }
+    @keyframes fillBarWidth { from { width: 0; } to { width: var(--fill); } }
+    .bar-value { flex: 0 0 auto; font-size: 12px; font-weight: 800; color: ${textColorValue}; min-width: 44px; text-align: right; }
+
+    .bar-row-rank { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .bar-row-rank:last-of-type { margin-bottom: 0; }
+    .rank-badge { flex: 0 0 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; background: var(--accent-tint, rgba(128,128,128,0.12)); color: ${textColorSub}; }
+    .rank-badge.is-first, .badge.is-first { background: var(--accent-soft); color: var(--accent-bar); }
+    .rank-label { flex: 1; font-size: 12px; font-weight: 600; color: ${textColorTitle}; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .v-columns { display: flex; align-items: flex-end; gap: 14px; height: 150px; margin-top: 10px; padding: 0 4px; }
+    .v-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+    .v-col-value { font-size: 11px; font-weight: 800; color: ${textColorValue}; margin-bottom: 6px; }
+    .v-col-bar { width: 100%; max-width: 34px; border-radius: 6px 6px 0 0; animation: fillBarHeight 1s cubic-bezier(0.16,1,0.3,1) forwards; }
+    @keyframes fillBarHeight { from { height: 0; } to { height: var(--fill); } }
+    .v-axis { height: 1px; background: #E5E7EB; }
+    .v-col-label { margin-top: 8px; font-size: 10px; font-weight: 600; color: ${textColorTitle}; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
     ${cssCompacto}
 </style>"
 
@@ -414,19 +452,19 @@ VAR _HTML = "<div class='wrapper'><div class='container'>" &
 
                 // Render based on displayMode
                 if (displayMode === 'trend-only') {
-                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg}</span></div>"`;
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg}</span></div>"`;
                 } else if (displayMode === 'proportion-only') {
-                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>" & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>" & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
                 } else if (displayMode === 'custom') {
                   // Fase 1 item 4: labelColor, quando definido, é um valor fixo (não depende do
                   // trend/dado) — sobrescreve completamente o IF() do DAX, igual a Preview.tsx.
                   if (c.labelColor) {
-                    return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor}'>${c.label}</span><span class='badge' style='color: ${c.labelColor}; background-color: ${c.labelColor}1A;'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                    return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: ${c.labelColor}; background-color: ${c.labelColor}1A;'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
                   }
-                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${textColorSub}'>${c.label}</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
                 } else {
                   // default: trend+value
-                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
                 }
             });
             compsDAX = `" & ${compsList.join(" & ")} & "`;

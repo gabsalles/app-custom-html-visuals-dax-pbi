@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { CardConfig, GlobalConfig, ComparisonConfig, DonutChartConfig, AppTab, DonutSlice, BarChartConfig, BarSlice } from '../types';
+import { CardConfig, GlobalConfig, ComparisonConfig, DonutChartConfig, AppTab, DonutSlice, BarChartConfig } from '../types';
 import { iconDefinitions, IconCategory } from '../utils/icons';
 import { formatTestValue } from '../utils/formatTestValue';
 import { DAX_CHAR_SAFE_BUDGET, DAX_CHAR_HARD_LIMIT, GAUGE_CHART_SIZE_MIN, GAUGE_CHART_SIZE_MAX } from '../utils/visualConstants';
@@ -202,17 +202,17 @@ const THEME_PRESETS: ThemePreset[] = [
   {
     id: 'nature', label: 'Natureza',
     swatch: ['#f0fdf4', '#16a34a', '#86efac'],
-    config: { primaryColor: '#16a34a', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#f0fdf4', textColorTitle: '#6b7280', textColorValue: '#14532d', textColorSub: '#86efac', positiveColor: '#16a34a', negativeColor: '#dc2626', hoverEffect: 'lift', borderRadius: 20, shadowIntensity: 6, shadowBlur: 16, shadowDistance: 6, fontWeightTitle: 800, fontWeightValue: 800, animation: 'fadeInUp' },
+    config: { primaryColor: '#16a34a', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#f0fdf4', textColorTitle: '#6b7280', textColorValue: '#14532d', textColorSub: '#2f6b45', positiveColor: '#16a34a', negativeColor: '#dc2626', hoverEffect: 'lift', borderRadius: 20, shadowIntensity: 6, shadowBlur: 16, shadowDistance: 6, fontWeightTitle: 800, fontWeightValue: 800, animation: 'fadeInUp' },
   },
   {
     id: 'ocean', label: 'Oceano',
     swatch: ['#eff6ff', '#0891b2', '#67e8f9'],
-    config: { primaryColor: '#0891b2', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#eff6ff', textColorTitle: '#64748b', textColorValue: '#0c4a6e', textColorSub: '#7dd3fc', positiveColor: '#059669', negativeColor: '#e11d48', hoverEffect: 'glow', borderRadius: 24, shadowIntensity: 12, shadowBlur: 24, shadowDistance: 8, fontWeightTitle: 800, fontWeightValue: 800, animation: 'popIn' },
+    config: { primaryColor: '#0891b2', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#eff6ff', textColorTitle: '#64748b', textColorValue: '#0c4a6e', textColorSub: '#0369a1', positiveColor: '#059669', negativeColor: '#e11d48', hoverEffect: 'glow', borderRadius: 24, shadowIntensity: 12, shadowBlur: 24, shadowDistance: 8, fontWeightTitle: 800, fontWeightValue: 800, animation: 'popIn' },
   },
   {
     id: 'sunset', label: 'Pôr do Sol',
     swatch: ['#fff7ed', '#ea580c', '#fbbf24'],
-    config: { primaryColor: '#ea580c', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#fff7ed', textColorTitle: '#9a3412', textColorValue: '#431407', textColorSub: '#fed7aa', positiveColor: '#16a34a', negativeColor: '#dc2626', hoverEffect: 'scale', borderRadius: 16, shadowIntensity: 10, shadowBlur: 20, shadowDistance: 10, fontWeightTitle: 700, fontWeightValue: 900, animation: 'fadeInUp' },
+    config: { primaryColor: '#ea580c', cardBackgroundColor: '#ffffff', canvasBackgroundColor: '#fff7ed', textColorTitle: '#9a3412', textColorValue: '#431407', textColorSub: '#c2410c', positiveColor: '#16a34a', negativeColor: '#dc2626', hoverEffect: 'scale', borderRadius: 16, shadowIntensity: 10, shadowBlur: 20, shadowDistance: 10, fontWeightTitle: 700, fontWeightValue: 900, animation: 'fadeInUp' },
   },
 ];
 
@@ -339,10 +339,10 @@ const Editor: React.FC<EditorProps> = ({
   const addComparison = (cardId: string, type: 'mom' | 'yoy' | 'custom' = 'custom') => {
     const card = cards.find(c => c.id === cardId);
     if (!card) return;
-    let label = 'Novo Comp', logic = 'TRUE()', measure = '[Medida]';
-    if (type === 'mom') { label = 'vs Mês Anterior'; logic = '[Variação Mês] > 0'; measure = '[Variação % Mês]'; }
-    if (type === 'yoy') { label = 'vs Ano Anterior'; logic = '[Variação Ano] > 0'; measure = '[Variação % Ano]'; }
-    const newComp: ComparisonConfig = { id: Math.random().toString(36).substr(2, 9), label, value: '0%', trend: 'up', logic, measurePlaceholder: measure, invertColor: false };
+    let label = 'Novo Comp', measure = '[Medida]';
+    if (type === 'mom') { label = 'vs Mês Anterior'; measure = '[Variação % Mês]'; }
+    if (type === 'yoy') { label = 'vs Ano Anterior'; measure = '[Variação % Ano]'; }
+    const newComp: ComparisonConfig = { id: Math.random().toString(36).substr(2, 9), label, value: '0%', trend: 'up', measurePlaceholder: measure, invertColor: false };
     updateCard(cardId, 'comparisons', [...card.comparisons, newComp]);
   };
 
@@ -454,13 +454,32 @@ const Editor: React.FC<EditorProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Categorias de Teste (Preview)</label>
-                    <button
-                      onClick={() => {
-                        const names = [...(card.categorical!.testCategories || []), ''];
-                        updateCard(card.id, 'categorical', { ...card.categorical!, testCategories: names });
-                      }}
-                      className="text-[10px] font-bold text-indigo-600 px-2 py-1 bg-indigo-50 rounded hover:bg-indigo-100"
-                    >+ Categoria</button>
+                    <div className="flex gap-1.5">
+                      {/* Mesmo botão "Gerar Dados" das barras categóricas — preenche
+                          maxSlots categorias genéricas + valor aleatório de uma vez,
+                          em vez de exigir "+ Categoria" item por item. */}
+                      <button
+                        onClick={() => {
+                          const n = Math.max(1, card.categorical!.maxSlots || 10);
+                          const names = Array.from({ length: n }, (_, i) => `Categoria ${i + 1}`);
+                          updateCard(card.id, 'categorical', { ...card.categorical!, testCategories: names });
+                          setTestValues(prev => {
+                            const next = { ...prev };
+                            names.forEach((_, i) => { next[`${card.id}_cat_${i}`] = Math.round(1000 + Math.random() * 9000); });
+                            return next;
+                          });
+                        }}
+                        className="text-[10px] font-bold text-indigo-600 px-2 py-1 bg-indigo-50 rounded hover:bg-indigo-100 flex items-center gap-1"
+                        title="Gera N categorias genéricas com valores aleatórios, de uma vez"
+                      ><Sparkles size={11} /> Gerar Dados</button>
+                      <button
+                        onClick={() => {
+                          const names = [...(card.categorical!.testCategories || []), ''];
+                          updateCard(card.id, 'categorical', { ...card.categorical!, testCategories: names });
+                        }}
+                        className="text-[10px] font-bold text-indigo-600 px-2 py-1 bg-indigo-50 rounded hover:bg-indigo-100"
+                      >+ Categoria</button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     {(card.categorical.testCategories || []).map((name, i) => (
@@ -949,31 +968,11 @@ const Editor: React.FC<EditorProps> = ({
     );
   }
 
-  // ── Bar chart edit panel (Fase 4, Etapa 5 — prova de conceito) ─
-  // Escopo mínimo pra PoC de arquitetura: título, dimensões, tipografia,
-  // formato/valor e lista de barras (cor/rótulo/medida/valor de teste).
-  // Formatação condicional das barras reaproveita o mesmo motor de
-  // ConditionalRule já usado em cards (Fase 2) — sem UI própria aqui ainda,
-  // igual ao que já está registrado no TODO.md pros itens 2/3 (ring,
-  // labelColor): funcional via JSON/estado, sem controle de UI dedicado.
+  // ── Bar chart edit panel — modo único: categórico (1 coluna + 1 medida,
+  // N categorias descobertas via DAX). Existiu um modo manual (barra por
+  // barra) — removido a pedido explícito, `categorical` não é mais opcional.
   if (isEditingItem && selectedBar) {
     const bar = selectedBar;
-    const addBarSlice = () => {
-      const newSlice: BarSlice = {
-        id: Math.random().toString(36).substr(2, 9),
-        label: `Barra ${bar.bars.length + 1}`,
-        measurePlaceholder: '[Medida]',
-        color: '#4f46e5',
-        value: '0',
-      };
-      updateBar(bar.id, 'bars', [...bar.bars, newSlice]);
-    };
-    const updateBarSlice = (sliceId: string, field: keyof BarSlice, value: any) => {
-      updateBar(bar.id, 'bars', bar.bars.map(s => s.id === sliceId ? { ...s, [field]: value } : s));
-    };
-    const deleteBarSlice = (sliceId: string) => {
-      updateBar(bar.id, 'bars', bar.bars.filter(s => s.id !== sliceId));
-    };
 
     return (
       <div className="flex flex-col h-full bg-slate-50 border-r border-slate-200 z-20 animate-fadeIn">
@@ -986,6 +985,172 @@ const Editor: React.FC<EditorProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar pb-20">
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <SectionHeader icon={Layers} title="Categorias" />
+            <div className="space-y-3">
+                <p className="text-[9px] text-slate-400 font-medium italic">
+                  1 coluna + 1 medida — até {bar.categorical.maxCategories} categorias descobertas automaticamente, sem adicionar barra por barra.
+                </p>
+                <MeasureSelect
+                  label="Coluna Categórica"
+                  value={bar.categorical.column}
+                  onChange={(v) => updateBar(bar.id, 'categorical', { ...bar.categorical!, column: v })}
+                  bindings={globalConfig.dataBindings || []}
+                />
+                <MeasureSelect
+                  label="Medida"
+                  value={bar.categorical.measurePlaceholder}
+                  onChange={(v) => updateBar(bar.id, 'categorical', { ...bar.categorical!, measurePlaceholder: v })}
+                  bindings={globalConfig.dataBindings || []}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label={bar.categorical.maxCategoriesMode === 'parameter' ? 'Máx. de Categorias (preview)' : 'Máximo de Categorias (N)'}>
+                    <CustomInput
+                      type="number" min="1" max="30"
+                      value={bar.categorical.maxCategories}
+                      onChange={(e: any) => updateBar(bar.id, 'categorical', { ...bar.categorical!, maxCategories: Math.max(1, +e.target.value) })}
+                    />
+                  </Field>
+                  <Field label="Orientação">
+                    <CustomSelect
+                      value={bar.barOrientation || 'horizontal'}
+                      onChange={(e: any) => updateBar(bar.id, 'barOrientation', e.target.value)}
+                    >
+                      <option value="horizontal">Barras Horizontais</option>
+                      <option value="ranking">Ranking (numerado)</option>
+                      <option value="vertical">Colunas Verticais</option>
+                    </CustomSelect>
+                  </Field>
+                </div>
+                <Field label="Quantidade de categorias">
+                  <CustomSelect
+                    value={bar.categorical.maxCategoriesMode}
+                    onChange={(e: any) => updateBar(bar.id, 'categorical', { ...bar.categorical!, maxCategoriesMode: e.target.value })}
+                  >
+                    <option value="fixed">Fixa (definida aqui no app)</option>
+                    <option value="parameter">Ajustável no Power BI (What-if Parameter)</option>
+                  </CustomSelect>
+                </Field>
+                {bar.categorical.maxCategoriesMode === 'parameter' && (
+                  <Field label="Expressão do parâmetro (DAX)">
+                    <input
+                      value={bar.categorical.maxCategoriesParamExpr || ''}
+                      onChange={(e) => updateBar(bar.id, 'categorical', { ...bar.categorical!, maxCategoriesParamExpr: e.target.value })}
+                      placeholder="SELECTEDVALUE('MaxCategorias'[MaxCategorias Value], 10)"
+                      className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-bold rounded-lg px-2 py-1.5 outline-none focus:border-indigo-400 font-mono"
+                    />
+                    <p className="text-[9px] text-slate-400 font-medium italic mt-1">
+                      Crie um "What-if Parameter" no Power BI Desktop (Modelagem → Novo Parâmetro) e cole aqui a expressão que ele gera — o app só gera o texto DAX, não cria o parâmetro por você.
+                    </p>
+                  </Field>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Ordenação">
+                    <CustomSelect
+                      value={bar.categorical.sortBy}
+                      onChange={(e: any) => updateBar(bar.id, 'categorical', { ...bar.categorical!, sortBy: e.target.value })}
+                    >
+                      <option value="value_desc">Valor (maior primeiro)</option>
+                      <option value="value_asc">Valor (menor primeiro)</option>
+                      <option value="alpha">Categoria (A→Z / cronológica)</option>
+                    </CustomSelect>
+                  </Field>
+                  <Field label='Botão "Ordenar" no visual'>
+                    <div className="flex items-center h-full pt-1">
+                      <ToggleSwitch
+                        checked={bar.categorical.sortEnabled}
+                        onChange={(v) => updateBar(bar.id, 'categorical', { ...bar.categorical!, sortEnabled: v })}
+                      />
+                    </div>
+                  </Field>
+                </div>
+                {bar.categorical.sortBy === 'alpha' && bar.categorical.sortEnabled && (
+                  <p className="text-[9px] text-amber-600 font-medium italic -mt-2">
+                    O botão "Ordenar" não aparece nesse modo — alternar maior/menor não faz sentido pra ordenação por categoria.
+                  </p>
+                )}
+                <Field label="Gradiente nas barras">
+                  <div className="flex items-center h-full pt-1">
+                    <ToggleSwitch
+                      checked={!!bar.categorical.useGradient}
+                      onChange={(v) => updateBar(bar.id, 'categorical', { ...bar.categorical!, useGradient: v })}
+                    />
+                  </div>
+                </Field>
+                <Field label="Subtítulo (opcional)">
+                  <input
+                    value={bar.categorical.subtitle || ''}
+                    onChange={(e) => updateBar(bar.id, 'categorical', { ...bar.categorical!, subtitle: e.target.value })}
+                    placeholder="Ex: Últimos 30 dias"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-bold rounded-lg px-2 py-1.5 outline-none focus:border-indigo-400"
+                  />
+                </Field>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Categorias de Teste (Preview)</label>
+                    <div className="flex gap-1.5">
+                      {/* Preenche de uma vez (nome genérico "Categoria N" + valor
+                          aleatório) pra ver o layout sem digitar item por item —
+                          substitui a lista atual pelo N configurado em maxCategories. */}
+                      <button
+                        onClick={() => {
+                          const n = Math.max(1, bar.categorical!.maxCategories || 10);
+                          const names = Array.from({ length: n }, (_, i) => `Categoria ${i + 1}`);
+                          updateBar(bar.id, 'categorical', { ...bar.categorical!, testCategories: names });
+                          setTestValues(prev => {
+                            const next = { ...prev };
+                            names.forEach((_, i) => { next[`${bar.id}_cat_${i}`] = Math.round(1000 + Math.random() * 9000); });
+                            return next;
+                          });
+                        }}
+                        className="text-[10px] font-bold text-indigo-600 px-2 py-1 bg-indigo-50 rounded hover:bg-indigo-100 flex items-center gap-1"
+                        title="Gera N categorias genéricas com valores aleatórios, de uma vez"
+                      ><Sparkles size={11} /> Gerar Dados</button>
+                      <button
+                        onClick={() => {
+                          const names = [...(bar.categorical!.testCategories || []), ''];
+                          updateBar(bar.id, 'categorical', { ...bar.categorical!, testCategories: names });
+                        }}
+                        className="text-[10px] font-bold text-indigo-600 px-2 py-1 bg-indigo-50 rounded hover:bg-indigo-100"
+                      >+ Categoria</button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {(bar.categorical.testCategories || []).map((name, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <input
+                          value={name}
+                          placeholder={`Categoria ${i + 1}`}
+                          onChange={(e) => {
+                            const names = [...(bar.categorical!.testCategories || [])];
+                            names[i] = e.target.value;
+                            updateBar(bar.id, 'categorical', { ...bar.categorical!, testCategories: names });
+                          }}
+                          className="flex-1 bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-bold rounded-lg px-2 py-1.5 outline-none focus:border-indigo-400"
+                        />
+                        <CustomInput
+                          type="number" placeholder="Valor"
+                          value={testValues[`${bar.id}_cat_${i}`] ?? ''}
+                          onChange={(e: any) => setTestValues(prev => e.target.value === '' ? (({ [`${bar.id}_cat_${i}`]: _, ...rest }) => rest)(prev) : { ...prev, [`${bar.id}_cat_${i}`]: +e.target.value })}
+                          className="w-24"
+                        />
+                        <button
+                          onClick={() => {
+                            const names = (bar.categorical!.testCategories || []).filter((_, idx) => idx !== i);
+                            updateBar(bar.id, 'categorical', { ...bar.categorical!, testCategories: names });
+                          }}
+                          className="text-slate-300 hover:text-red-500"
+                        ><X size={14} /></button>
+                      </div>
+                    ))}
+                    {(!bar.categorical.testCategories || bar.categorical.testCategories.length === 0) && (
+                      <p className="text-xs text-center text-slate-400 py-2">Nenhuma categoria de teste ainda.</p>
+                    )}
+                  </div>
+                </div>
+            </div>
+          </div>
+
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
             <SectionHeader icon={Grid3X3} title="Dimensões no Grid" />
             <div className="grid grid-cols-2 gap-4">
@@ -1029,34 +1194,6 @@ const Editor: React.FC<EditorProps> = ({
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-            <SectionHeader icon={BarChart3} title="Barras" rightElement={<button onClick={addBarSlice} className="text-[10px] font-bold text-indigo-600 px-2 py-1 bg-indigo-50 rounded hover:bg-indigo-100">+ Barra</button>} />
-            <div className="space-y-3">
-              {bar.bars.map((slice, i) => (
-                <div key={slice.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 relative group">
-                  <button onClick={() => deleteBarSlice(slice.id)} className="absolute top-2 right-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><X size={14} /></button>
-                  <div className="flex gap-2 mb-3 pr-6">
-                    <input type="color" value={slice.color} onChange={(e) => updateBarSlice(slice.id, 'color', e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer p-0 border-0" />
-                    <input value={slice.label} onChange={(e) => updateBarSlice(slice.id, 'label', e.target.value)} className="flex-1 bg-transparent text-[11px] font-bold text-slate-700 outline-none border-b border-slate-300 focus:border-indigo-400 placeholder-slate-400 py-1 px-2" placeholder="Rótulo da Barra" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <MeasureSelect label="Medida (DAX)" value={slice.measurePlaceholder} onChange={(v) => updateBarSlice(slice.id, 'measurePlaceholder', v)} bindings={globalConfig.dataBindings || []} />
-                    {/* Chave de teste segue o mesmo padrão de testValues usado pelos
-                        outros tipos (cards, centro de donut) — mas indexado por
-                        posição (`${bar.id}_bar_${i}`), igual ao que
-                        barChartType.tsx (renderPreview) já lê. */}
-                    <Field label="Valor de Teste (Preview)">
-                      <CustomInput
-                        type="number" placeholder="Ex: 120"
-                        value={testValues[`${bar.id}_bar_${i}`] ?? ''}
-                        onChange={(e: any) => setTestValues(prev => e.target.value === '' ? (({ [`${bar.id}_bar_${i}`]: _, ...rest }) => rest)(prev) : { ...prev, [`${bar.id}_bar_${i}`]: +e.target.value })}
-                      />
-                    </Field>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     );

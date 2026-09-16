@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { generateDAX } from './daxGenerator';
-import { GlobalConfig, CardConfig, DonutChartConfig, BarChartConfig, BarSlice } from '../types';
+import { GlobalConfig, CardConfig, DonutChartConfig, BarChartConfig } from '../types';
 
 const baseGlobal: GlobalConfig = {
   columnsDesktop: 3, columnsTablet: 2, columnsMobile: 1,
@@ -27,7 +27,7 @@ function baseCard(overrides: Partial<CardConfig> = {}): CardConfig {
   return {
     id: 'c1', title: 'Vendas', measurePlaceholder: '[Vendas]',
     formatType: 'currency', decimalPlaces: 0, prefix: '', suffix: '',
-    type: 'simple', progressValue: 0, targetMeasurePlaceholder: '', value: '',
+    type: 'simple', progressValue: 0, value: '',
     icon: 'chart', iconPosition: 'top', iconSize: 40, iconPadding: 8, iconRounded: false,
     comparisons: [],
     ...overrides,
@@ -57,8 +57,13 @@ describe('Fase 0.6 itens 1-7 (badge, progress bar, animação, transição)', ()
   });
 
   it('item 5: progress bar usa radius em pílula (100px)', () => {
+    // Escopado às 2 classes de progress bar (não uma contagem global de
+    // "border-radius: 100px" no _CSS inteiro) — outras classes do CSS
+    // compartilhado (ex.: barras categóricas) também usam radius em pílula
+    // de propósito, sem que isso invalide este teste.
     const dax = generateDAX(baseGlobal, [baseCard({ type: 'progress' })], 'cards');
-    expect((dax.match(/border-radius: 100px/g) || []).length).toBe(2);
+    expect(dax).toMatch(/\.progress-track \{[^}]*border-radius: 100px/);
+    expect(dax).toMatch(/\.progress-fill \{[^}]*border-radius: 100px/);
   });
 
   it('item 6: popIn usa curva de bounce, não a genérica antiga', () => {
@@ -123,7 +128,7 @@ describe('Fase 0.6 item 8 (ring)', () => {
 describe('Ícones do badge (bar/dot/star/alert)', () => {
   function cardWithIcon(iconType: string) {
     return baseCard({
-      comparisons: [{ id: 'cp1', label: 'MoM', value: '', trend: 'up', logic: 'true', measurePlaceholder: '[D]', displayMode: 'trend+value', iconType: iconType as any }],
+      comparisons: [{ id: 'cp1', label: 'MoM', value: '', trend: 'up', measurePlaceholder: '[D]', displayMode: 'trend+value', iconType: iconType as any }],
     });
   }
 
@@ -178,7 +183,7 @@ describe('Fase 1 item 3 (pior caso)', () => {
 
   it('5 comparativos: todos são gerados, sem truncar a quantidade', () => {
     const comps = [1, 2, 3, 4, 5].map(n => ({
-      id: `cp${n}`, label: `Comp ${n}`, value: '', trend: 'up' as const, logic: 'true', measurePlaceholder: `[D${n}]`,
+      id: `cp${n}`, label: `Comp ${n}`, value: '', trend: 'up' as const, measurePlaceholder: `[D${n}]`,
     }));
     const dax = generateDAX(baseGlobal, [baseCard({ comparisons: comps })], 'cards');
     expect((dax.match(/class='row'/g) || []).length).toBe(5);
@@ -219,7 +224,7 @@ describe('Fase 1 fechamento (.value wrap)', () => {
 describe('Fase 1 item 4 (labelColor)', () => {
   function customCard(labelColor?: string) {
     return baseCard({
-      comparisons: [{ id: 'cp1', label: 'NPS', value: '', trend: 'up', logic: 'true', measurePlaceholder: '[D]', displayMode: 'custom', iconType: 'trending', labelColor }],
+      comparisons: [{ id: 'cp1', label: 'NPS', value: '', trend: 'up', measurePlaceholder: '[D]', displayMode: 'custom', iconType: 'trending', labelColor }],
     });
   }
 
@@ -249,7 +254,7 @@ describe('Regressão combinada: título longo + labelColor (itens 2 e 4)', () =>
   function combinedCard(iconPosition: 'top' | 'left' | 'right') {
     return baseCard({
       title: LONG_TITLE, iconPosition,
-      comparisons: [{ id: 'cp1', label: 'NPS Trimestral', value: '', trend: 'up', logic: 'true', measurePlaceholder: '[D]', displayMode: 'custom', iconType: 'trending', labelColor: LABEL_COLOR }],
+      comparisons: [{ id: 'cp1', label: 'NPS Trimestral', value: '', trend: 'up', measurePlaceholder: '[D]', displayMode: 'custom', iconType: 'trending', labelColor: LABEL_COLOR }],
     });
   }
 
@@ -436,19 +441,19 @@ describe('Fase 3 (motor categórico)', () => {
 // concatena VAR/HTML vindos de chartTypeRegistry.bar.generateDax() sem
 // reescrever nada, com índice 1-based correto e sem regressão nos outros
 // dois branches (cards/donuts).
-function baseBarSlice(overrides: Partial<BarSlice> = {}): BarSlice {
-  return { id: 'b1', label: 'Categoria 1', measurePlaceholder: '[Vendas]', color: '#4f46e5', value: '0', ...overrides };
-}
-
 function baseBarChart(overrides: Partial<BarChartConfig> = {}): BarChartConfig {
   return {
     id: 'bar1', title: 'Vendas por Categoria',
-    bars: [baseBarSlice({ id: 'b1', label: 'Cat 1' }), baseBarSlice({ id: 'b2', label: 'Cat 2', measurePlaceholder: '[Custo]' })],
+    categorical: {
+      column: "'Produtos'[Categoria]", measurePlaceholder: '[Vendas]',
+      maxCategoriesMode: 'fixed', maxCategories: 5,
+      sortBy: 'value_desc', sortEnabled: true,
+    },
     ...overrides,
   };
 }
 
-describe("Fase 4, Etapa 5 (despacho puro tab === 'bars')", () => {
+describe("despacho puro tab === 'bars'", () => {
   it('gera DAX válido (aspas balanceadas) pra 1 gráfico de barras', () => {
     const dax = generateDAX(baseGlobal, [baseBarChart()], 'bars');
     expect(quoteBalance(dax)).toBe(true);
@@ -457,9 +462,8 @@ describe("Fase 4, Etapa 5 (despacho puro tab === 'bars')", () => {
   it('usa o mesmo motor de chartTypeRegistry.bar.generateDax (VAR _Bar1_* presentes)', () => {
     const dax = generateDAX(baseGlobal, [baseBarChart()], 'bars');
     expect(dax).toContain('VAR _Bar1_Tit = "Vendas por Categoria"');
-    expect(dax).toContain('VAR _Bar1_S1_Val_Raw = [Vendas]');
-    expect(dax).toContain('VAR _Bar1_S2_Val_Raw = [Custo]');
-    expect(dax).toContain('VAR _Bar1_Max = MAX(_Bar1_S1_Val_Raw, _Bar1_S2_Val_Raw)');
+    expect(dax).toContain(`VAR _Bar1_CatTable = ADDCOLUMNS(VALUES('Produtos'[Categoria]), "@CatValue", CALCULATE([Vendas]))`);
+    expect(dax).toContain('VAR _Bar1_Max = MAXX(_Bar1_Top, [@CatValue])');
   });
 
   it('índice 1-based correto pra múltiplos gráficos de barras (_Bar1_/_Bar2_)', () => {

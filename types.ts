@@ -44,7 +44,6 @@ export interface ComparisonConfig {
   label: string;
   value: string;
   trend: TrendDirection;
-  logic: string;
   measurePlaceholder: string;
   invertColor?: boolean;
   // Advanced Customization
@@ -88,7 +87,6 @@ export interface CardConfig {
   progressHeight?: number;
   progressValue: number;
 
-  targetMeasurePlaceholder: string;
   value: string;
   
   icon: string;
@@ -174,22 +172,13 @@ export interface DonutChartConfig {
   fontSizeLabel?: number;
 }
 
-// Fase 4, Etapa 5 — prova de conceito de tipo de gráfico novo (utils/chartTypes/).
-// Shape análogo a DonutSlice[]/DonutChartConfig, decidido explicitamente (não
-// reaproveita/estende CardConfig nem DonutChartConfig, por design — ver README
-// de utils/chartTypes/).
-export interface BarSlice {
-  id: string;
-  label: string;
-  measurePlaceholder: string;
-  color: string;
-  value: string; // valor de teste, mesmo padrão de DonutSlice.value
-}
-
+// Fase 4, Etapa 5 (protótipo) → único modo desde então: 1 coluna + 1 medida,
+// N categorias descobertas via DAX (TOPN+CONCATENATEX+RANKX). O modo manual
+// (BarSlice[], barra por barra) existiu e foi removido — categorical não é
+// mais opcional, é a única forma de configurar um gráfico de barras.
 export interface BarChartConfig {
   id: string;
   title: string;
-  bars: BarSlice[];
   colSpan?: number;
   rowSpan?: number;
   cardBackgroundColor?: string;
@@ -202,10 +191,27 @@ export interface BarChartConfig {
   decimalPlaces?: number;
   prefix?: string;
   suffix?: string;
-  // Fase 2 reaproveitada com o mesmo padrão da Fase 3: 1 conjunto de regras no
-  // gráfico, avaliado independentemente contra o valor de CADA barra — não
-  // passa por ChartTypeDefinition.getConditionalTarget (ver contract.ts).
-  conditionalRules?: ConditionalRule[];
+  barOrientation?: BarOrientation;
+  categorical: BarCategoricalConfig;
+}
+
+export type BarOrientation = 'horizontal' | 'ranking' | 'vertical';
+
+export interface BarCategoricalConfig {
+  column: string; // mesmo padrão de CategoricalConfig.column — picker via MeasureSelect
+  measurePlaceholder: string;
+  // 'fixed': maxCategories é usado direto no DAX (literal). 'parameter': o DAX usa
+  // maxCategoriesParamExpr (ex: um What-if Parameter criado pelo usuário no Power BI
+  // Desktop) — maxCategories vira só o valor usado pra fatiar o PREVIEW no app, já
+  // que não existe motor DAX no navegador pra simular o parâmetro de verdade.
+  maxCategoriesMode: 'fixed' | 'parameter';
+  maxCategories: number; // default 10
+  maxCategoriesParamExpr?: string; // ex: SELECTEDVALUE('MaxCategorias'[MaxCategorias Value], 10)
+  sortBy: CategoricalSortBy; // reaproveita o enum dos cards categóricos (value_desc/value_asc/alpha)
+  sortEnabled: boolean; // mostra o botão "Ordenar" no HTML gerado
+  useGradient?: boolean;
+  subtitle?: string;
+  testCategories?: string[];
 }
 
 // ... (resto do arquivo mantido)
