@@ -9,6 +9,7 @@ import { createCardFromTemplate } from './utils/cardTemplates';
 import { TUTORIAL_STEPS_V2, isTutorialCompleted, markTutorialCompleted, getTutorialStep, saveTutorialStep, resetTutorial } from './utils/tutorialSteps';
 import { GlobalConfig, CardConfig, DonutChartConfig, BarChartConfig, ViewportMode, AppTab } from './types';
 import { parseDaxToState, createImportWarning } from './utils/daxParser';
+import { migrateBarConfig } from './utils/barMigration';
 import {
   Code, Eye, Copy, Check, Settings2, Download, Upload,
   Trash2, RotateCcw, FileCode2, X, Undo2, Redo2,
@@ -155,7 +156,8 @@ const App: React.FC = () => {
   // Mesmo padrão de donuts, fiação de estado de nível de app (ver contract.ts
   // pra clarificação do critério).
   const [bars, setBars] = useState<BarChartConfig[]>(() => {
-    return loadFromStorage<BarChartConfig[]>('pbi-bars', INITIAL_BARS);
+    const loaded = loadFromStorage<BarChartConfig[]>('pbi-bars', INITIAL_BARS);
+    return (loaded || []).map(migrateBarConfig);
   });
 
   const [testValues, setTestValues] = useState<Record<string, number>>(INITIAL_BAR_TEST_VALUES);
