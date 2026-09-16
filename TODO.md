@@ -269,57 +269,6 @@ concatenação de string.
 
 ---
 
-## 8. Badge de comparativo em valor exatamente 0 diverge entre preview e produção
-
-**Origem**: consistency-checker (TypeSafe/Jev, `scripts/consistency-check/`)
-construído nesta sessão, na primeira rodada real comparando `Preview.tsx`
-x `daxGenerator.ts`.
-
-**O que é**: `daxGenerator.ts` (região `comparisonTrend`) calcula
-`_C{ci}_Comp{cpi}_Log = _C{ci}_Comp{cpi}_Val_Raw > 0`. No DAX gerado,
-`IF(_Log, corPositiva/ícone-up, corNegativa/ícone-down)` — em exatamente
-0, `_Log` é `false`, então produção mostra o badge **negativo** ("down").
-Já em `Preview.tsx` (`resolveComp`): `trend = tv > 0 ? 'up' : tv < 0 ?
-'down' : 'none'` — em exatamente 0, `trend = 'none'`, e a linha do
-comparativo inteira é **ocultada** (`resolved.trend !== 'none' &&
-renderComparison(...)`).
-
-**Impacto atual**: uma medida de comparativo que resolve pra exatamente
-0% não aparece no preview do editor, mas aparece como badge negativo no
-visual exportado (Power BI). Divergência visual real entre o que o
-usuário configura e o que é entregue.
-
-**O que falta pra resolver**: decidir qual dos dois comportamentos é o
-correto (provavelmente um estado "neutro" explícito nos dois lados, não
-apenas "esconde" ou "trata como negativo") e alinhar `Preview.tsx` e
-`daxGenerator.ts`.
-
----
-
-## 9. Sort do gráfico de barras quebra sob locale de vírgula decimal
-
-**Origem**: code-review (2 passes) antes do merge de
-`feature/bar-chart-categorico`.
-
-**O que é**: `utils/chartTypes/bar/barChartType.tsx` (~linha 152) — o
-script de ordenação client-side no HTML exportado faz `parseFloat` no
-atributo `data-value`, que vem de `FORMAT(_RowValorRaw,
-"0.##############")` no DAX. `FORMAT()` usa o separador decimal do
-locale do relatório/modelo do Power BI — em pt-BR isso é vírgula.
-`parseFloat('1234,5')` retorna `1234` (trunca no separador), então
-valores não-inteiros diferentes podem colapsar pro mesmo número.
-
-**Impacto atual**: o botão interativo "Ordenar" no visual HTML exportado
-(produção, não só preview) pode ordenar errado ou de forma instável
-quando o relatório usa locale de vírgula decimal e as medidas não são
-inteiras — bem provável dado que este app é 100% pt-BR.
-
-**O que falta pra resolver**: usar um valor sem formatação de locale (ex.:
-o número bruto, ou `FORMAT` com uma cultura fixa) pro `data-value`,
-reservando `FORMAT` só pro texto exibido ao usuário.
-
----
-
 ## 12. `RANKX` alfabético sem garantia formal de ordem no gráfico de barras (orientação "ranking")
 
 **Origem**: code-review (2 passes) antes do merge de

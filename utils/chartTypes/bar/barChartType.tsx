@@ -115,7 +115,7 @@ function generateCategoricalBarDax(config: BarChartConfig, ctx: ChartDaxContext)
         VAR _RowPct = MAX(0, DIVIDE(_RowValorRaw, ${p}_Max, 0))
         VAR _RowRank = RANKX(${topVar}, ${orderByExpr}, , ${orderDir}, DENSE)
         VAR _RowValFmt = ${inlineValueFormatExpr('_RowValorRaw', formatSpec)}
-        VAR _RowRawStr = FORMAT(_RowValorRaw, "0.##############")
+        VAR _RowRawStr = SUBSTITUTE(FORMAT(_RowValorRaw, "0.##############"), ",", ".")
         RETURN ${rowBodyExpr},
         "",
         ${orderByExpr}, ${orderDir}

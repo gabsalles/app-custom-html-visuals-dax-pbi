@@ -1484,12 +1484,15 @@ const Editor: React.FC<EditorProps> = ({
               </div>
               <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm space-y-4">
                 <SectionHeader icon={Binary} title="Semântica (Badges)" />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <Field label="Positivo (Bom)">
                     <ColorPickerSimple value={globalConfig.positiveColor} onChange={(v) => setGlobalConfig({ ...globalConfig, positiveColor: v })} contrastWith={globalConfig.cardBackgroundColor} />
                   </Field>
                   <Field label="Negativo (Ruim)">
                     <ColorPickerSimple value={globalConfig.negativeColor} onChange={(v) => setGlobalConfig({ ...globalConfig, negativeColor: v })} contrastWith={globalConfig.cardBackgroundColor} />
+                  </Field>
+                  <Field label="Neutro (Sem variação)">
+                    <ColorPickerSimple value={globalConfig.neutralColor} onChange={(v) => setGlobalConfig({ ...globalConfig, neutralColor: v })} contrastWith={globalConfig.cardBackgroundColor} />
                   </Field>
                 </div>
               </div>
