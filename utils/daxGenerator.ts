@@ -92,7 +92,6 @@ export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'c
 VAR _CorPrimaria = "${primaryColor}"
 VAR _CorPos      = "${positiveColor}"
 VAR _CorNeg      = "${negativeColor}"
-VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
 `;
 
   // Fase 4, Etapa 5 — despacho puro: toda a lógica de barra mora em
@@ -407,19 +406,19 @@ VAR _HTML = "<div class='wrapper'><div class='container'>" &
 
                 // Render based on displayMode
                 if (displayMode === 'trend-only') {
-                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg}</span></div>"`;
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg}</span></div>"`;
                 } else if (displayMode === 'proportion-only') {
-                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>" & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>" & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
                 } else if (displayMode === 'custom') {
                   // Fase 1 item 4: labelColor, quando definido, é um valor fixo (não depende do
                   // trend/dado) — sobrescreve completamente o IF() do DAX, igual a Preview.tsx.
                   if (c.labelColor) {
-                    return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor}'>${c.label}</span><span class='badge' style='color: ${c.labelColor}; background-color: ${c.labelColor}1A;'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                    return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: ${c.labelColor}; background-color: ${c.labelColor}1A;'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
                   }
-                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${textColorSub}'>${c.label}</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
                 } else {
                   // default: trend+value
-                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>${c.label}</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
                 }
             });
             compsDAX = `" & ${compsList.join(" & ")} & "`;

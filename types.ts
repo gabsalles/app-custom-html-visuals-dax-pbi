@@ -44,7 +44,6 @@ export interface ComparisonConfig {
   label: string;
   value: string;
   trend: TrendDirection;
-  logic: string;
   measurePlaceholder: string;
   invertColor?: boolean;
   // Advanced Customization
@@ -88,7 +87,6 @@ export interface CardConfig {
   progressHeight?: number;
   progressValue: number;
 
-  targetMeasurePlaceholder: string;
   value: string;
   
   icon: string;

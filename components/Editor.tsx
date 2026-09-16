@@ -339,10 +339,10 @@ const Editor: React.FC<EditorProps> = ({
   const addComparison = (cardId: string, type: 'mom' | 'yoy' | 'custom' = 'custom') => {
     const card = cards.find(c => c.id === cardId);
     if (!card) return;
-    let label = 'Novo Comp', logic = 'TRUE()', measure = '[Medida]';
-    if (type === 'mom') { label = 'vs Mês Anterior'; logic = '[Variação Mês] > 0'; measure = '[Variação % Mês]'; }
-    if (type === 'yoy') { label = 'vs Ano Anterior'; logic = '[Variação Ano] > 0'; measure = '[Variação % Ano]'; }
-    const newComp: ComparisonConfig = { id: Math.random().toString(36).substr(2, 9), label, value: '0%', trend: 'up', logic, measurePlaceholder: measure, invertColor: false };
+    let label = 'Novo Comp', measure = '[Medida]';
+    if (type === 'mom') { label = 'vs Mês Anterior'; measure = '[Variação % Mês]'; }
+    if (type === 'yoy') { label = 'vs Ano Anterior'; measure = '[Variação % Ano]'; }
+    const newComp: ComparisonConfig = { id: Math.random().toString(36).substr(2, 9), label, value: '0%', trend: 'up', measurePlaceholder: measure, invertColor: false };
     updateCard(cardId, 'comparisons', [...card.comparisons, newComp]);
   };
 

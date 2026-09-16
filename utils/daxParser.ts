@@ -139,7 +139,7 @@ export const parseDaxToState = (daxText: string, defaultGlobal: GlobalConfig) =>
                     measurePlaceholder,
                     type: hasProgress ? 'progress' : 'simple',
                     formatType: 'decimal', decimalPlaces: 0, prefix: '', suffix: '',
-                    value: 'R$ 0', targetMeasurePlaceholder: '1', progressValue: 50,
+                    value: 'R$ 0', progressValue: 50,
                     icon: 'chart', iconPosition: 'top', iconSize: 40, iconPadding: 8, iconRounded: false, isOpen: false, comparisons: [], colSpan: 1, rowSpan: 1
                 });
 
@@ -152,7 +152,7 @@ export const parseDaxToState = (daxText: string, defaultGlobal: GlobalConfig) =>
 
                     newCards[newCards.length - 1].comparisons.push({
                         id: Math.random().toString(36).substr(2, 9),
-                        label: cLab, value: '0%', trend: 'up', logic: 'TRUE()', measurePlaceholder: cRaw, invertColor: false
+                        label: cLab, value: '0%', trend: 'up', measurePlaceholder: cRaw, invertColor: false
                     });
                     cp++;
                 }

@@ -59,10 +59,10 @@ const INITIAL_CARDS: CardConfig[] = [
   {
     id: '1', title: 'Exemplo Vendas', measurePlaceholder: '[Total Vendas]',
     formatType: 'currency', decimalPlaces: 0, prefix: '', suffix: '',
-    targetMeasurePlaceholder: '1000000', value: 'R$ 842.500', type: 'progress',
+    progressTarget: '1000000', value: 'R$ 842.500', type: 'progress',
     progressValue: 84, progressHeight: 8, icon: 'chart', iconPosition: 'top',
     iconSize: 40, iconPadding: 8, iconRounded: false, isOpen: true,
-    comparisons: [{ id: 'c1', label: 'vs Meta', value: '+14%', trend: 'up', logic: '[Vendas] > [Meta]', measurePlaceholder: '[Meta]' }],
+    comparisons: [{ id: 'c1', label: 'vs Meta', value: '+14%', trend: 'up', measurePlaceholder: 'DIVIDE([Total Vendas] - [Meta Vendas], [Meta Vendas], 0)' }],
     colSpan: 1, rowSpan: 1,
   }
 ];
@@ -281,7 +281,7 @@ const App: React.FC = () => {
   const daxCode = useMemo(() => {
     const items = activeAppTab === 'cards' ? cards : activeAppTab === 'donuts' ? donuts : bars;
     return generateDAX(globalConfig, items, activeAppTab);
-  }, [globalConfig, cards, donuts, activeAppTab]);
+  }, [globalConfig, cards, donuts, bars, activeAppTab]);
 
   // Fase 3 etapa 4: mede o mesmo daxCode já gerado acima — não reimplementa
   // uma fórmula de estimativa separada (utils/visualConstants.ts tem o

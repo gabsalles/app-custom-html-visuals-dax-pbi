@@ -27,7 +27,7 @@ function baseCard(overrides: Partial<CardConfig> = {}): CardConfig {
   return {
     id: 'c1', title: 'Vendas', measurePlaceholder: '[Vendas]',
     formatType: 'currency', decimalPlaces: 0, prefix: '', suffix: '',
-    type: 'simple', progressValue: 0, targetMeasurePlaceholder: '', value: '',
+    type: 'simple', progressValue: 0, value: '',
     icon: 'chart', iconPosition: 'top', iconSize: 40, iconPadding: 8, iconRounded: false,
     comparisons: [],
     ...overrides,
@@ -123,7 +123,7 @@ describe('Fase 0.6 item 8 (ring)', () => {
 describe('Ícones do badge (bar/dot/star/alert)', () => {
   function cardWithIcon(iconType: string) {
     return baseCard({
-      comparisons: [{ id: 'cp1', label: 'MoM', value: '', trend: 'up', logic: 'true', measurePlaceholder: '[D]', displayMode: 'trend+value', iconType: iconType as any }],
+      comparisons: [{ id: 'cp1', label: 'MoM', value: '', trend: 'up', measurePlaceholder: '[D]', displayMode: 'trend+value', iconType: iconType as any }],
     });
   }
 
@@ -178,7 +178,7 @@ describe('Fase 1 item 3 (pior caso)', () => {
 
   it('5 comparativos: todos são gerados, sem truncar a quantidade', () => {
     const comps = [1, 2, 3, 4, 5].map(n => ({
-      id: `cp${n}`, label: `Comp ${n}`, value: '', trend: 'up' as const, logic: 'true', measurePlaceholder: `[D${n}]`,
+      id: `cp${n}`, label: `Comp ${n}`, value: '', trend: 'up' as const, measurePlaceholder: `[D${n}]`,
     }));
     const dax = generateDAX(baseGlobal, [baseCard({ comparisons: comps })], 'cards');
     expect((dax.match(/class='row'/g) || []).length).toBe(5);
@@ -219,7 +219,7 @@ describe('Fase 1 fechamento (.value wrap)', () => {
 describe('Fase 1 item 4 (labelColor)', () => {
   function customCard(labelColor?: string) {
     return baseCard({
-      comparisons: [{ id: 'cp1', label: 'NPS', value: '', trend: 'up', logic: 'true', measurePlaceholder: '[D]', displayMode: 'custom', iconType: 'trending', labelColor }],
+      comparisons: [{ id: 'cp1', label: 'NPS', value: '', trend: 'up', measurePlaceholder: '[D]', displayMode: 'custom', iconType: 'trending', labelColor }],
     });
   }
 
@@ -249,7 +249,7 @@ describe('Regressão combinada: título longo + labelColor (itens 2 e 4)', () =>
   function combinedCard(iconPosition: 'top' | 'left' | 'right') {
     return baseCard({
       title: LONG_TITLE, iconPosition,
-      comparisons: [{ id: 'cp1', label: 'NPS Trimestral', value: '', trend: 'up', logic: 'true', measurePlaceholder: '[D]', displayMode: 'custom', iconType: 'trending', labelColor: LABEL_COLOR }],
+      comparisons: [{ id: 'cp1', label: 'NPS Trimestral', value: '', trend: 'up', measurePlaceholder: '[D]', displayMode: 'custom', iconType: 'trending', labelColor: LABEL_COLOR }],
     });
   }
 
