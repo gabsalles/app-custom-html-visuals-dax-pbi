@@ -150,6 +150,7 @@ VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
       const { dax: valFmtDax } = buildValueFormatDax('_C' + ci + '_Val_Raw', '_C' + ci, card);
       dax += valFmtDax;
 
+      // TS-CONSISTENCY:BEGIN progressRingFormula
       if (card.type === 'progress' || card.type === 'ring') {
          // 'ring' (mini anel de progresso, ver renderRing em Preview.tsx) usa a mesma
          // Medida Realizado/Meta que 'progress' já usava — não é um par de campos novo.
@@ -157,22 +158,26 @@ VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
          dax += `VAR _C${ci}_Prog_Tgt = ${card.progressTarget || "100"}\n`;
          dax += `VAR _C${ci}_Prog_Pct = MIN(1, MAX(0, DIVIDE(_C${ci}_Prog_Val, _C${ci}_Prog_Tgt, 0)))\n`;
       }
+      // TS-CONSISTENCY:END
 
+      // TS-CONSISTENCY:BEGIN comparisonTrend
       (card.comparisons || []).forEach((comp, cpIdx) => {
         const cpi = cpIdx + 1;
         dax += `VAR _C${ci}_Comp${cpi}_Lab = "${comp.label}"\n`;
         dax += `VAR _C${ci}_Comp${cpi}_Val_Raw = ${comp.measurePlaceholder || "0"}\n`;
         dax += `VAR _C${ci}_Comp${cpi}_Val = FORMAT(_C${ci}_Comp${cpi}_Val_Raw, "+0.0%;-0.0%;0%")\n`;
-        
+
         // Avalia dinamicamente se a própria medida é maior que 0
-        dax += `VAR _C${ci}_Comp${cpi}_Log = _C${ci}_Comp${cpi}_Val_Raw > 0\n`; 
+        dax += `VAR _C${ci}_Comp${cpi}_Log = _C${ci}_Comp${cpi}_Val_Raw > 0\n`;
       });
+      // TS-CONSISTENCY:END
       dax += `\n`;
     });
   } else if (tab === 'donuts') {
      (items || []).forEach((donut, dIdx) => {
         const di = dIdx + 1;
         dax += `VAR _D${di}_Tit = "${donut.title}"\n`;
+        // TS-CONSISTENCY:BEGIN donutModeFormula
         if (donut.mode === 'completeness') {
             dax += `VAR _D${di}_Val_Raw = ${donut.completenessMeasure || "0"}\n`;
             dax += `VAR _D${di}_Target = ${donut.completenessTarget || "1"}\n`;
@@ -186,6 +191,7 @@ VAR _CorNeu      = "${global.neutralColor || '#9ca3af'}"
         if (donut.showCenterText) {
             dax += `VAR _D${di}_CenterVal = ${donut.centerTextValueMeasure || '""'}\n`;
         }
+        // TS-CONSISTENCY:END
      });
   } else {
      // tab === 'bars' — despacho puro (ver barDaxResults acima).
@@ -365,6 +371,7 @@ VAR _HTML = "<div class='wrapper'><div class='container'>" &
 
         // NOVO: Construtor de array limpo para os comparativos (v0.4.0)
         let compsDAX = "";
+        // TS-CONSISTENCY:BEGIN comparisonTrend
         if (card.comparisons && card.comparisons.length > 0) {
             const compsList = card.comparisons.map((c, cpIdx) => {
                 const cpi = cpIdx + 1;
@@ -424,6 +431,7 @@ VAR _HTML = "<div class='wrapper'><div class='container'>" &
             });
             compsDAX = `" & ${compsList.join(" & ")} & "`;
         }
+        // TS-CONSISTENCY:END
 
         // Resolve a cor exata no JS em vez de usar DAX IF(ISBLANK)
         const actualCardBg = card.cardBackgroundColor || cardBackgroundColor;

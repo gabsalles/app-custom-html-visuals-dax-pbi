@@ -1,0 +1,6 @@
+#!/bin/sh
+# Installed via `core.hooksPath .githooks` (see package.json postinstall).
+# Runs the Preview.tsx <-> daxGenerator.ts consistency check — only actually
+# calls out to TypeSafe when one of the watched files is staged; otherwise
+# it's a no-op. See scripts/consistency-check/ for the full design.
+node scripts/consistency-check/run.mjs --staged
