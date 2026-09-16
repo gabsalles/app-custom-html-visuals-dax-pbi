@@ -204,6 +204,32 @@ export interface BarChartConfig {
   // gráfico, avaliado independentemente contra o valor de CADA barra — não
   // passa por ChartTypeDefinition.getConditionalTarget (ver contract.ts).
   conditionalRules?: ConditionalRule[];
+
+  // Modo categórico (1 coluna + 1 medida, N categorias descobertas via DAX) —
+  // aditivo: presença de `categorical` ativa este modo, ausência preserva o
+  // comportamento manual (bars: BarSlice[]) de sempre. Mesmo padrão de
+  // CardConfig.categorical.
+  barOrientation?: BarOrientation;
+  categorical?: BarCategoricalConfig;
+}
+
+export type BarOrientation = 'horizontal' | 'ranking' | 'vertical';
+
+export interface BarCategoricalConfig {
+  column: string; // mesmo padrão de CategoricalConfig.column — picker via MeasureSelect
+  measurePlaceholder: string;
+  // 'fixed': maxCategories é usado direto no DAX (literal). 'parameter': o DAX usa
+  // maxCategoriesParamExpr (ex: um What-if Parameter criado pelo usuário no Power BI
+  // Desktop) — maxCategories vira só o valor usado pra fatiar o PREVIEW no app, já
+  // que não existe motor DAX no navegador pra simular o parâmetro de verdade.
+  maxCategoriesMode: 'fixed' | 'parameter';
+  maxCategories: number; // default 10
+  maxCategoriesParamExpr?: string; // ex: SELECTEDVALUE('MaxCategorias'[MaxCategorias Value], 10)
+  sortBy: CategoricalSortBy; // reaproveita o enum dos cards categóricos (value_desc/value_asc/alpha)
+  sortEnabled: boolean; // mostra o botão "Ordenar" no HTML gerado
+  useGradient?: boolean;
+  subtitle?: string;
+  testCategories?: string[];
 }
 
 // ... (resto do arquivo mantido)

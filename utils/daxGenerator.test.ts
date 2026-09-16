@@ -57,8 +57,13 @@ describe('Fase 0.6 itens 1-7 (badge, progress bar, animação, transição)', ()
   });
 
   it('item 5: progress bar usa radius em pílula (100px)', () => {
+    // Escopado às 2 classes de progress bar (não uma contagem global de
+    // "border-radius: 100px" no _CSS inteiro) — outras classes do CSS
+    // compartilhado (ex.: barras categóricas) também usam radius em pílula
+    // de propósito, sem que isso invalide este teste.
     const dax = generateDAX(baseGlobal, [baseCard({ type: 'progress' })], 'cards');
-    expect((dax.match(/border-radius: 100px/g) || []).length).toBe(2);
+    expect(dax).toMatch(/\.progress-track \{[^}]*border-radius: 100px/);
+    expect(dax).toMatch(/\.progress-fill \{[^}]*border-radius: 100px/);
   });
 
   it('item 6: popIn usa curva de bounce, não a genérica antiga', () => {
