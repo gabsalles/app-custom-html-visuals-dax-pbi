@@ -172,22 +172,13 @@ export interface DonutChartConfig {
   fontSizeLabel?: number;
 }
 
-// Fase 4, Etapa 5 — prova de conceito de tipo de gráfico novo (utils/chartTypes/).
-// Shape análogo a DonutSlice[]/DonutChartConfig, decidido explicitamente (não
-// reaproveita/estende CardConfig nem DonutChartConfig, por design — ver README
-// de utils/chartTypes/).
-export interface BarSlice {
-  id: string;
-  label: string;
-  measurePlaceholder: string;
-  color: string;
-  value: string; // valor de teste, mesmo padrão de DonutSlice.value
-}
-
+// Fase 4, Etapa 5 (protótipo) → único modo desde então: 1 coluna + 1 medida,
+// N categorias descobertas via DAX (TOPN+CONCATENATEX+RANKX). O modo manual
+// (BarSlice[], barra por barra) existiu e foi removido — categorical não é
+// mais opcional, é a única forma de configurar um gráfico de barras.
 export interface BarChartConfig {
   id: string;
   title: string;
-  bars: BarSlice[];
   colSpan?: number;
   rowSpan?: number;
   cardBackgroundColor?: string;
@@ -200,17 +191,8 @@ export interface BarChartConfig {
   decimalPlaces?: number;
   prefix?: string;
   suffix?: string;
-  // Fase 2 reaproveitada com o mesmo padrão da Fase 3: 1 conjunto de regras no
-  // gráfico, avaliado independentemente contra o valor de CADA barra — não
-  // passa por ChartTypeDefinition.getConditionalTarget (ver contract.ts).
-  conditionalRules?: ConditionalRule[];
-
-  // Modo categórico (1 coluna + 1 medida, N categorias descobertas via DAX) —
-  // aditivo: presença de `categorical` ativa este modo, ausência preserva o
-  // comportamento manual (bars: BarSlice[]) de sempre. Mesmo padrão de
-  // CardConfig.categorical.
   barOrientation?: BarOrientation;
-  categorical?: BarCategoricalConfig;
+  categorical: BarCategoricalConfig;
 }
 
 export type BarOrientation = 'horizontal' | 'ranking' | 'vertical';

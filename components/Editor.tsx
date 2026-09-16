@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { CardConfig, GlobalConfig, ComparisonConfig, DonutChartConfig, AppTab, DonutSlice, BarChartConfig, BarSlice } from '../types';
+import { CardConfig, GlobalConfig, ComparisonConfig, DonutChartConfig, AppTab, DonutSlice, BarChartConfig } from '../types';
 import { iconDefinitions, IconCategory } from '../utils/icons';
 import { formatTestValue } from '../utils/formatTestValue';
 import { DAX_CHAR_SAFE_BUDGET, DAX_CHAR_HARD_LIMIT, GAUGE_CHART_SIZE_MIN, GAUGE_CHART_SIZE_MAX } from '../utils/visualConstants';
@@ -968,31 +968,11 @@ const Editor: React.FC<EditorProps> = ({
     );
   }
 
-  // ── Bar chart edit panel (Fase 4, Etapa 5 — prova de conceito) ─
-  // Escopo mínimo pra PoC de arquitetura: título, dimensões, tipografia,
-  // formato/valor e lista de barras (cor/rótulo/medida/valor de teste).
-  // Formatação condicional das barras reaproveita o mesmo motor de
-  // ConditionalRule já usado em cards (Fase 2) — sem UI própria aqui ainda,
-  // igual ao que já está registrado no TODO.md pros itens 2/3 (ring,
-  // labelColor): funcional via JSON/estado, sem controle de UI dedicado.
+  // ── Bar chart edit panel — modo único: categórico (1 coluna + 1 medida,
+  // N categorias descobertas via DAX). Existiu um modo manual (barra por
+  // barra) — removido a pedido explícito, `categorical` não é mais opcional.
   if (isEditingItem && selectedBar) {
     const bar = selectedBar;
-    const addBarSlice = () => {
-      const newSlice: BarSlice = {
-        id: Math.random().toString(36).substr(2, 9),
-        label: `Barra ${bar.bars.length + 1}`,
-        measurePlaceholder: '[Medida]',
-        color: '#4f46e5',
-        value: '0',
-      };
-      updateBar(bar.id, 'bars', [...bar.bars, newSlice]);
-    };
-    const updateBarSlice = (sliceId: string, field: keyof BarSlice, value: any) => {
-      updateBar(bar.id, 'bars', bar.bars.map(s => s.id === sliceId ? { ...s, [field]: value } : s));
-    };
-    const deleteBarSlice = (sliceId: string) => {
-      updateBar(bar.id, 'bars', bar.bars.filter(s => s.id !== sliceId));
-    };
 
     return (
       <div className="flex flex-col h-full bg-slate-50 border-r border-slate-200 z-20 animate-fadeIn">
@@ -1005,22 +985,9 @@ const Editor: React.FC<EditorProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar pb-20">
-          {/* Modo Categórico — 1 coluna + 1 medida, N categorias descobertas via DAX
-              (INDEX()/ORDERBY, mesmo motor dos cards categóricos). Aditivo: a lista
-              "Barras" manual abaixo continua sempre visível/editável, mesma convenção
-              já usada pelos cards (o gerador ignora os campos manuais quando categorical
-              está setado). */}
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-            <SectionHeader icon={Layers} title="Modo Categórico" rightElement={
-              <ToggleSwitch
-                checked={!!bar.categorical}
-                onChange={(v) => updateBar(bar.id, 'categorical', v ? {
-                  column: '', measurePlaceholder: '[Medida]', maxCategoriesMode: 'fixed', maxCategories: 10, sortBy: 'value_desc', sortEnabled: true, useGradient: false, testCategories: [],
-                } : undefined)}
-              />
-            } />
-            {bar.categorical ? (
-              <div className="space-y-3">
+            <SectionHeader icon={Layers} title="Categorias" />
+            <div className="space-y-3">
                 <p className="text-[9px] text-slate-400 font-medium italic">
                   1 coluna + 1 medida — até {bar.categorical.maxCategories} categorias descobertas automaticamente, sem adicionar barra por barra.
                 </p>
@@ -1181,10 +1148,7 @@ const Editor: React.FC<EditorProps> = ({
                     )}
                   </div>
                 </div>
-              </div>
-            ) : (
-              <p className="text-[9px] text-slate-400 font-medium italic">Barras manuais, comportamento normal.</p>
-            )}
+            </div>
           </div>
 
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
@@ -1230,39 +1194,6 @@ const Editor: React.FC<EditorProps> = ({
             </div>
           </div>
 
-          {/* Lista manual só faz sentido no modo manual — no categórico, as
-              "barras" são as categorias descobertas via DAX, editadas na
-              seção "Modo Categórico" acima, não aqui. */}
-          {!bar.categorical && (
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-              <SectionHeader icon={BarChart3} title="Barras" rightElement={<button onClick={addBarSlice} className="text-[10px] font-bold text-indigo-600 px-2 py-1 bg-indigo-50 rounded hover:bg-indigo-100">+ Barra</button>} />
-              <div className="space-y-3">
-                {bar.bars.map((slice, i) => (
-                  <div key={slice.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 relative group">
-                    <button onClick={() => deleteBarSlice(slice.id)} className="absolute top-2 right-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><X size={14} /></button>
-                    <div className="flex gap-2 mb-3 pr-6">
-                      <input type="color" value={slice.color} onChange={(e) => updateBarSlice(slice.id, 'color', e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer p-0 border-0" />
-                      <input value={slice.label} onChange={(e) => updateBarSlice(slice.id, 'label', e.target.value)} className="flex-1 bg-transparent text-[11px] font-bold text-slate-700 outline-none border-b border-slate-300 focus:border-indigo-400 placeholder-slate-400 py-1 px-2" placeholder="Rótulo da Barra" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <MeasureSelect label="Medida (DAX)" value={slice.measurePlaceholder} onChange={(v) => updateBarSlice(slice.id, 'measurePlaceholder', v)} bindings={globalConfig.dataBindings || []} />
-                      {/* Chave de teste segue o mesmo padrão de testValues usado pelos
-                          outros tipos (cards, centro de donut) — mas indexado por
-                          posição (`${bar.id}_bar_${i}`), igual ao que
-                          barChartType.tsx (renderPreview) já lê. */}
-                      <Field label="Valor de Teste (Preview)">
-                        <CustomInput
-                          type="number" placeholder="Ex: 120"
-                          value={testValues[`${bar.id}_bar_${i}`] ?? ''}
-                          onChange={(e: any) => setTestValues(prev => e.target.value === '' ? (({ [`${bar.id}_bar_${i}`]: _, ...rest }) => rest)(prev) : { ...prev, [`${bar.id}_bar_${i}`]: +e.target.value })}
-                        />
-                      </Field>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     );

@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { generateDAX } from './daxGenerator';
-import { GlobalConfig, CardConfig, DonutChartConfig, BarChartConfig, BarSlice } from '../types';
+import { GlobalConfig, CardConfig, DonutChartConfig, BarChartConfig } from '../types';
 
 const baseGlobal: GlobalConfig = {
   columnsDesktop: 3, columnsTablet: 2, columnsMobile: 1,
@@ -441,19 +441,19 @@ describe('Fase 3 (motor categórico)', () => {
 // concatena VAR/HTML vindos de chartTypeRegistry.bar.generateDax() sem
 // reescrever nada, com índice 1-based correto e sem regressão nos outros
 // dois branches (cards/donuts).
-function baseBarSlice(overrides: Partial<BarSlice> = {}): BarSlice {
-  return { id: 'b1', label: 'Categoria 1', measurePlaceholder: '[Vendas]', color: '#4f46e5', value: '0', ...overrides };
-}
-
 function baseBarChart(overrides: Partial<BarChartConfig> = {}): BarChartConfig {
   return {
     id: 'bar1', title: 'Vendas por Categoria',
-    bars: [baseBarSlice({ id: 'b1', label: 'Cat 1' }), baseBarSlice({ id: 'b2', label: 'Cat 2', measurePlaceholder: '[Custo]' })],
+    categorical: {
+      column: "'Produtos'[Categoria]", measurePlaceholder: '[Vendas]',
+      maxCategoriesMode: 'fixed', maxCategories: 5,
+      sortBy: 'value_desc', sortEnabled: true,
+    },
     ...overrides,
   };
 }
 
-describe("Fase 4, Etapa 5 (despacho puro tab === 'bars')", () => {
+describe("despacho puro tab === 'bars'", () => {
   it('gera DAX válido (aspas balanceadas) pra 1 gráfico de barras', () => {
     const dax = generateDAX(baseGlobal, [baseBarChart()], 'bars');
     expect(quoteBalance(dax)).toBe(true);
@@ -462,9 +462,8 @@ describe("Fase 4, Etapa 5 (despacho puro tab === 'bars')", () => {
   it('usa o mesmo motor de chartTypeRegistry.bar.generateDax (VAR _Bar1_* presentes)', () => {
     const dax = generateDAX(baseGlobal, [baseBarChart()], 'bars');
     expect(dax).toContain('VAR _Bar1_Tit = "Vendas por Categoria"');
-    expect(dax).toContain('VAR _Bar1_S1_Val_Raw = [Vendas]');
-    expect(dax).toContain('VAR _Bar1_S2_Val_Raw = [Custo]');
-    expect(dax).toContain('VAR _Bar1_Max = MAX(_Bar1_S1_Val_Raw, _Bar1_S2_Val_Raw)');
+    expect(dax).toContain(`VAR _Bar1_CatTable = ADDCOLUMNS(VALUES('Produtos'[Categoria]), "@CatValue", CALCULATE([Vendas]))`);
+    expect(dax).toContain('VAR _Bar1_Max = MAXX(_Bar1_Top, [@CatValue])');
   });
 
   it('índice 1-based correto pra múltiplos gráficos de barras (_Bar1_/_Bar2_)', () => {
