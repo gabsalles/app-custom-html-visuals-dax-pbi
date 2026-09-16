@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { GlobalConfig, CardConfig, ViewportMode, DonutChartConfig, BarChartConfig, AppTab, ComparisonConfig } from '../types';
 import { chartTypeRegistry } from '../utils/chartTypes';
-import { ZoomIn, ZoomOut, RotateCcw, BoxSelect, TrendingUp, TrendingDown, GripHorizontal } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, BoxSelect, TrendingUp, TrendingDown, Minus, GripHorizontal } from 'lucide-react';
 import { iconPaths } from '../utils/icons';
 import { formatTestValue } from '../utils/formatTestValue';
 import { resolveConditionalColor } from '../utils/conditionalFormatting';
@@ -466,6 +466,9 @@ const Preview: React.FC<PreviewProps> = ({
                   const displayMode = comp.displayMode || 'trend+value';
                   const iconType = comp.iconType || 'trending';
 
+                  // Valor exatamente 0 (trend === 'none') é um terceiro estado
+                  // visual — neutro — não "queda" nem "sem dado" (ver daxGenerator.ts,
+                  // que agora emite _CorNeutro / _State "neutral" pro mesmo caso).
                   let badgeColor = global.neutralColor;
                   if (resolved.trend === 'up') {
                     badgeColor = comp.invertColor ? global.negativeColor : global.positiveColor;
@@ -479,13 +482,15 @@ const Preview: React.FC<PreviewProps> = ({
                   if (iconType === 'trending') {
                     trendIcon = resolved.trend === 'up'
                       ? <TrendingUp size={BADGE_ICON_SIZE_PX} strokeWidth={BADGE_ICON_STROKE_WIDTH} />
-                      : <TrendingDown size={BADGE_ICON_SIZE_PX} strokeWidth={BADGE_ICON_STROKE_WIDTH} />;
+                      : resolved.trend === 'down'
+                      ? <TrendingDown size={BADGE_ICON_SIZE_PX} strokeWidth={BADGE_ICON_STROKE_WIDTH} />
+                      : <Minus size={BADGE_ICON_SIZE_PX} strokeWidth={BADGE_ICON_STROKE_WIDTH} />;
                   } else if (iconType === 'proportion') {
                     trendIcon = <span style={{ fontSize: '10px', fontWeight: 'bold' }}>—</span>;
                   } else if (iconType === 'arrow') {
                     trendIcon = <span style={{ fontSize: '10px', fontWeight: 'bold' }}>→</span>;
                   } else if (iconType === 'check') {
-                    trendIcon = resolved.trend === 'up' ? <span style={{ fontSize: '10px' }}>✓</span> : <span style={{ fontSize: '10px' }}>✗</span>;
+                    trendIcon = resolved.trend === 'up' ? <span style={{ fontSize: '10px' }}>✓</span> : resolved.trend === 'down' ? <span style={{ fontSize: '10px' }}>✗</span> : <span style={{ fontSize: '10px', fontWeight: 'bold' }}>—</span>;
                   } else if (iconType === 'bar') {
                     trendIcon = <span style={{ fontSize: '10px', fontWeight: 'bold' }}>▯</span>;
                   } else if (iconType === 'dot') {
@@ -560,7 +565,7 @@ const Preview: React.FC<PreviewProps> = ({
                             return (
                                 <div key={comp.id} className="flex items-center gap-2" style={{ fontSize: `${fSub}px`, fontWeight: 600, color: global.textColorSub }}>
                                    <span className="hidden sm:inline" style={comp.labelColor ? { color: comp.labelColor } : undefined}>{comp.label}</span>
-                                   {resolved.trend !== 'none' && renderComparison(comp, resolved)}
+                                   {renderComparison(comp, resolved)}
                                 </div>
                             );
                          })}
@@ -651,7 +656,7 @@ const Preview: React.FC<PreviewProps> = ({
                               {/* Fase 1 item 4: labelColor já era respeitado em daxGenerator.ts
                                   pra este rótulo em TODOS os modos — faltava só aqui. */}
                               <span style={{ color: comp.labelColor || global.textColorSub }}>{comp.label}</span>
-                              {resolved.trend !== 'none' && renderComparison(comp, resolved)}
+                              {renderComparison(comp, resolved)}
                            </div>
                        );
                     })}

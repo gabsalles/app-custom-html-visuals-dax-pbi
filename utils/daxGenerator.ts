@@ -20,7 +20,7 @@ export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'c
     marginType, marginAll, marginTop, marginRight, marginBottom, marginLeft, // <- Adicione isso
     primaryColor, cardBackgroundColor,
     textColorTitle, textColorValue, textColorSub,
-    positiveColor, negativeColor,
+    positiveColor, negativeColor, neutralColor,
     animation, animationDuration, hoverEffect, borderRadius, cardMinHeight, 
     fontSizeTitle, fontSizeValue, fontSizeSub, fontSizeBadge,
     fontWeightTitle, fontWeightValue, textAlign,
@@ -92,6 +92,7 @@ export const generateDAX = (global: GlobalConfig, items: any[], tab: AppTab = 'c
 VAR _CorPrimaria = "${primaryColor}"
 VAR _CorPos      = "${positiveColor}"
 VAR _CorNeg      = "${negativeColor}"
+VAR _CorNeutro   = "${neutralColor}"
 `;
 
   // Fase 4, Etapa 5 — despacho puro: toda a lógica de barra mora em
@@ -166,8 +167,11 @@ VAR _CorNeg      = "${negativeColor}"
         dax += `VAR _C${ci}_Comp${cpi}_Val_Raw = ${comp.measurePlaceholder || "0"}\n`;
         dax += `VAR _C${ci}_Comp${cpi}_Val = FORMAT(_C${ci}_Comp${cpi}_Val_Raw, "+0.0%;-0.0%;0%")\n`;
 
-        // Avalia dinamicamente se a própria medida é maior que 0
-        dax += `VAR _C${ci}_Comp${cpi}_Log = _C${ci}_Comp${cpi}_Val_Raw > 0\n`;
+        // Estado de 3 vias — "up"/"down"/"neutral" — em vez do booleano
+        // ">0" de antes: valor exatamente 0 não é "queda" nem "sem dado",
+        // é um terceiro estado visual próprio (badge neutro), consistente
+        // com o preview (Preview.tsx, resolveComp/renderComparison).
+        dax += `VAR _C${ci}_Comp${cpi}_State = SWITCH(TRUE(), _C${ci}_Comp${cpi}_Val_Raw > 0, "up", _C${ci}_Comp${cpi}_Val_Raw < 0, "down", "neutral")\n`;
       });
       // TS-CONSISTENCY:END
       dax += `\n`;
@@ -448,23 +452,35 @@ VAR _HTML = "<div class='wrapper'><div class='container'>" &
                 // Nenhum destes 4 varia por trend (up/down) — mesmo comportamento de Preview.tsx,
                 // que sempre mostra o mesmo glifo independente da direção.
 
-                const iconSvg = `<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round'><path d='" & IF(_C${ci}_Comp${cpi}_Log, "${iconPathUp}", "${iconPathDown}") & "'/></svg>`;
+                // Estado neutro (valor exatamente 0): 'trending' e 'check' têm glifos
+                // direcionais (seta/✓ vs ✗) que não fazem sentido pra "sem variação" —
+                // ambos caem num traço horizontal neutro. Os outros iconTypes já são
+                // o mesmo glifo em up/down (ver comentário acima), então o neutro
+                // também reaproveita o mesmo path.
+                let iconPathNeutral = iconPathUp;
+                if (iconType === 'trending' || iconType === 'check') {
+                  iconPathNeutral = "M5 12h14"; // traço horizontal (mesmo formato do "Minus" do lucide-react)
+                }
+
+                const iconSvg = `<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round'><path d='" & SWITCH(_C${ci}_Comp${cpi}_State, "up", "${iconPathUp}", "down", "${iconPathDown}", "${iconPathNeutral}") & "'/></svg>`;
+                const colorSwitch = `SWITCH(_C${ci}_Comp${cpi}_State, "up", ${trueColor}, "down", ${falseColor}, _CorNeutro)`;
+                const bgSwitch = `SWITCH(_C${ci}_Comp${cpi}_State, "up", ${trueColor} & "1A", "down", ${falseColor} & "1A", _CorNeutro & "1A")`;
 
                 // Render based on displayMode
                 if (displayMode === 'trend-only') {
-                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg}</span></div>"`;
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & ${colorSwitch} & "; background-color: " & ${bgSwitch} & ";'>${iconSvg}</span></div>"`;
                 } else if (displayMode === 'proportion-only') {
-                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>" & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & ${colorSwitch} & "; background-color: " & ${bgSwitch} & ";'>" & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
                 } else if (displayMode === 'custom') {
                   // Fase 1 item 4: labelColor, quando definido, é um valor fixo (não depende do
-                  // trend/dado) — sobrescreve completamente o IF() do DAX, igual a Preview.tsx.
+                  // trend/dado) — sobrescreve completamente o SWITCH() do DAX, igual a Preview.tsx.
                   if (c.labelColor) {
                     return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: ${c.labelColor}; background-color: ${c.labelColor}1A;'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
                   }
-                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & ${colorSwitch} & "; background-color: " & ${bgSwitch} & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
                 } else {
                   // default: trend+value
-                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor}, ${falseColor}) & "; background-color: " & IF(_C${ci}_Comp${cpi}_Log, ${trueColor} & "1A", ${falseColor} & "1A") & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
+                  return `"<div class='row' style='font-size: ${c.labelFontSize || fSub}px;'><span class='row-label' style='color: ${c.labelColor || textColorSub}'>" & _C${ci}_Comp${cpi}_Lab & "</span><span class='badge' style='color: " & ${colorSwitch} & "; background-color: " & ${bgSwitch} & ";'>${iconSvg} " & _C${ci}_Comp${cpi}_Val & "</span></div>"`;
                 }
             });
             compsDAX = `" & ${compsList.join(" & ")} & "`;

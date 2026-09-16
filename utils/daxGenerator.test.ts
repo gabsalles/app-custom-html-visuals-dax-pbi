@@ -145,7 +145,7 @@ describe('Ícones do badge (bar/dot/star/alert)', () => {
   it('os 4 tipos geram paths distintos entre si', () => {
     const paths = ['bar', 'dot', 'star', 'alert'].map(t => {
       const dax = generateDAX(baseGlobal, [cardWithIcon(t)], 'cards');
-      const m = dax.match(/path d='" & IF\(_C1_Comp1_Log, "([^"]+)", "([^"]+)"\)/);
+      const m = dax.match(/path d='" & SWITCH\(_C1_Comp1_State, "up", "([^"]+)", "down", "([^"]+)"/);
       return m ? m[1] : null;
     });
     expect(new Set(paths).size).toBe(4);
@@ -231,14 +231,14 @@ describe('Fase 1 item 4 (labelColor)', () => {
   it('com labelColor: badge usa cor fixa, sem IF() de trend', () => {
     const dax = generateDAX(baseGlobal, [customCard('#7c3aed')], 'cards');
     expect(dax).toContain('color: #7c3aed; background-color: #7c3aed1A;');
-    expect(dax).not.toContain('color: " & IF(_C1_Comp1_Log');
+    expect(dax).not.toContain('color: " & SWITCH(_C1_Comp1_State');
     expect(dax).toContain("class='row-label' style='color: #7c3aed'");
     expect(quoteBalance(dax)).toBe(true);
   });
 
-  it('sem labelColor: comportamento antigo preservado (IF de trend, textColorSub)', () => {
+  it('sem labelColor: comportamento antigo preservado (SWITCH de trend, textColorSub)', () => {
     const dax = generateDAX(baseGlobal, [customCard(undefined)], 'cards');
-    expect(dax).toContain('color: " & IF(_C1_Comp1_Log');
+    expect(dax).toContain('color: " & SWITCH(_C1_Comp1_State');
     expect(dax).toContain(`class='row-label' style='color: ${baseGlobal.textColorSub}'`);
     expect(quoteBalance(dax)).toBe(true);
   });
@@ -268,7 +268,7 @@ describe('Regressão combinada: título longo + labelColor (itens 2 e 4)', () =>
         expect(dax).toContain(LONG_TITLE);
         expect(dax).toContain(`style='color: ${LABEL_COLOR}; background-color: ${LABEL_COLOR}1A;'`);
         // ícone de tendência continua condicional (não deve sumir por causa do labelColor)
-        expect(dax).toContain(`path d='" & IF(_C1_Comp1_Log, "M23 6l-9.5 9.5-5-5L1 18", "M23 18l-9.5-9.5-5 5L1 6") & "'`);
+        expect(dax).toContain(`path d='" & SWITCH(_C1_Comp1_State, "up", "M23 6l-9.5 9.5-5-5L1 18", "down", "M23 18l-9.5-9.5-5 5L1 6", "M5 12h14") & "'`);
         expect(quoteBalance(dax)).toBe(true);
       });
     }
