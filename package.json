@@ -8,9 +8,13 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:consistency": "node scripts/consistency-check/run.mjs --range HEAD~1",
+    "triage": "node scripts/pr-triage/run.mjs",
+    "postinstall": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
+    "@typesafe-ai/sdk": "^0.6.0",
     "@vercel/analytics": "^2.0.1",
     "lucide-react": "^0.563.0",
     "react": "^19.2.4",

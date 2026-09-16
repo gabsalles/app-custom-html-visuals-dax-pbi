@@ -14,6 +14,7 @@ import { DONUT_RADIUS, GAUGE_CHART_SIZE_MIN, GAUGE_CHART_SIZE_MAX } from './visu
  * Percentual (0-100) usado pelo modo 'completeness' do gauge — mesmo clamp
  * que _D{di}_Pct faz em produção (ver utils/daxGenerator.ts).
  */
+// TS-CONSISTENCY:BEGIN donutModeFormula
 export function resolveCompletenessPct(previewPercent: number | undefined): number {
   return Math.min(100, Math.max(0, previewPercent ?? 75));
 }
@@ -27,6 +28,7 @@ export function resolveDistributionTotal(slices: DonutSlice[]): number {
   const sum = slices.reduce((acc, s) => acc + (parseFloat(s.value) || 0), 0);
   return Math.min(100, Math.max(0, sum));
 }
+// TS-CONSISTENCY:END
 
 // ─────────────────────────────────────────────────────────────
 // Fix do gauge (chartSize/sizePct não crescia acima de um teto fixo

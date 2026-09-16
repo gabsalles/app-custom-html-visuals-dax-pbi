@@ -451,6 +451,7 @@ const Preview: React.FC<PreviewProps> = ({
                 // Fase 2: cor da accent bar — sem valor de teste, sem regras, ou nenhuma regra
                 // casando, cai no accentColor normal (comportamento inalterado pra quem não usa isso).
                 const accentBarColor = resolveConditionalColor(testMain, card.conditionalRules, card.accentColor || global.primaryColor);
+                // TS-CONSISTENCY:BEGIN comparisonTrend
                 const resolveComp = (comp: any) => {
                   const key = `${card.id}_${comp.id}`;
                   const tv = effectiveTestValues[key];
@@ -513,6 +514,7 @@ const Preview: React.FC<PreviewProps> = ({
                     return <span className="p-badge" style={{ color: badgeColor, backgroundColor: badgeBg }}>{trendIcon} {resolved.value}</span>;
                   }
                 };
+                // TS-CONSISTENCY:END
 
                 if (isCompact) {
                    return (
@@ -551,6 +553,7 @@ const Preview: React.FC<PreviewProps> = ({
                         </div>
                       </div>
     
+                      {/* TS-CONSISTENCY:BEGIN comparisonTrend */}
                       <div className="flex flex-col items-end justify-center gap-1 z-10 h-full">
                          {card.comparisons.map((comp) => {
                             const resolved = resolveComp(comp);
@@ -562,10 +565,13 @@ const Preview: React.FC<PreviewProps> = ({
                             );
                          })}
                       </div>
+                      {/* TS-CONSISTENCY:END */}
 
+                      {/* TS-CONSISTENCY:BEGIN progressRingFormula */}
                       {card.type === 'progress' && (
                          <div className="absolute bottom-0 left-0 h-1 transition-all duration-1000" style={{ width: `${card.progressValue}%`, backgroundColor: global.primaryColor }} />
                       )}
+                      {/* TS-CONSISTENCY:END */}
                     </div>
                    );
                 }
@@ -631,9 +637,12 @@ const Preview: React.FC<PreviewProps> = ({
                      {/* Fase 1 (fechamento): já quebrava linha por padrão (sem nowrap definido);
                          overflowWrap cobre o caso de um número longo sem espaço pra quebrar. */}
                      <div style={{ fontSize: `${fValue}px`, fontWeight: global.fontWeightValue, color: global.textColorValue, letterSpacing: '-0.5px', textAlign: align as any, overflowWrap: 'break-word' }}>{displayValue}</div>
+                     {/* TS-CONSISTENCY:BEGIN progressRingFormula */}
                      {card.type === 'progress' && <div className="p-track" style={{ height: `${card.progressHeight || PROGRESS_BAR_DEFAULT_HEIGHT_PX}px` }}><div className="p-fill" style={{ width: `${card.progressValue}%`, background: card.progressColor || card.accentColor || global.primaryColor }} /></div>}
+                     {/* TS-CONSISTENCY:END */}
                   </div>
     
+                  {/* TS-CONSISTENCY:BEGIN comparisonTrend */}
                   <div className="p-footer">
                     {card.comparisons.map((comp) => {
                        const resolved = resolveComp(comp);
@@ -647,6 +656,7 @@ const Preview: React.FC<PreviewProps> = ({
                        );
                     })}
                   </div>
+                  {/* TS-CONSISTENCY:END */}
                 </div>
                 );
                 }; // fim de renderCardItem
@@ -861,6 +871,7 @@ const Preview: React.FC<PreviewProps> = ({
   );
 };
 
+// TS-CONSISTENCY:BEGIN progressRingFormula
 const renderRing = (card: any, global: any) => (
    <div className="ring-box">
       <svg viewBox="0 0 50 50" className="ring-svg">
@@ -870,5 +881,6 @@ const renderRing = (card: any, global: any) => (
       <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold" style={{color: global.textColorValue}}>{card.progressValue}%</div>
    </div>
 );
+// TS-CONSISTENCY:END
 
 export default Preview;
