@@ -9,8 +9,8 @@
 // Exit codes: 0 = pass/warn/skip, 1 = block.
 // Never blocks due to the TypeSafe API being unreachable — fails open.
 
-import { execSync } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,30 +20,51 @@ import { buildBundle } from './extract.mjs';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-function sh(cmd) {
-  return execSync(cmd, { cwd: REPO_ROOT, encoding: 'utf8' }).trim();
+// execFileSync with an argv array — never a shell — so nothing (a ref name,
+// a file path) needs quoting and nothing can be interpreted as shell syntax.
+function git(args) {
+  return execFileSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8' }).trim();
 }
 
-function getChangedFiles() {
+function getMode() {
   const args = process.argv.slice(2);
   const rangeIdx = args.indexOf('--range');
   if (rangeIdx !== -1 && args[rangeIdx + 1]) {
-    const ref = args[rangeIdx + 1];
-    return sh(`git diff --name-only ${ref}...HEAD`).split('\n').filter(Boolean);
+    return { mode: 'range', ref: args[rangeIdx + 1] };
   }
-  // default: --staged
-  return sh('git diff --cached --name-only').split('\n').filter(Boolean);
+  return { mode: 'staged' };
+}
+
+function getChangedFiles(mode) {
+  const out = mode.mode === 'range'
+    ? git(['diff', '--name-only', `${mode.ref}...HEAD`])
+    : git(['diff', '--cached', '--name-only']);
+  return out.split('\n').filter(Boolean);
 }
 
 function log(msg) {
   process.stdout.write(`[typesafe-consistency] ${msg}\n`);
 }
 
-function readWatchedFiles() {
+// --staged must read what's actually STAGED (the git index), not the
+// working tree — otherwise further unstaged edits made after `git add`
+// are silently included (or a since-fixed mismatch in the working tree
+// masks what's really about to be committed). --range reads the working
+// tree, which is correct there since it reflects the actual checked-out
+// commit (e.g. in CI).
+function readWatchedFiles(mode) {
   const contents = {};
   for (const rel of WATCHED_FILES) {
-    const abs = path.join(REPO_ROOT, rel);
-    if (existsSync(abs)) contents[rel] = readFileSync(abs, 'utf8');
+    if (mode.mode === 'staged') {
+      try {
+        contents[rel] = git(['show', `:${rel}`]);
+      } catch {
+        // not in the index (e.g. deleted, or never existed) — skip.
+      }
+    } else {
+      const abs = path.join(REPO_ROOT, rel);
+      if (existsSync(abs)) contents[rel] = readFileSync(abs, 'utf8');
+    }
   }
   return contents;
 }
@@ -90,14 +111,18 @@ function evaluateScore(name, score, confidence) {
   if (score >= t.block_min_score && confidence >= t.block_min_confidence) {
     return { level: 'block', reason: `${name}=${score.toFixed(2)} confidence=${confidence.toFixed(2)}` };
   }
-  if (score >= t.warn_min_score || (score >= t.block_min_score && confidence < t.block_min_confidence)) {
+  // score >= warn_min_score already covers the "block-score but low
+  // confidence" case too, since warn_min_score <= block_min_score for
+  // every configured question — no separate clause needed for that.
+  if (score >= t.warn_min_score) {
     return { level: 'warn', reason: `${name}=${score.toFixed(2)} confidence=${confidence.toFixed(2)} (below block confidence bar)` };
   }
   return { level: 'pass', reason: `${name}=${score.toFixed(2)} confidence=${confidence.toFixed(2)}` };
 }
 
 async function main() {
-  const changed = getChangedFiles();
+  const mode = getMode();
+  const changed = getChangedFiles(mode);
   const relevant = changed.filter((f) => WATCHED_FILES.includes(f));
 
   if (relevant.length === 0) {
@@ -107,8 +132,22 @@ async function main() {
 
   log(`relevant files changed: ${relevant.join(', ')}`);
 
-  const contents = readWatchedFiles();
-  const { bundle, missing } = buildBundle(contents, SIDES, REGIONS);
+  const contents = readWatchedFiles(mode);
+
+  // Extraction failure (a BEGIN/END sentinel edited or removed without its
+  // pair) is NOT the same failure class as "the API is unreachable" — it
+  // means we genuinely can't verify anything, so it BLOCKS rather than
+  // fails open. Kept as its own try/catch, separate from the API call's,
+  // so it isn't swallowed by that fail-open path or by the top-level
+  // catch-all below.
+  let bundle, missing;
+  try {
+    ({ bundle, missing } = buildBundle(contents, SIDES, REGIONS));
+  } catch (err) {
+    log(`BLOCK: failed to extract TS-CONSISTENCY regions (${err.message})`);
+    log('A BEGIN/END sentinel was likely edited or removed without its pair. Fix the sentinels before committing.');
+    return 1;
+  }
 
   if (missing.length > 0) {
     log(`BLOCK: region(s) missing entirely on one side: ${missing.join(', ')}`);

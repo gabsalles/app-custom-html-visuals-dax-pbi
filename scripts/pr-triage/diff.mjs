@@ -1,11 +1,15 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
-function sh(cmd, cwd) {
-  return execSync(cmd, { cwd, encoding: 'utf8', maxBuffer: 1024 * 1024 * 64 });
+// execFileSync with an argv array — never a shell — so a range/ref/path
+// containing shell metacharacters is just an argument, never parsed as
+// shell syntax (matters especially for `range`, which in CI comes from a
+// branch name outside our control).
+function git(args, cwd) {
+  return execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 1024 * 1024 * 64 });
 }
 
 export function getChangedFiles(cwd, range) {
-  return sh(`git diff --name-only ${range}`, cwd)
+  return git(['diff', '--name-only', range], cwd)
     .trim()
     .split('\n')
     .filter(Boolean);
@@ -18,7 +22,7 @@ export function getChangedFiles(cwd, range) {
 export function getFileDiff(cwd, range, path, maxLines) {
   let patch;
   try {
-    patch = sh(`git diff ${range} -- ${JSON.stringify(path)}`, cwd);
+    patch = git(['diff', range, '--', path], cwd);
   } catch (err) {
     return `(failed to read diff: ${err.message})`;
   }

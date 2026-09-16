@@ -138,9 +138,10 @@ async function main() {
       const client = new TypeSafeClient();
       const batches = packIntoBatches(classifiable, BATCH_CHAR_BUDGET);
       log(`Triaging ${classifiable.length} file(s) across ${batches.length} Jev call(s)...`);
-      for (const batch of batches) {
-        await classifyBatch(batch, client);
-      }
+      // Batches are independent (each writes onto its own files' objects
+      // only), so they run concurrently — an N-batch PR costs ~1x
+      // API_TIMEOUT_MS worst case instead of ~Nx.
+      await Promise.all(batches.map((batch) => classifyBatch(batch, client)));
     } catch (err) {
       jevOk = false;
       log(`WARNING: TypeSafe triage unavailable (${err.message}) — falling back to "review everything".`);

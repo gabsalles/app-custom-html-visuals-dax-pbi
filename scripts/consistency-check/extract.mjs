@@ -24,6 +24,12 @@ export function extractRegions(fileContent) {
       if (m) currentId = m[1];
       continue;
     }
+    const nested = BEGIN_RE.exec(line);
+    if (nested) {
+      throw new Error(
+        `Nested TS-CONSISTENCY:BEGIN "${nested[1]}" found before region "${currentId}" was closed with END`
+      );
+    }
     if (END_RE.test(line)) {
       const body = buffer.join('\n').trim();
       regions[currentId] = regions[currentId] ? `${regions[currentId]}\n\n---\n\n${body}` : body;
